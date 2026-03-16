@@ -1,0 +1,25 @@
+run_time_note: "Run after market close"
+
+scoring:
+  trend_ma_period: 50
+  trend_ignition_ma_period: 20
+  trend_ignition_lookback_days: 5
+  momentum_roc_period: 5
+  momentum_threshold_pct: 4.0
+  relative_strength_period: 10
+  relative_strength_benchmark: VOO
+  relative_strength_threshold_pct: 2.0
+  rs_persistence_days: 3
+  exhaustion_short_roc_period: 3
+  exhaustion_long_roc_period: 10
+  exhaustion_threshold_pct: -4.0
+  atr_period: 14
+  volatility_limit_pct_of_price: 6.0
+
+signal_states:
+  strong_bull_min: 6
+  bull_min: 3
+  neutral_min: -2
+  neutral_max: 2
+  bear_max: -3
+  strong_bear_max: -6
