@@ -1,10 +1,10 @@
 date,sector,signal_etf,total_score,signal_state,score_change,rank
-2026-03-16,Biotechnology,XBI,0,Neutral,0,0
-2026-03-16,Consumer Discretionary,XLY,0,Neutral,0,0
-2026-03-16,Energy,XLE,0,Neutral,0,0
-2026-03-16,Financials,XLF,0,Neutral,0,0
-2026-03-16,Healthcare,XLV,0,Neutral,0,0
-2026-03-16,Industrials,XLI,0,Neutral,0,0
-2026-03-16,Nasdaq Growth,QQQ,0,Neutral,0,0
-2026-03-16,Semiconductors,SMH,0,Neutral,0,0
-2026-03-16,Technology,XLK,0,Neutral,0,0
+2026-03-16,Biotechnology,XBI,0,Neutral,0,1
+2026-03-16,Consumer Discretionary,XLY,0,Neutral,0,1
+2026-03-16,Energy,XLE,0,Neutral,0,1
+2026-03-16,Financials,XLF,0,Neutral,0,1
+2026-03-16,Healthcare,XLV,0,Neutral,0,1
+2026-03-16,Industrials,XLI,0,Neutral,0,1
+2026-03-16,Nasdaq Growth,QQQ,0,Neutral,0,1
+2026-03-16,Semiconductors,SMH,0,Neutral,0,1
+2026-03-16,Technology,XLK,0,Neutral,0,1
