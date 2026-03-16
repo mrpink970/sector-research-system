@@ -1,0 +1,35 @@
+signal_etfs:
+  - SMH
+  - XLK
+  - XLF
+  - XLE
+  - XBI
+  - XLV
+  - XLI
+  - XLY
+  - QQQ
+
+trade_bull:
+  - SOXL
+  - TECL
+  - FAS
+  - ERX
+  - LABU
+  - CURE
+  - DUSL
+  - WANT
+  - TQQQ
+
+trade_bear:
+  - SOXS
+  - TECS
+  - FAZ
+  - ERY
+  - LABD
+  - RXD
+  - DRV
+  - SQQQ
+
+benchmarks:
+  - VOO
+  - QQQ
