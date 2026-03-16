@@ -57,14 +57,14 @@ def fetch_price(ticker):
     date = data.index[-1].strftime("%Y-%m-%d")
 
     return [
-        date,
-        ticker,
-        float(row["Open"]),
-        float(row["High"]),
-        float(row["Low"]),
-        float(row["Close"]),
-        int(row["Volume"])
-    ]
+    date,
+    ticker,
+    float(row["Open"].item()),
+    float(row["High"].item()),
+    float(row["Low"].item()),
+    float(row["Close"].item()),
+    int(row["Volume"].item())
+]
 
 
 def main():
