@@ -33,7 +33,8 @@ jobs:
         run: python scripts/calculate_indicators.py
       - name: Score sectors
         run: python scripts/score_sectors.py
-
+      - name: Rank sectors
+        run: python scripts/rank_sectors.py
         
       - name: Commit changes
         run: |
