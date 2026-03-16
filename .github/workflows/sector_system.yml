@@ -28,11 +28,15 @@ jobs:
 
       - name: Collect market data
         run: python scripts/collect_market_data.py
-
+        
+      - name: Calculate indicators
+        run: python scripts/calculate_indicators.py
+        
       - name: Commit changes
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add data/market_data.csv
+          git add data/market_data.csv data/indicators.csv
           git commit -m "daily sector market data update" || echo "No changes to commit"
           git push
