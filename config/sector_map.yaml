@@ -1,0 +1,63 @@
+sectors:
+  - sector: Semiconductors
+    signal_etf: SMH
+    bull_etf: SOXL
+    bear_etf: SOXS
+    benchmark: VOO
+    notes: Core sector
+
+  - sector: Technology
+    signal_etf: XLK
+    bull_etf: TECL
+    bear_etf: TECS
+    benchmark: VOO
+    notes: Broad technology
+
+  - sector: Financials
+    signal_etf: XLF
+    bull_etf: FAS
+    bear_etf: FAZ
+    benchmark: VOO
+    notes: Macro sensitive
+
+  - sector: Energy
+    signal_etf: XLE
+    bull_etf: ERX
+    bear_etf: ERY
+    benchmark: VOO
+    notes: Commodity / macro sensitive
+
+  - sector: Biotechnology
+    signal_etf: XBI
+    bull_etf: LABU
+    bear_etf: LABD
+    benchmark: VOO
+    notes: High volatility
+
+  - sector: Healthcare
+    signal_etf: XLV
+    bull_etf: CURE
+    bear_etf: RXD
+    benchmark: VOO
+    notes: Defensive sector
+
+  - sector: Industrials
+    signal_etf: XLI
+    bull_etf: DUSL
+    bear_etf: DRV
+    benchmark: VOO
+    notes: Placeholder inverse mapping, review later
+
+  - sector: Consumer Discretionary
+    signal_etf: XLY
+    bull_etf: WANT
+    bear_etf: ""
+    benchmark: VOO
+    notes: No locked bear twin
+
+  - sector: Nasdaq Growth
+    signal_etf: QQQ
+    bull_etf: TQQQ
+    bear_etf: SQQQ
+    benchmark: VOO
+    notes: Growth / tech context
