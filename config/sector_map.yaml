@@ -46,14 +46,49 @@ sectors:
     bull_etf: DUSL
     bear_etf: SIJ
     benchmark: VOO
-    notes: Fixed inverse mapping (DRV removed, SIJ used)
+    notes: Fixed inverse mapping; SIJ is the inverse Industrials ETF
 
   - sector: Consumer Discretionary
     signal_etf: XLY
     bull_etf: WANT
     bear_etf: SCC
     benchmark: VOO
-    notes: Added inverse ETF (SCC)
+    notes: Consumer discretionary / services
+
+  - sector: Consumer Staples
+    signal_etf: XLP
+    bull_etf: UGE
+    bear_etf: SZK
+    benchmark: VOO
+    notes: Staples mapping added
+
+  - sector: Materials
+    signal_etf: XLB
+    bull_etf: UYM
+    bear_etf: SMN
+    benchmark: VOO
+    notes: Materials mapping added
+
+  - sector: Utilities
+    signal_etf: XLU
+    bull_etf: UTSL
+    bear_etf: SDP
+    benchmark: VOO
+    notes: Utilities mapping added
+
+  - sector: Real Estate
+    signal_etf: XLRE
+    bull_etf: DRN
+    bear_etf: DRV
+    benchmark: VOO
+    notes: Real estate mapping added
+
+  - sector: Communication Services
+    signal_etf: XLC
+    bull_etf: LTL
+    bear_etf: ""
+    benchmark: VOO
+    notes: Bull ETF confirmed; inverse ETF not yet locked
 
   - sector: Nasdaq Growth
     signal_etf: QQQ
