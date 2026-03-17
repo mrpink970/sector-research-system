@@ -50,11 +50,11 @@ sectors:
   
 
   - sector: Consumer Discretionary
-    signal_etf: XLY
-    bull_etf: WANT
-    bear_etf: ""
-    benchmark: VOO
-    notes: No locked bear twin
+  signal_etf: XLY
+  bull_etf: WANT
+  bear_etf: SCC
+  benchmark: VOO
+  notes: Added inverse ETF (SCC)
 
   - sector: Nasdaq Growth
     signal_etf: QQQ
