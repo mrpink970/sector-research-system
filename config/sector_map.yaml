@@ -42,11 +42,12 @@ sectors:
     notes: Defensive sector
 
   - sector: Industrials
-    signal_etf: XLI
-    bull_etf: DUSL
-    bear_etf: DRV
-    benchmark: VOO
-    notes: Placeholder inverse mapping, review later
+  signal_etf: XLI
+  bull_etf: DUSL
+  bear_etf: SIJ
+  benchmark: VOO
+  notes: Fixed inverse mapping (DRV removed, SIJ used)
+  
 
   - sector: Consumer Discretionary
     signal_etf: XLY
