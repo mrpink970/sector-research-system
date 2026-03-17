@@ -48,7 +48,6 @@ sectors:
   benchmark: VOO
   notes: Fixed inverse mapping (DRV removed, SIJ used)
   
-
   - sector: Consumer Discretionary
   signal_etf: XLY
   bull_etf: WANT
