@@ -17,3 +17,12 @@ date,sector,signal_etf,total_score,signal_state,score_change,rank
 2026-03-17,Nasdaq Growth,QQQ,0,Neutral,0,1
 2026-03-17,Semiconductors,SMH,0,Neutral,0,1
 2026-03-17,Technology,XLK,0,Neutral,0,1
+2026-03-18,Biotechnology,XBI,0,Neutral,0,1
+2026-03-18,Consumer Discretionary,XLY,0,Neutral,0,1
+2026-03-18,Energy,XLE,0,Neutral,0,1
+2026-03-18,Financials,XLF,0,Neutral,0,1
+2026-03-18,Healthcare,XLV,0,Neutral,0,1
+2026-03-18,Industrials,XLI,0,Neutral,0,1
+2026-03-18,Nasdaq Growth,QQQ,0,Neutral,0,1
+2026-03-18,Semiconductors,SMH,0,Neutral,0,1
+2026-03-18,Technology,XLK,0,Neutral,0,1
