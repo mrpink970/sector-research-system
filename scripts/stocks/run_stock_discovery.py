@@ -271,19 +271,19 @@ def main() -> None:
         except Exception:
             continue
 
-    if not rows:
-    append_run_log(
-        paths.run_log,
-        {
-            "date": today,
-            "stocks_scored": 0,
-            "candidates_found": 0,
-            "status": "warning",
-            "notes": "No rows survived filtering/scoring",
-        },
-    )
-    print("WARNING: No stocks survived filtering/scoring")
-    return
+     if not rows:
+         append_run_log(
+             paths.run_log,
+             {
+                 "date": today,
+                 "stocks_scored": 0,
+                 "candidates_found": 0,
+                 "status": "warning",
+                 "notes": "No rows survived filtering/scoring",
+             },
+         )
+         print("WARNING: No stocks survived filtering/scoring")
+         return
 
     full_df = pd.DataFrame(rows)
     full_df = full_df.sort_values(["date", "total_score", "ticker"], ascending=[True, False, True])
