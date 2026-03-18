@@ -1,12 +1,13 @@
 universe:
   universe_a:
-    min_price: 10
-    min_market_cap: 1000000000
-    min_volume: 1000000
-  universe_b:
-    min_price: 3
+    min_price: 2
     min_market_cap: 300000000
-    min_volume: 250000
+    min_volume: 300000
+
+  universe_b:
+    min_price: 1
+    min_market_cap: 100000000
+    min_volume: 100000
 
 benchmark:
   ticker: SPY
