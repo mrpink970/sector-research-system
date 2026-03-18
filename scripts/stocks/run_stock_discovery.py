@@ -170,7 +170,7 @@ def main():
     for ticker in tickers:
         try:
             df = download_history(ticker, "1y")
-            if df.empty or len(df) < 100:
+            if df.empty or len(df) < 30:
                 continue
 
             metrics = latest_metrics(df, spy_ret_63)
