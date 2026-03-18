@@ -1,1 +1,44 @@
+universe:
+  universe_a:
+    min_price: 10
+    min_market_cap: 1000000000
+    min_volume: 1000000
+  universe_b:
+    min_price: 3
+    min_market_cap: 300000000
+    min_volume: 250000
+
+benchmark:
+  ticker: SPY
+
+lookbacks:
+  ret_21: 21
+  ret_63: 63
+  ret_126: 126
+  ma_20: 20
+  ma_50: 50
+  ma_100: 100
+  vol_20: 20
+  vol_50: 50
+  atr_14: 14
+
+scoring:
+  rs_strong: 0.15
+  rs_moderate: 0.05
+  volume_ratio: 1.10
+  atr_threshold: 0.06
+  extension_threshold: 0.12
+  strong_bullish: 6
+  bullish: 3
+
+files:
+  universe: data/stocks/stock_universe.csv
+  benchmark_cache: data/stocks/benchmark_history.csv
+  full_history: data/stocks/stock_scores_history.csv
+  candidate_history: data/stocks/stock_candidates_history.csv
+  run_log: data/stocks/stock_system_run_log.csv
+
+pull:
+  history_period: 18mo
+  batch_size: 50
 
