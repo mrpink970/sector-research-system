@@ -1,1 +1,22 @@
-place holder
+run_mode_note: "Paper system rebuilds outputs deterministically from available research data"
+
+positions:
+  max_concurrent_positions: 2
+  shares_per_trade: 100
+
+confirmation:
+  required_consecutive_closes: 2
+
+stops:
+  leverage_1x_pct: 10.0
+  leverage_2x_pct: 14.0
+  leverage_3x_pct: 18.0
+
+replacement:
+  min_strength_advantage_points: 2.0
+
+direction:
+  non_tradable_state: Neutral
+
+logging:
+  skip_placeholder_mappings: true
