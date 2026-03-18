@@ -33,7 +33,6 @@ def download_history(ticker: str, period: str) -> pd.DataFrame:
     if df.empty:
         return df
 
-    # flatten yfinance columns if needed
     if hasattr(df.columns, "nlevels") and df.columns.nlevels > 1:
         df.columns = df.columns.get_level_values(0)
 
@@ -132,7 +131,37 @@ def score_row(row: Dict[str, float], params: dict) -> Dict[str, int | str]:
     else:
         signal = "Neutral"
 
-    return {"total_score": total, "signal": signal}
+    return {
+        "relative_strength_score": rs_score,
+        "trend_score": trend_score,
+        "structure_score": structure_score,
+        "volume_score": volume_score,
+        "volatility_score": volatility_score,
+        "extension_score": extension_score,
+        "total_score": total,
+        "signal": signal,
+    }
+
+
+def classify_tag(ret_21: float, ret_63: float, extension_pct: float) -> str:
+    if pd.notna(ret_21) and ret_21 > 0.50:
+        return "extended"
+
+    if (
+        pd.notna(ret_21)
+        and pd.notna(ret_63)
+        and ret_21 > 0.20
+        and ret_63 > 0.30
+    ):
+        return "momentum"
+
+    if pd.notna(ret_21) and ret_21 > 0.05:
+        return "early_breakout"
+
+    if pd.notna(extension_pct) and extension_pct > 0.12:
+        return "extended"
+
+    return "neutral"
 
 
 def append_run_log(path: Path, row: Dict[str, object]) -> None:
@@ -170,6 +199,7 @@ def main():
 
             metrics = latest_metrics(df, spy_ret_63)
             scored = score_row(metrics, params)
+            tag = classify_tag(metrics["ret_21"], metrics["ret_63"], metrics["extension_pct"])
 
             rows.append(
                 {
@@ -177,6 +207,7 @@ def main():
                     "ticker": ticker,
                     **metrics,
                     **scored,
+                    "tag": tag,
                 }
             )
 
@@ -204,6 +235,7 @@ def main():
         return
 
     out = pd.DataFrame(rows)
+    out = out.sort_values(["date", "total_score", "ticker"], ascending=[True, False, True])
     out.to_csv(scores_path, index=False)
 
     candidates = out[out["signal"] == "Strong Bullish"].copy()
