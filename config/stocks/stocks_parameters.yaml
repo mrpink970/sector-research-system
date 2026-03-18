@@ -24,12 +24,13 @@ lookbacks:
   atr_14: 14
 
 scoring:
-  rs_strong: 0.15
-  rs_moderate: 0.05
-  volume_ratio: 1.10
-  atr_threshold: 0.06
-  extension_threshold: 0.12
-  strong_bullish: 6
+  rs_strong: 0.05
+  rs_moderate: 0.02
+  volume_ratio: 1.1
+  atr_threshold: 0.08
+  extension_threshold: 0.25
+
+  strong_bullish: 5
   bullish: 3
 
 files:
