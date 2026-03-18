@@ -1,1 +1,1 @@
-
+date,ticker,universe,close,market_cap,avg_volume_50,ret_21,ret_63,ret_126,spy_ret_63,rs_63,ma_20,ma_50,ma_100,avg_vol_20,avg_vol_50,vol_ratio,atr_14,atr_pct,extension_pct,relative_strength_score,trend_score,structure_score,volume_score,volatility_score,extension_score,total_score,signal
