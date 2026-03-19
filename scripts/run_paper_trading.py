@@ -45,6 +45,11 @@ def normalize_signal(signal: str) -> str:
     return mapping.get(signal, signal)
 
 
+def is_bearish_signal(signal: str) -> bool:
+    s = normalize_signal(signal)
+    return s in {"Bear", "Strong Bear"}
+
+
 def leverage_for_ticker(ticker: str) -> int:
     t = str(ticker).upper()
     three_x = {
@@ -217,12 +222,11 @@ def main():
     max_positions = int(params["positions"]["max_concurrent_positions"])
     shares_per_trade = int(params["positions"]["shares_per_trade"])
     required_closes = int(params["confirmation"]["required_consecutive_closes"])
-    non_tradable_state = str(params["direction"].get("non_tradable_state", "Neutral")).strip().lower()
 
     active_positions: List[Position] = []
     trade_log: List[dict] = []
 
-    # Yesterday's signal -> today's open execution
+    # yesterday's signal drives today's open
     for i in range(1, len(all_dates)):
         signal_date = all_dates[i - 1]
         trade_date = all_dates[i]
@@ -230,7 +234,7 @@ def main():
         signal_day = latest_scores_for_date(scores, signal_date)
         signal_by_sector = {row["sector"]: row for _, row in signal_day.iterrows()}
 
-        # 1) Execute exits at today's open
+        # 1) exits
         survivors: List[Position] = []
         for position in active_positions:
             bar = price_map.get((trade_date, position.ticker))
@@ -238,7 +242,7 @@ def main():
                 survivors.append(position)
                 continue
 
-            # Protective exit remains immediate
+            # trailing stop always active
             if bar["low"] <= position.trailing_stop:
                 trade_log.append(
                     close_position(
@@ -251,30 +255,21 @@ def main():
                 )
                 continue
 
-            # REVERTED: immediate managed exit on first neutral / mapping blank / ETF change
             signal_row = signal_by_sector.get(position.sector)
             if signal_row is None:
-                trade_log.append(
-                    close_position(
-                        position=position,
-                        exit_date=trade_date,
-                        exit_price=bar["open"],
-                        exit_signal="Missing",
-                        exit_type="sector_missing",
-                    )
-                )
+                survivors.append(position)
                 continue
 
             raw_signal = normalize_signal(signal_row[signal_col])
-            row_direction = str(signal_row["direction"]).strip().lower()
             row_ticker = str(signal_row["selected_etf"]).strip()
 
             exit_type: Optional[str] = None
-            if row_direction == "none" or normalize_signal(raw_signal).lower() == non_tradable_state:
-                exit_type = "signal_neutral"
-            elif row_ticker == "":
-                exit_type = "mapping_blank"
-            elif row_ticker != position.ticker:
+
+            # bear-only managed exit
+            if is_bearish_signal(raw_signal):
+                exit_type = "bear_signal"
+            # rotation still exits immediately
+            elif row_ticker != "" and row_ticker != position.ticker:
                 exit_type = "ticker_changed"
 
             if exit_type:
@@ -295,7 +290,7 @@ def main():
 
         active_positions = survivors
 
-        # 2) Build entry candidates from confirmed signals
+        # 2) entries
         candidates = []
         for _, row in signal_day.iterrows():
             sector = row["sector"]
@@ -310,7 +305,6 @@ def main():
                 continue
             if any(p.sector == sector for p in active_positions):
                 continue
-            # KEEP ORIGINAL: 2-day confirmation for entries
             if not signal_confirmed_for_entry(scores, sector, signal_date, required_closes):
                 continue
 
@@ -324,7 +318,6 @@ def main():
 
         candidates = sorted(candidates, key=lambda x: (-x["strength"], x["sector"]))
 
-        # 3) Execute entries at today's open
         for candidate in candidates:
             if len(active_positions) >= max_positions:
                 break
