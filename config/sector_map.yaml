@@ -1,98 +1,95 @@
-sectors:
-  - sector: Semiconductors
-    signal_etf: SMH
-    bull_etf: SOXL
-    bear_etf: SOXS
-    benchmark: VOO
-    notes: Core sector
+#!/usr/bin/env python3
 
-  - sector: Technology
-    signal_etf: XLK
-    bull_etf: TECL
-    bear_etf: TECS
-    benchmark: VOO
-    notes: Broad technology
+import pandas as pd
+import yaml
+import yfinance as yf
 
-  - sector: Financials
-    signal_etf: XLF
-    bull_etf: FAS
-    bear_etf: FAZ
-    benchmark: VOO
-    notes: Macro sensitive
 
-  - sector: Energy
-    signal_etf: XLE
-    bull_etf: ERX
-    bear_etf: ERY
-    benchmark: VOO
-    notes: Commodity / macro sensitive
+OUTPUT_FILE = "data/market_data.csv"
+LOOKBACK_PERIOD = "6mo"
 
-  - sector: Biotechnology
-    signal_etf: XBI
-    bull_etf: LABU
-    bear_etf: LABD
-    benchmark: VOO
-    notes: High volatility
 
-  - sector: Healthcare
-    signal_etf: XLV
-    bull_etf: CURE
-    bear_etf: RXD
-    benchmark: VOO
-    notes: Defensive sector
+def load_sector_map():
+    with open("config/sector_map.yaml", "r") as f:
+        return yaml.safe_load(f)
 
-  - sector: Industrials
-    signal_etf: XLI
-    bull_etf: DUSL
-    bear_etf: SIJ
-    benchmark: VOO
-    notes: Fixed inverse mapping; SIJ is the inverse Industrials ETF
 
-  - sector: Consumer Discretionary
-    signal_etf: XLY
-    bull_etf: WANT
-    bear_etf: SCC
-    benchmark: VOO
-    notes: Consumer discretionary / services
+def get_all_tickers(config):
+    tickers = set()
 
-  - sector: Consumer Staples
-    signal_etf: XLP
-    bull_etf: UGE
-    bear_etf: SZK
-    benchmark: VOO
-    notes: Staples mapping added
+    for s in config["sectors"]:
+        if s.get("signal_etf"):
+            tickers.add(s["signal_etf"])
+        if s.get("bull_etf"):
+            tickers.add(s["bull_etf"])
+        if s.get("bear_etf"):
+            if s["bear_etf"] != "":
+                tickers.add(s["bear_etf"])
+        if s.get("benchmark"):
+            tickers.add(s["benchmark"])
 
-  - sector: Materials
-    signal_etf: XLB
-    bull_etf: UYM
-    bear_etf: SMN
-    benchmark: VOO
-    notes: Materials mapping added
+    return sorted(tickers)
 
-  - sector: Utilities
-    signal_etf: XLU
-    bull_etf: UTSL
-    bear_etf: SDP
-    benchmark: VOO
-    notes: Utilities mapping added
 
-  - sector: Real Estate
-    signal_etf: XLRE
-    bull_etf: DRN
-    bear_etf: DRV
-    benchmark: VOO
-    notes: Real estate mapping added
+def fetch_history(ticker):
+    df = yf.download(
+        ticker,
+        period=LOOKBACK_PERIOD,
+        interval="1d",
+        progress=False,
+        auto_adjust=False,
+        threads=False,
+    )
 
-  - sector: Communication Services
-    signal_etf: XLC
-    bull_etf: LTL
-    bear_etf: ""
-    benchmark: VOO
-    notes: Bull ETF confirmed; inverse ETF not yet locked
+    if df.empty:
+        return None
 
-  - sector: Nasdaq Growth
-    signal_etf: QQQ
-    bull_etf: TQQQ
-    bear_etf: SQQQ
-    benchmark: VOO
-    notes: Growth / tech context
+    # flatten multiindex if needed
+    if hasattr(df.columns, "nlevels") and df.columns.nlevels > 1:
+        df.columns = df.columns.get_level_values(0)
+
+    df = df.reset_index()
+
+    out = pd.DataFrame({
+        "date": pd.to_datetime(df["Date"]).dt.strftime("%Y-%m-%d"),
+        "ticker": ticker,
+        "open": df["Open"],
+        "high": df["High"],
+        "low": df["Low"],
+        "close": df["Close"],
+        "volume": df["Volume"],
+    })
+
+    return out
+
+
+def main():
+    config = load_sector_map()
+    tickers = get_all_tickers(config)
+
+    all_data = []
+
+    for t in tickers:
+        print("Fetching:", t)
+        df = fetch_history(t)
+
+        if df is None:
+            print("No data:", t)
+            continue
+
+        all_data.append(df)
+
+    if not all_data:
+        print("No data collected")
+        return
+
+    final = pd.concat(all_data, ignore_index=True)
+    final = final.sort_values(["ticker", "date"]).reset_index(drop=True)
+
+    final.to_csv(OUTPUT_FILE, index=False)
+
+    print(f"Wrote {len(final)} rows to {OUTPUT_FILE}")
+
+
+if __name__ == "__main__":
+    main()
