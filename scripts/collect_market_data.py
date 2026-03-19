@@ -4,6 +4,11 @@ import csv
 from pathlib import Path
 import yaml
 import yfinance as yf
+import pandas as pd
+
+
+MARKET_DATA_PATH = Path("data/market_data.csv")
+LOOKBACK_PERIOD = "6mo"
 
 
 def load_yaml(path):
@@ -29,75 +34,80 @@ def load_tickers():
     return tickers
 
 
-def get_existing_keys():
-    keys = set()
-    path = Path("data/market_data.csv")
+def load_existing():
+    if not MARKET_DATA_PATH.exists():
+        return pd.DataFrame(columns=["date", "ticker", "open", "high", "low", "close", "volume"])
 
-    if not path.exists():
-        return keys
+    df = pd.read_csv(MARKET_DATA_PATH)
+    if df.empty:
+        return pd.DataFrame(columns=["date", "ticker", "open", "high", "low", "close", "volume"])
 
-    with open(path, newline="") as f:
-        reader = csv.DictReader(f)
-        for row in reader:
-            keys.add((row["date"], row["ticker"]))
-
-    return keys
+    return df
 
 
-def fetch_price(ticker):
+def fetch_history(ticker):
     data = yf.download(
         ticker,
-        period="10d",
+        period=LOOKBACK_PERIOD,
         interval="1d",
-        progress=False
+        progress=False,
+        auto_adjust=False,
+        threads=False,
     )
 
     if data.empty:
-        return None
+        return pd.DataFrame()
 
-    row = data.iloc[-1]
-    date = data.index[-1].strftime("%Y-%m-%d")
+    if hasattr(data.columns, "nlevels") and data.columns.nlevels > 1:
+        data.columns = data.columns.get_level_values(0)
 
-    return [
-        date,
-        ticker,
-        float(row["Open"].item()),
-        float(row["High"].item()),
-        float(row["Low"].item()),
-        float(row["Close"].item()),
-        int(row["Volume"].item())
-    ]
+    data = data.reset_index()
+
+    out = pd.DataFrame({
+        "date": pd.to_datetime(data["Date"]).dt.strftime("%Y-%m-%d"),
+        "ticker": ticker,
+        "open": data["Open"].astype(float),
+        "high": data["High"].astype(float),
+        "low": data["Low"].astype(float),
+        "close": data["Close"].astype(float),
+        "volume": data["Volume"].fillna(0).astype(int),
+    })
+
+    return out
 
 
 def main():
     tickers = load_tickers()
-    existing = get_existing_keys()
-    new_rows = []
+    existing = load_existing()
+
+    frames = []
 
     for ticker in tickers:
-        row = fetch_price(ticker)
+        hist = fetch_history(ticker)
 
-        if row is None:
+        if hist.empty:
             print("no data", ticker)
             continue
 
-        key = (row[0], row[1])
+        print("fetched", ticker, len(hist))
+        frames.append(hist)
 
-        if key in existing:
-            print("duplicate", ticker)
-            continue
-
-        print("add", ticker, row[0])
-        new_rows.append(row)
-
-    if not new_rows:
-        print("no new rows")
+    if not frames:
+        print("no data fetched")
         return
 
-    with open("data/market_data.csv", "a", newline="") as f:
-        writer = csv.writer(f)
-        for row in new_rows:
-            writer.writerow(row)
+    fresh = pd.concat(frames, ignore_index=True)
+
+    if existing.empty:
+        combined = fresh
+    else:
+        combined = pd.concat([existing, fresh], ignore_index=True)
+        combined = combined.drop_duplicates(subset=["date", "ticker"], keep="last")
+
+    combined = combined.sort_values(["ticker", "date"]).reset_index(drop=True)
+    combined.to_csv(MARKET_DATA_PATH, index=False)
+
+    print(f"wrote {len(combined)} rows to {MARKET_DATA_PATH}")
 
 
 if __name__ == "__main__":
