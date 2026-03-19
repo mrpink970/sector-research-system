@@ -1738,14 +1738,14 @@ date,sector,signal_etf,selected_etf,direction,total_score,signal_state,score_cha
 2026-03-19,Energy,XLE,ERX,long,5,Bull,0,1
 2026-03-19,Utilities,XLU,UTSL,long,4,Bull,0,2
 2026-03-19,Semiconductors,SMH,,none,-1,Neutral,1,3
-2026-03-19,Technology,XLK,,none,-1,Neutral,0,3
-2026-03-19,Biotechnology,XBI,,none,-2,Neutral,3,4
-2026-03-19,Communication Services,XLC,,short,-3,Bear,0,5
-2026-03-19,Consumer Staples,XLP,SZK,short,-3,Bear,0,5
-2026-03-19,Financials,XLF,FAZ,short,-3,Bear,0,5
-2026-03-19,Healthcare,XLV,RXD,short,-3,Bear,2,5
-2026-03-19,Industrials,XLI,SIJ,short,-3,Bear,2,5
-2026-03-19,Nasdaq Growth,QQQ,SQQQ,short,-3,Bear,0,5
-2026-03-19,Real Estate,XLRE,DRV,short,-3,Bear,0,5
-2026-03-19,Consumer Discretionary,XLY,SCC,short,-4,Bear,-1,6
-2026-03-19,Materials,XLB,SMN,short,-5,Bear,0,7
+2026-03-19,Biotechnology,XBI,LABD,short,-3,Bear,2,4
+2026-03-19,Communication Services,XLC,,short,-3,Bear,0,4
+2026-03-19,Consumer Staples,XLP,SZK,short,-3,Bear,0,4
+2026-03-19,Financials,XLF,FAZ,short,-3,Bear,0,4
+2026-03-19,Healthcare,XLV,RXD,short,-3,Bear,2,4
+2026-03-19,Industrials,XLI,SIJ,short,-3,Bear,2,4
+2026-03-19,Nasdaq Growth,QQQ,SQQQ,short,-3,Bear,0,4
+2026-03-19,Real Estate,XLRE,DRV,short,-3,Bear,0,4
+2026-03-19,Technology,XLK,TECS,short,-3,Bear,-2,4
+2026-03-19,Consumer Discretionary,XLY,SCC,short,-4,Bear,-1,5
+2026-03-19,Materials,XLB,SMN,short,-5,Bear,0,6
