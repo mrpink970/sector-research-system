@@ -45,9 +45,9 @@ def normalize_signal(signal: str) -> str:
     return mapping.get(signal, signal)
 
 
-def is_bearish_signal(signal: str) -> bool:
+def is_bullish_signal(signal: str) -> bool:
     s = normalize_signal(signal)
-    return s in {"Bear", "Strong Bear"}
+    return s in {"Bull", "Strong Bull"}
 
 
 def leverage_for_ticker(ticker: str) -> int:
@@ -103,7 +103,7 @@ def signal_confirmed_for_entry(
     directions = tail["direction"].astype(str).tolist()
     etfs = tail["selected_etf"].fillna("").astype(str).tolist()
 
-    if any(d == "none" for d in directions):
+    if any(d != "long" for d in directions):
         return False
     if any(e.strip() == "" for e in etfs):
         return False
@@ -262,13 +262,16 @@ def main():
 
             raw_signal = normalize_signal(signal_row[signal_col])
             row_ticker = str(signal_row["selected_etf"]).strip()
+            row_direction = str(signal_row["direction"]).strip().lower()
 
             exit_type: Optional[str] = None
 
-            # bear-only managed exit
-            if is_bearish_signal(raw_signal):
-                exit_type = "bear_signal"
-            # rotation still exits immediately
+            # long-only: exit if no longer bullish
+            if not is_bullish_signal(raw_signal):
+                exit_type = "signal_change"
+            # or if the mapped ETF rotated away from current
+            elif row_direction != "long":
+                exit_type = "direction_change"
             elif row_ticker != "" and row_ticker != position.ticker:
                 exit_type = "ticker_changed"
 
@@ -290,7 +293,7 @@ def main():
 
         active_positions = survivors
 
-        # 2) entries
+        # 2) entries (long-only)
         candidates = []
         for _, row in signal_day.iterrows():
             sector = row["sector"]
@@ -299,7 +302,9 @@ def main():
             total_score = float(row["total_score"])
             normalized_signal = normalize_signal(row[signal_col])
 
-            if direction == "none":
+            if direction != "long":
+                continue
+            if not is_bullish_signal(normalized_signal):
                 continue
             if ticker == "":
                 continue
@@ -334,7 +339,7 @@ def main():
                 Position(
                     sector=candidate["sector"],
                     ticker=candidate["ticker"],
-                    direction=candidate["direction"],
+                    direction="long",
                     entry_date=trade_date,
                     entry_price=float(bar["open"]),
                     shares=shares_per_trade,
