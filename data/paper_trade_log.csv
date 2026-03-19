@@ -1,0 +1,25 @@
+sector,ticker,direction,entry_date,entry_price,exit_date,exit_price,shares,entry_signal,exit_signal,gross_pnl_dollars,return_pct,trade_duration_days,exit_type
+Biotechnology,LABU,long,2025-10-22,119.85,2025-10-23,114.11,100,Bull,Neutral,-574.0,-4.7893,1,signal_neutral
+Technology,TECL,long,2025-10-30,149.75,2025-10-31,151.87,100,Bull,Neutral,212.0,1.4157,1,signal_neutral
+Semiconductors,SOXL,long,2025-10-30,48.5,2025-11-03,49.5,100,Bull,Neutral,100.0,2.0619,4,signal_neutral
+Financials,FAZ,short,2025-10-31,44.98,2025-11-05,43.9,100,Bear,Neutral,-108.0,-2.4011,5,signal_neutral
+Real Estate,DRV,short,2025-11-03,26.5,2025-11-12,24.96,100,Bear,Neutral,-154.0,-5.8113,9,signal_neutral
+Materials,SMN,short,2025-11-05,15.18,2025-11-12,14.12,100,Bear,Neutral,-106.0,-6.9829,7,signal_neutral
+Biotechnology,LABU,long,2025-11-13,131.63,2025-11-14,124.62,100,Bull,Neutral,-701.0,-5.3255,1,signal_neutral
+Healthcare,CURE,long,2025-11-14,107.32,2025-11-17,105.0,100,Bull,Neutral,-232.0,-2.1618,3,signal_neutral
+Energy,ERX,long,2025-11-13,57.15,2025-11-20,56.91,100,Bull,Neutral,-24.0,-0.42,7,signal_neutral
+Biotechnology,LABU,long,2025-11-18,133.72,2025-11-20,141.58,100,Bull,Neutral,786.0,5.878,2,signal_neutral
+Semiconductors,SOXS,short,2025-11-20,76.4,2025-11-24,89.0,100,Bear,Bear,1260.0,16.4921,4,trailing_stop
+Consumer Discretionary,SCC,short,2025-11-20,15.96,2025-11-25,15.75,100,Bear,Bear,-21.0,-1.3158,5,trailing_stop
+Semiconductors,SOXS,short,2025-11-24,89.0,2025-11-26,76.4,100,Bear,Neutral,-1260.0,-14.1573,2,trailing_stop
+Consumer Discretionary,SCC,short,2025-11-25,15.75,2025-11-26,15.11,100,Bear,Neutral,-64.0,-4.0635,1,signal_neutral
+Healthcare,CURE,long,2025-11-26,119.93,2025-12-02,112.82,100,Bull,Neutral,-711.0,-5.9285,6,signal_neutral
+Biotechnology,LABU,long,2025-11-26,160.6,2025-12-03,149.4,100,Bull,Neutral,-1120.0,-6.9739,7,signal_neutral
+Semiconductors,SOXL,long,2025-12-03,44.45,2025-12-05,46.47,100,Bull,Neutral,202.0,4.5444,2,signal_neutral
+Biotechnology,LABU,long,2025-12-05,167.99,2026-01-05,156.99,100,Bull,Bull,-1100.0,-6.548,31,trailing_stop
+Consumer Staples,SZK,short,2026-01-05,13.0,2026-01-09,12.52,100,Bear,Neutral,-48.0,-3.6923,4,signal_neutral
+Utilities,SDP,short,2025-12-03,12.17,2026-01-16,12.11,100,Bear,Neutral,-6.0,-0.493,44,signal_neutral
+Semiconductors,SOXL,long,2026-01-09,51.09,2026-02-03,66.81,100,Strong Bull,Bull,1572.0,30.7692,25,trailing_stop
+Communication Services,LTL,long,2026-02-03,28.67,2026-02-04,28.12,100,Bull,Neutral,-55.0,-1.9184,1,signal_neutral
+Consumer Staples,UGE,long,2026-01-16,18.59,2026-03-05,20.48,100,Strong Bull,Bull,189.0,10.1668,48,trailing_stop
+Communication Services,LTL,long,2026-03-05,28.52,2026-03-13,26.72,100,Bull,Neutral,-180.0,-6.3114,8,signal_neutral
