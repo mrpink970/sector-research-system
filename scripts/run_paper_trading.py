@@ -49,7 +49,8 @@ def leverage_for_ticker(ticker: str) -> int:
     t = str(ticker).upper()
     three_x = {
         "SOXL", "SOXS", "TECL", "TECS", "FAS", "FAZ", "ERX", "ERY",
-        "LABU", "LABD", "DUSL", "WANT", "TQQQ", "SQQQ", "DRV"
+        "LABU", "LABD", "DUSL", "WANT", "TQQQ", "SQQQ", "DRV",
+        "UTSL", "SDP", "UYM", "SMN", "UGE", "SZK", "DRN", "SIJ", "SCC"
     }
     two_x = {"CURE", "RXD"}
     if t in three_x:
@@ -82,7 +83,12 @@ def load_price_table(market_data: pd.DataFrame) -> Dict[Tuple[str, str], dict]:
     return price_map
 
 
-def signal_confirmed(scores: pd.DataFrame, sector: str, signal_date: str, required_closes: int) -> bool:
+def signal_confirmed_for_entry(
+    scores: pd.DataFrame,
+    sector: str,
+    signal_date: str,
+    required_closes: int,
+) -> bool:
     subset = scores[(scores["sector"] == sector) & (scores["date"] <= signal_date)].sort_values("date")
     if len(subset) < required_closes:
         return False
@@ -98,6 +104,48 @@ def signal_confirmed(scores: pd.DataFrame, sector: str, signal_date: str, requir
         return False
 
     return len(set(directions)) == 1 and len(set(etfs)) == 1
+
+
+def exit_signal_confirmed(
+    scores: pd.DataFrame,
+    sector: str,
+    signal_date: str,
+    held_ticker: str,
+    required_closes: int,
+) -> Tuple[bool, str, str]:
+    """
+    Exit is confirmed only if the last N signal rows for this sector all agree that:
+    - the signal is non-tradable (direction == none or selected_etf blank), OR
+    - the selected ETF has changed away from the held ticker.
+    Returns: (confirmed, exit_type, final_signal_label)
+    """
+    subset = scores[(scores["sector"] == sector) & (scores["date"] <= signal_date)].sort_values("date")
+    if len(subset) < required_closes:
+        return False, "", ""
+
+    tail = subset.tail(required_closes).copy()
+    signal_col = "signal_state" if "signal_state" in tail.columns else "signal"
+
+    confirmations = []
+    final_signal = normalize_signal(str(tail.iloc[-1][signal_col]))
+
+    for _, row in tail.iterrows():
+        direction = str(row["direction"]).strip().lower()
+        selected_etf = str(row["selected_etf"]).strip()
+
+        if direction == "none" or selected_etf == "":
+            confirmations.append("signal_neutral")
+        elif selected_etf != held_ticker:
+            confirmations.append("ticker_changed")
+        else:
+            confirmations.append("hold")
+
+    unique = set(confirmations)
+    if len(unique) == 1 and "hold" not in unique:
+        exit_type = list(unique)[0]
+        return True, exit_type, final_signal
+
+    return False, "", final_signal
 
 
 def latest_scores_for_date(scores: pd.DataFrame, date: str) -> pd.DataFrame:
@@ -201,7 +249,6 @@ def main():
     market["date"] = pd.to_datetime(market["date"]).dt.strftime("%Y-%m-%d")
     scores["selected_etf"] = scores["selected_etf"].fillna("").astype(str)
     scores["direction"] = scores["direction"].fillna("none").astype(str)
-    signal_col = "signal_state" if "signal_state" in scores.columns else "signal"
 
     all_dates = sorted(set(market["date"]).intersection(set(scores["date"])))
     if len(all_dates) < 2:
@@ -211,15 +258,15 @@ def main():
     max_positions = int(params["positions"]["max_concurrent_positions"])
     shares_per_trade = int(params["positions"]["shares_per_trade"])
     required_closes = int(params["confirmation"]["required_consecutive_closes"])
-    non_tradable_state = str(params["direction"].get("non_tradable_state", "Neutral")).strip().lower()
 
-    # Stronger filter than before
+    # Keep current selectivity unless you change it later
     min_entry_score = 5.0
     allowed_entry_signals = {"Strong Bull", "Strong Bear"}
 
     active_positions: List[Position] = []
     trade_log: List[dict] = []
 
+    # Yesterday's signal -> today's open execution
     for i in range(1, len(all_dates)):
         signal_date = all_dates[i - 1]
         trade_date = all_dates[i]
@@ -227,49 +274,43 @@ def main():
         signal_day = latest_scores_for_date(scores, signal_date)
         signal_by_sector = {row["sector"]: row for _, row in signal_day.iterrows()}
 
+        # 1) Execute exits at today's open
         survivors: List[Position] = []
         for position in active_positions:
-            signal_row = signal_by_sector.get(position.sector)
-            exit_type: Optional[str] = None
-            exit_signal = "Neutral"
-
             bar = price_map.get((trade_date, position.ticker))
             if not bar:
                 survivors.append(position)
                 continue
 
+            # Protective exit remains immediate
             if bar["low"] <= position.trailing_stop:
-                exit_type = "trailing_stop"
-                exit_signal = "Stop"
-
-            if signal_row is None:
-                if exit_type is None:
-                    exit_type = "sector_missing"
-                    exit_signal = "Missing"
-            else:
-                raw_signal = normalize_signal(signal_row[signal_col])
-                exit_signal = raw_signal
-
-                row_direction = str(signal_row["direction"]).strip().lower()
-                row_ticker = str(signal_row["selected_etf"]).strip()
-
-                if row_direction == "none" or normalize_signal(raw_signal).lower() == non_tradable_state:
-                    if exit_type is None:
-                        exit_type = "signal_neutral"
-                elif row_ticker == "":
-                    if exit_type is None:
-                        exit_type = "mapping_blank"
-                elif row_ticker != position.ticker:
-                    if exit_type is None:
-                        exit_type = "ticker_changed"
-
-            if exit_type:
                 trade_log.append(
                     close_position(
                         position=position,
                         exit_date=trade_date,
                         exit_price=bar["open"],
-                        exit_signal=exit_signal,
+                        exit_signal="Stop",
+                        exit_type="trailing_stop",
+                    )
+                )
+                continue
+
+            # Managed / replacement exits now require confirmation
+            confirmed_exit, exit_type, final_signal = exit_signal_confirmed(
+                scores=scores,
+                sector=position.sector,
+                signal_date=signal_date,
+                held_ticker=position.ticker,
+                required_closes=required_closes,
+            )
+
+            if confirmed_exit:
+                trade_log.append(
+                    close_position(
+                        position=position,
+                        exit_date=trade_date,
+                        exit_price=bar["open"],
+                        exit_signal=final_signal,
                         exit_type=exit_type,
                     )
                 )
@@ -281,7 +322,10 @@ def main():
 
         active_positions = survivors
 
+        # 2) Build entry candidates from confirmed signals
         candidates = []
+        signal_col = "signal_state" if "signal_state" in signal_day.columns else "signal"
+
         for _, row in signal_day.iterrows():
             sector = row["sector"]
             direction = str(row["direction"]).strip().lower()
@@ -299,7 +343,7 @@ def main():
                 continue
             if any(p.sector == sector for p in active_positions):
                 continue
-            if not signal_confirmed(scores, sector, signal_date, required_closes):
+            if not signal_confirmed_for_entry(scores, sector, signal_date, required_closes):
                 continue
 
             candidates.append({
@@ -312,6 +356,7 @@ def main():
 
         candidates = sorted(candidates, key=lambda x: (-x["strength"], x["sector"]))
 
+        # 3) Execute entries at today's open
         for candidate in candidates:
             if len(active_positions) >= max_positions:
                 break
@@ -321,7 +366,7 @@ def main():
                 continue
 
             stop_pct = stop_pct_for_ticker(candidate["ticker"], params)
-            highest_price = bar["high"]
+            highest_price = float(bar["high"])
             trailing_stop = highest_price * (1 - stop_pct)
 
             active_positions.append(
@@ -332,7 +377,7 @@ def main():
                     entry_date=trade_date,
                     entry_price=float(bar["open"]),
                     shares=shares_per_trade,
-                    highest_price=float(highest_price),
+                    highest_price=highest_price,
                     stop_pct=float(stop_pct),
                     trailing_stop=float(trailing_stop),
                     entry_signal=candidate["signal"],
