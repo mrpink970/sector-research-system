@@ -213,8 +213,9 @@ def main():
     required_closes = int(params["confirmation"]["required_consecutive_closes"])
     non_tradable_state = str(params["direction"].get("non_tradable_state", "Neutral")).strip().lower()
 
-    # NEW: minimum absolute score required to enter a trade
-    min_entry_score = 4.0
+    # Stronger filter than before
+    min_entry_score = 5.0
+    allowed_entry_signals = {"Strong Bull", "Strong Bear"}
 
     active_positions: List[Position] = []
     trade_log: List[dict] = []
@@ -226,7 +227,6 @@ def main():
         signal_day = latest_scores_for_date(scores, signal_date)
         signal_by_sector = {row["sector"]: row for _, row in signal_day.iterrows()}
 
-        # 1) Execute exits at today's open
         survivors: List[Position] = []
         for position in active_positions:
             signal_row = signal_by_sector.get(position.sector)
@@ -281,19 +281,21 @@ def main():
 
         active_positions = survivors
 
-        # 2) Build entry candidates from yesterday's confirmed signals
         candidates = []
         for _, row in signal_day.iterrows():
             sector = row["sector"]
             direction = str(row["direction"]).strip().lower()
             ticker = str(row["selected_etf"]).strip()
             total_score = float(row["total_score"])
+            normalized_signal = normalize_signal(row[signal_col])
 
             if direction == "none":
                 continue
             if ticker == "":
                 continue
             if abs(total_score) < min_entry_score:
+                continue
+            if normalized_signal not in allowed_entry_signals:
                 continue
             if any(p.sector == sector for p in active_positions):
                 continue
@@ -304,13 +306,12 @@ def main():
                 "sector": sector,
                 "ticker": ticker,
                 "direction": direction,
-                "signal": normalize_signal(row[signal_col]),
+                "signal": normalized_signal,
                 "strength": float(abs(total_score)),
             })
 
         candidates = sorted(candidates, key=lambda x: (-x["strength"], x["sector"]))
 
-        # 3) Execute entries at today's open
         for candidate in candidates:
             if len(active_positions) >= max_positions:
                 break
