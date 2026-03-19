@@ -6,7 +6,7 @@ import yfinance as yf
 
 
 OUTPUT_FILE = "data/market_data.csv"
-LOOKBACK_PERIOD = "6mo"
+LOOKBACK_PERIOD = "2y"
 
 
 def load_sector_map():
