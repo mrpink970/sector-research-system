@@ -13,7 +13,7 @@ import yaml
 class Position:
     sector: str
     ticker: str
-    direction: str          # long / short (instrument direction from signal file)
+    direction: str
     entry_date: str
     entry_price: float
     shares: int
@@ -89,7 +89,6 @@ def signal_confirmed(scores: pd.DataFrame, sector: str, signal_date: str, requir
 
     tail = subset.tail(required_closes)
 
-    # Must keep same selected_etf and same direction for required_closes days
     directions = tail["direction"].astype(str).tolist()
     etfs = tail["selected_etf"].fillna("").astype(str).tolist()
 
@@ -106,7 +105,6 @@ def latest_scores_for_date(scores: pd.DataFrame, date: str) -> pd.DataFrame:
     if day.empty:
         return day
 
-    # strongest tradable sectors first
     day["strength"] = day["total_score"].astype(float).abs()
     day = day.sort_values(["strength", "sector"], ascending=[False, True]).reset_index(drop=True)
     return day
@@ -199,7 +197,6 @@ def main():
     scores = pd.read_csv(data_dir / "sector_scores.csv")
     market = pd.read_csv(data_dir / "market_data.csv")
 
-    # Normalize dates and fields
     scores["date"] = pd.to_datetime(scores["date"]).dt.strftime("%Y-%m-%d")
     market["date"] = pd.to_datetime(market["date"]).dt.strftime("%Y-%m-%d")
     scores["selected_etf"] = scores["selected_etf"].fillna("").astype(str)
@@ -216,10 +213,12 @@ def main():
     required_closes = int(params["confirmation"]["required_consecutive_closes"])
     non_tradable_state = str(params["direction"].get("non_tradable_state", "Neutral")).strip().lower()
 
+    # NEW: minimum absolute score required to enter a trade
+    min_entry_score = 4.0
+
     active_positions: List[Position] = []
     trade_log: List[dict] = []
 
-    # Use yesterday's signal to trade at today's open
     for i in range(1, len(all_dates)):
         signal_date = all_dates[i - 1]
         trade_date = all_dates[i]
@@ -234,14 +233,11 @@ def main():
             exit_type: Optional[str] = None
             exit_signal = "Neutral"
 
-            # price bar for traded ETF on trade_date
             bar = price_map.get((trade_date, position.ticker))
             if not bar:
-                # if no bar, keep position alive and revisit next day
                 survivors.append(position)
                 continue
 
-            # trailing stop evaluated on today's low, exit at today's open
             if bar["low"] <= position.trailing_stop:
                 exit_type = "trailing_stop"
                 exit_signal = "Stop"
@@ -260,11 +256,9 @@ def main():
                 if row_direction == "none" or normalize_signal(raw_signal).lower() == non_tradable_state:
                     if exit_type is None:
                         exit_type = "signal_neutral"
-
                 elif row_ticker == "":
                     if exit_type is None:
                         exit_type = "mapping_blank"
-
                 elif row_ticker != position.ticker:
                     if exit_type is None:
                         exit_type = "ticker_changed"
@@ -280,7 +274,6 @@ def main():
                     )
                 )
             else:
-                # still alive → update trailing high using today's high
                 new_high = max(position.highest_price, bar["high"])
                 position.highest_price = new_high
                 position.trailing_stop = new_high * (1 - position.stop_pct)
@@ -294,14 +287,16 @@ def main():
             sector = row["sector"]
             direction = str(row["direction"]).strip().lower()
             ticker = str(row["selected_etf"]).strip()
+            total_score = float(row["total_score"])
 
             if direction == "none":
                 continue
             if ticker == "":
                 continue
+            if abs(total_score) < min_entry_score:
+                continue
             if any(p.sector == sector for p in active_positions):
                 continue
-
             if not signal_confirmed(scores, sector, signal_date, required_closes):
                 continue
 
@@ -310,7 +305,7 @@ def main():
                 "ticker": ticker,
                 "direction": direction,
                 "signal": normalize_signal(row[signal_col]),
-                "strength": float(abs(row["total_score"])),
+                "strength": float(abs(total_score)),
             })
 
         candidates = sorted(candidates, key=lambda x: (-x["strength"], x["sector"]))
@@ -344,7 +339,6 @@ def main():
                 )
             )
 
-    # Save outputs
     positions_df = pd.DataFrame([
         {
             "sector": p.sector,
