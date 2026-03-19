@@ -31,7 +31,6 @@ def load_tickers():
 
 def get_existing_keys():
     keys = set()
-
     path = Path("data/market_data.csv")
 
     if not path.exists():
@@ -39,7 +38,6 @@ def get_existing_keys():
 
     with open(path, newline="") as f:
         reader = csv.DictReader(f)
-
         for row in reader:
             keys.add((row["date"], row["ticker"]))
 
@@ -98,7 +96,6 @@ def main():
 
     with open("data/market_data.csv", "a", newline="") as f:
         writer = csv.writer(f)
-
         for row in new_rows:
             writer.writerow(row)
 
