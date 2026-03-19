@@ -1,103 +1,92 @@
 #!/usr/bin/env python3
 
-import csv
-from pathlib import Path
+import pandas as pd
 import yaml
 import yfinance as yf
 
 
-def load_yaml(path):
-    with open(path, "r") as f:
+OUTPUT_FILE = "data/market_data.csv"
+LOOKBACK_PERIOD = "6mo"
+
+
+def load_sector_map():
+    with open("config/sector_map.yaml", "r") as f:
         return yaml.safe_load(f)
 
 
-def load_tickers():
-    config = load_yaml("config/sector_map.yaml")
+def get_all_tickers(config):
+    tickers = set()
 
-    tickers = []
+    for s in config["sectors"]:
+        if s.get("signal_etf"):
+            tickers.add(s["signal_etf"])
+        if s.get("bull_etf"):
+            tickers.add(s["bull_etf"])
+        if s.get("bear_etf"):
+            if s["bear_etf"] != "":
+                tickers.add(s["bear_etf"])
+        if s.get("benchmark"):
+            tickers.add(s["benchmark"])
 
-    for sector in config.get("sectors", []):
-        signal_etf = sector.get("signal_etf")
-        benchmark = sector.get("benchmark")
-
-        if signal_etf and signal_etf not in tickers:
-            tickers.append(signal_etf)
-
-        if benchmark and benchmark not in tickers:
-            tickers.append(benchmark)
-
-    return tickers
-
-
-def get_existing_keys():
-    keys = set()
-    path = Path("data/market_data.csv")
-
-    if not path.exists():
-        return keys
-
-    with open(path, newline="") as f:
-        reader = csv.DictReader(f)
-        for row in reader:
-            keys.add((row["date"], row["ticker"]))
-
-    return keys
+    return sorted(tickers)
 
 
-def fetch_price(ticker):
-    data = yf.download(
+def fetch_history(ticker):
+    df = yf.download(
         ticker,
-        period="10d",
+        period=LOOKBACK_PERIOD,
         interval="1d",
-        progress=False
+        progress=False,
+        auto_adjust=False,
+        threads=False,
     )
 
-    if data.empty:
+    if df.empty:
         return None
 
-    row = data.iloc[-1]
-    date = data.index[-1].strftime("%Y-%m-%d")
+    if hasattr(df.columns, "nlevels") and df.columns.nlevels > 1:
+        df.columns = df.columns.get_level_values(0)
 
-    return [
-        date,
-        ticker,
-        float(row["Open"].item()),
-        float(row["High"].item()),
-        float(row["Low"].item()),
-        float(row["Close"].item()),
-        int(row["Volume"].item())
-    ]
+    df = df.reset_index()
+
+    out = pd.DataFrame({
+        "date": pd.to_datetime(df["Date"]).dt.strftime("%Y-%m-%d"),
+        "ticker": ticker,
+        "open": df["Open"],
+        "high": df["High"],
+        "low": df["Low"],
+        "close": df["Close"],
+        "volume": df["Volume"],
+    })
+
+    return out
 
 
 def main():
-    tickers = load_tickers()
-    existing = get_existing_keys()
-    new_rows = []
+    config = load_sector_map()
+    tickers = get_all_tickers(config)
+
+    all_data = []
 
     for ticker in tickers:
-        row = fetch_price(ticker)
+        print(f"Fetching {ticker}")
+        df = fetch_history(ticker)
 
-        if row is None:
-            print("no data", ticker)
+        if df is None or df.empty:
+            print(f"No data for {ticker}")
             continue
 
-        key = (row[0], row[1])
+        all_data.append(df)
 
-        if key in existing:
-            print("duplicate", ticker)
-            continue
-
-        print("add", ticker, row[0])
-        new_rows.append(row)
-
-    if not new_rows:
-        print("no new rows")
+    if not all_data:
+        print("No market data collected")
         return
 
-    with open("data/market_data.csv", "a", newline="") as f:
-        writer = csv.writer(f)
-        for row in new_rows:
-            writer.writerow(row)
+    final = pd.concat(all_data, ignore_index=True)
+    final = final.sort_values(["ticker", "date"]).reset_index(drop=True)
+
+    final.to_csv(OUTPUT_FILE, index=False)
+    print(f"Wrote {len(final)} rows to {OUTPUT_FILE}")
 
 
 if __name__ == "__main__":
