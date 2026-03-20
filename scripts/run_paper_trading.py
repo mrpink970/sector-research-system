@@ -22,6 +22,7 @@ class Position:
     trailing_stop: float
     entry_signal: str
     entry_strength: float
+    phased_stop_activated: bool
 
 
 def load_yaml(path: str | Path) -> dict:
@@ -73,6 +74,15 @@ def stop_pct_for_ticker(ticker: str, params: dict) -> float:
     if lev == 2:
         return float(stops["leverage_2x_pct"]) / 100.0
     return float(stops["leverage_1x_pct"]) / 100.0
+
+
+def tightened_stop_pct_for_ticker(ticker: str, current_stop_pct: float) -> float:
+    lev = leverage_for_ticker(ticker)
+    if lev == 3:
+        return 0.12
+    if lev == 2:
+        return 0.10
+    return 0.08
 
 
 def load_price_table(market_data: pd.DataFrame) -> Dict[Tuple[str, str], dict]:
@@ -242,6 +252,14 @@ def main():
                 survivors.append(position)
                 continue
 
+            # === EXP01 ONLY CHANGE ===
+            # If the trade has reached +10% from entry, activate tighter stop
+            if not position.phased_stop_activated:
+                if position.highest_price >= position.entry_price * 1.10:
+                    position.stop_pct = tightened_stop_pct_for_ticker(position.ticker, position.stop_pct)
+                    position.trailing_stop = position.highest_price * (1 - position.stop_pct)
+                    position.phased_stop_activated = True
+
             # trailing stop always active
             if bar["low"] <= position.trailing_stop:
                 trade_log.append(
@@ -345,9 +363,10 @@ def main():
                     shares=shares_per_trade,
                     highest_price=highest_price,
                     stop_pct=float(stop_pct),
-                    trailing_stop=float(trailing_stop),
+                    trailing_stop=trailing_stop,
                     entry_signal=candidate["signal"],
                     entry_strength=float(candidate["strength"]),
+                    phased_stop_activated=False,
                 )
             )
 
@@ -364,6 +383,7 @@ def main():
             "trailing_stop": round(p.trailing_stop, 4),
             "entry_signal": p.entry_signal,
             "entry_strength": round(p.entry_strength, 4),
+            "phased_stop_activated": p.phased_stop_activated,
         }
         for p in active_positions
     ])
