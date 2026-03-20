@@ -22,6 +22,7 @@ class Position:
     trailing_stop: float
     entry_signal: str
     entry_strength: float
+    ignored_signal_exit_once: bool
 
 
 def load_yaml(path: str | Path) -> dict:
@@ -77,9 +78,9 @@ def base_stop_pct_for_ticker(ticker: str, params: dict) -> float:
 
 def stepped_stop_pct_for_ticker(ticker: str, gain_pct: float, params: dict) -> float:
     """
-    EXP03 only change:
+    EXP03 logic retained in EXP09:
     stop distance tightens in steps as profit grows.
-    gain_pct is decimal, so:
+    gain_pct is decimal:
       0.10 = +10%
       0.20 = +20%
       0.40 = +40%
@@ -284,7 +285,10 @@ def main():
                 survivors.append(position)
                 continue
 
-            # EXP03 only change: stepped trailing stop by gain level
+            # Preserve EXP03 order exactly
+            new_high = max(position.highest_price, bar["high"])
+            position.highest_price = new_high
+
             current_gain_pct = (position.highest_price - position.entry_price) / position.entry_price
             position.stop_pct = stepped_stop_pct_for_ticker(position.ticker, current_gain_pct, params)
             position.trailing_stop = position.highest_price * (1 - position.stop_pct)
@@ -313,14 +317,23 @@ def main():
 
             exit_type: Optional[str] = None
 
-            # long-only: exit if no longer bullish
+            # EXP09 only change:
+            # if trade has already proven itself (+10%), ignore the first signal exit
             if not is_bullish_signal(raw_signal):
-                exit_type = "signal_change"
-            # or if the mapped ETF rotated away from current
+                if current_gain_pct >= 0.10 and not position.ignored_signal_exit_once:
+                    position.ignored_signal_exit_once = True
+                else:
+                    exit_type = "signal_change"
             elif row_direction != "long":
-                exit_type = "direction_change"
+                if current_gain_pct >= 0.10 and not position.ignored_signal_exit_once:
+                    position.ignored_signal_exit_once = True
+                else:
+                    exit_type = "direction_change"
             elif row_ticker != "" and row_ticker != position.ticker:
-                exit_type = "ticker_changed"
+                if current_gain_pct >= 0.10 and not position.ignored_signal_exit_once:
+                    position.ignored_signal_exit_once = True
+                else:
+                    exit_type = "ticker_changed"
 
             if exit_type:
                 trade_log.append(
@@ -333,14 +346,6 @@ def main():
                     )
                 )
             else:
-                new_high = max(position.highest_price, bar["high"])
-                position.highest_price = new_high
-
-                # recalc stop after updating new high
-                current_gain_pct = (position.highest_price - position.entry_price) / position.entry_price
-                position.stop_pct = stepped_stop_pct_for_ticker(position.ticker, current_gain_pct, params)
-                position.trailing_stop = position.highest_price * (1 - position.stop_pct)
-
                 survivors.append(position)
 
         active_positions = survivors
@@ -400,6 +405,7 @@ def main():
                     trailing_stop=trailing_stop,
                     entry_signal=candidate["signal"],
                     entry_strength=float(candidate["strength"]),
+                    ignored_signal_exit_once=False,
                 )
             )
 
@@ -416,6 +422,7 @@ def main():
             "trailing_stop": round(p.trailing_stop, 4),
             "entry_signal": p.entry_signal,
             "entry_strength": round(p.entry_strength, 4),
+            "ignored_signal_exit_once": p.ignored_signal_exit_once,
         }
         for p in active_positions
     ])
