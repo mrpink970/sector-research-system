@@ -79,10 +79,10 @@ def stop_pct_for_ticker(ticker: str, params: dict) -> float:
 def tightened_stop_pct_for_ticker(ticker: str, current_stop_pct: float) -> float:
     lev = leverage_for_ticker(ticker)
     if lev == 3:
-        return 0.12
+        return 0.14
     if lev == 2:
-        return 0.10
-    return 0.08
+        return 0.11
+    return 0.09
 
 
 def load_price_table(market_data: pd.DataFrame) -> Dict[Tuple[str, str], dict]:
@@ -236,7 +236,6 @@ def main():
     active_positions: List[Position] = []
     trade_log: List[dict] = []
 
-    # yesterday's signal drives today's open
     for i in range(1, len(all_dates)):
         signal_date = all_dates[i - 1]
         trade_date = all_dates[i]
@@ -244,7 +243,6 @@ def main():
         signal_day = latest_scores_for_date(scores, signal_date)
         signal_by_sector = {row["sector"]: row for _, row in signal_day.iterrows()}
 
-        # 1) exits
         survivors: List[Position] = []
         for position in active_positions:
             bar = price_map.get((trade_date, position.ticker))
@@ -252,15 +250,13 @@ def main():
                 survivors.append(position)
                 continue
 
-            # === EXP01 ONLY CHANGE ===
-            # If the trade has reached +10% from entry, activate tighter stop
+            # EXP02 only change: same +10% trigger, looser tightened stop than EXP01
             if not position.phased_stop_activated:
                 if position.highest_price >= position.entry_price * 1.10:
                     position.stop_pct = tightened_stop_pct_for_ticker(position.ticker, position.stop_pct)
                     position.trailing_stop = position.highest_price * (1 - position.stop_pct)
                     position.phased_stop_activated = True
 
-            # trailing stop always active
             if bar["low"] <= position.trailing_stop:
                 trade_log.append(
                     close_position(
@@ -284,10 +280,8 @@ def main():
 
             exit_type: Optional[str] = None
 
-            # long-only: exit if no longer bullish
             if not is_bullish_signal(raw_signal):
                 exit_type = "signal_change"
-            # or if the mapped ETF rotated away from current
             elif row_direction != "long":
                 exit_type = "direction_change"
             elif row_ticker != "" and row_ticker != position.ticker:
@@ -311,7 +305,6 @@ def main():
 
         active_positions = survivors
 
-        # 2) entries (long-only)
         candidates = []
         for _, row in signal_day.iterrows():
             sector = row["sector"]
