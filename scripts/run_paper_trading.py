@@ -78,8 +78,9 @@ def base_stop_pct_for_ticker(ticker: str, params: dict) -> float:
 
 def stepped_stop_pct_for_ticker(ticker: str, gain_pct: float, params: dict) -> float:
     """
-    EXP03 logic retained in EXP09:
-    stop distance tightens in steps as profit grows.
+    EXP10 logic:
+    Keep EXP09 structure, but loosen late-stage 3x stop bands.
+
     gain_pct is decimal:
       0.10 = +10%
       0.20 = +20%
@@ -89,9 +90,9 @@ def stepped_stop_pct_for_ticker(ticker: str, gain_pct: float, params: dict) -> f
 
     if lev == 3:
         if gain_pct >= 0.40:
-            return 0.10
+            return 0.12   # EXP10: was 0.10
         elif gain_pct >= 0.20:
-            return 0.12
+            return 0.15   # EXP10: was 0.12
         elif gain_pct >= 0.10:
             return 0.14
         else:
@@ -285,7 +286,7 @@ def main():
                 survivors.append(position)
                 continue
 
-            # Preserve EXP03 order exactly
+            # Preserve EXP09 order
             new_high = max(position.highest_price, bar["high"])
             position.highest_price = new_high
 
@@ -317,8 +318,8 @@ def main():
 
             exit_type: Optional[str] = None
 
-            # EXP09 only change:
-            # if trade has already proven itself (+10%), ignore the first signal exit
+            # EXP09 logic retained:
+            # ignore first signal exit after trade reaches +10% max gain
             if not is_bullish_signal(raw_signal):
                 if current_gain_pct >= 0.10 and not position.ignored_signal_exit_once:
                     position.ignored_signal_exit_once = True
