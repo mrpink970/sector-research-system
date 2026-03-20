@@ -77,7 +77,7 @@ def base_stop_pct_for_ticker(ticker: str, params: dict) -> float:
 
 def stepped_stop_pct_for_ticker(ticker: str, gain_pct: float, params: dict) -> float:
     """
-    EXP03 logic retained in EXP07:
+    EXP03 logic retained in EXP08:
     stop distance tightens in steps as profit grows.
     gain_pct is decimal:
       0.10 = +10%
@@ -314,9 +314,9 @@ def main():
             row_ticker = str(signal_row["selected_etf"]).strip()
             row_direction = str(signal_row["direction"]).strip().lower()
 
-            # EXP07 only change:
-            # allow signal exits only before trade has proven itself (+8% max gain)
-            allow_signal_exit = current_gain_pct < 0.08
+            # EXP08 only change:
+            # ignore signal exits until trade proves itself (+8% max gain)
+            allow_signal_exit = current_gain_pct >= 0.08
 
             exit_type: Optional[str] = None
 
