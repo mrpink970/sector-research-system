@@ -77,9 +77,9 @@ def base_stop_pct_for_ticker(ticker: str, params: dict) -> float:
 
 def stepped_stop_pct_for_ticker(ticker: str, gain_pct: float, params: dict) -> float:
     """
-    EXP03 only change:
+    EXP03 logic retained in EXP07:
     stop distance tightens in steps as profit grows.
-    gain_pct is decimal, so:
+    gain_pct is decimal:
       0.10 = +10%
       0.20 = +20%
       0.40 = +40%
@@ -284,7 +284,10 @@ def main():
                 survivors.append(position)
                 continue
 
-            # EXP03 only change: stepped trailing stop by gain level
+            # --- preserve EXP03 order exactly ---
+            new_high = max(position.highest_price, bar["high"])
+            position.highest_price = new_high
+
             current_gain_pct = (position.highest_price - position.entry_price) / position.entry_price
             position.stop_pct = stepped_stop_pct_for_ticker(position.ticker, current_gain_pct, params)
             position.trailing_stop = position.highest_price * (1 - position.stop_pct)
@@ -311,16 +314,19 @@ def main():
             row_ticker = str(signal_row["selected_etf"]).strip()
             row_direction = str(signal_row["direction"]).strip().lower()
 
+            # EXP07 only change:
+            # allow signal exits only before trade has proven itself (+8% max gain)
+            allow_signal_exit = current_gain_pct < 0.08
+
             exit_type: Optional[str] = None
 
-            # long-only: exit if no longer bullish
-            if not is_bullish_signal(raw_signal):
-                exit_type = "signal_change"
-            # or if the mapped ETF rotated away from current
-            elif row_direction != "long":
-                exit_type = "direction_change"
-            elif row_ticker != "" and row_ticker != position.ticker:
-                exit_type = "ticker_changed"
+            if allow_signal_exit:
+                if not is_bullish_signal(raw_signal):
+                    exit_type = "signal_change"
+                elif row_direction != "long":
+                    exit_type = "direction_change"
+                elif row_ticker != "" and row_ticker != position.ticker:
+                    exit_type = "ticker_changed"
 
             if exit_type:
                 trade_log.append(
@@ -333,14 +339,6 @@ def main():
                     )
                 )
             else:
-                new_high = max(position.highest_price, bar["high"])
-                position.highest_price = new_high
-
-                # recalc stop after updating new high
-                current_gain_pct = (position.highest_price - position.entry_price) / position.entry_price
-                position.stop_pct = stepped_stop_pct_for_ticker(position.ticker, current_gain_pct, params)
-                position.trailing_stop = position.highest_price * (1 - position.stop_pct)
-
                 survivors.append(position)
 
         active_positions = survivors
