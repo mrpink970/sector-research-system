@@ -22,7 +22,6 @@ class Position:
     trailing_stop: float
     entry_signal: str
     entry_strength: float
-    ignored_signal_exit_once: bool
 
 
 def load_yaml(path: str | Path) -> dict:
@@ -78,10 +77,9 @@ def base_stop_pct_for_ticker(ticker: str, params: dict) -> float:
 
 def stepped_stop_pct_for_ticker(ticker: str, gain_pct: float, params: dict) -> float:
     """
-    EXP10 logic:
-    Keep EXP09 structure, but loosen late-stage 3x stop bands.
-
-    gain_pct is decimal:
+    EXP03 only change:
+    stop distance tightens in steps as profit grows.
+    gain_pct is decimal, so:
       0.10 = +10%
       0.20 = +20%
       0.40 = +40%
@@ -90,9 +88,9 @@ def stepped_stop_pct_for_ticker(ticker: str, gain_pct: float, params: dict) -> f
 
     if lev == 3:
         if gain_pct >= 0.40:
-            return 0.12   # EXP10: was 0.10
+            return 0.10
         elif gain_pct >= 0.20:
-            return 0.15   # EXP10: was 0.12
+            return 0.12
         elif gain_pct >= 0.10:
             return 0.14
         else:
@@ -286,10 +284,7 @@ def main():
                 survivors.append(position)
                 continue
 
-            # Preserve EXP09 order
-            new_high = max(position.highest_price, bar["high"])
-            position.highest_price = new_high
-
+            # EXP03 only change: stepped trailing stop by gain level
             current_gain_pct = (position.highest_price - position.entry_price) / position.entry_price
             position.stop_pct = stepped_stop_pct_for_ticker(position.ticker, current_gain_pct, params)
             position.trailing_stop = position.highest_price * (1 - position.stop_pct)
@@ -318,23 +313,14 @@ def main():
 
             exit_type: Optional[str] = None
 
-            # EXP09 logic retained:
-            # ignore first signal exit after trade reaches +10% max gain
+            # long-only: exit if no longer bullish
             if not is_bullish_signal(raw_signal):
-                if current_gain_pct >= 0.10 and not position.ignored_signal_exit_once:
-                    position.ignored_signal_exit_once = True
-                else:
-                    exit_type = "signal_change"
+                exit_type = "signal_change"
+            # or if the mapped ETF rotated away from current
             elif row_direction != "long":
-                if current_gain_pct >= 0.10 and not position.ignored_signal_exit_once:
-                    position.ignored_signal_exit_once = True
-                else:
-                    exit_type = "direction_change"
+                exit_type = "direction_change"
             elif row_ticker != "" and row_ticker != position.ticker:
-                if current_gain_pct >= 0.10 and not position.ignored_signal_exit_once:
-                    position.ignored_signal_exit_once = True
-                else:
-                    exit_type = "ticker_changed"
+                exit_type = "ticker_changed"
 
             if exit_type:
                 trade_log.append(
@@ -347,6 +333,14 @@ def main():
                     )
                 )
             else:
+                new_high = max(position.highest_price, bar["high"])
+                position.highest_price = new_high
+
+                # recalc stop after updating new high
+                current_gain_pct = (position.highest_price - position.entry_price) / position.entry_price
+                position.stop_pct = stepped_stop_pct_for_ticker(position.ticker, current_gain_pct, params)
+                position.trailing_stop = position.highest_price * (1 - position.stop_pct)
+
                 survivors.append(position)
 
         active_positions = survivors
@@ -406,7 +400,6 @@ def main():
                     trailing_stop=trailing_stop,
                     entry_signal=candidate["signal"],
                     entry_strength=float(candidate["strength"]),
-                    ignored_signal_exit_once=False,
                 )
             )
 
@@ -423,7 +416,6 @@ def main():
             "trailing_stop": round(p.trailing_stop, 4),
             "entry_signal": p.entry_signal,
             "entry_strength": round(p.entry_strength, 4),
-            "ignored_signal_exit_once": p.ignored_signal_exit_once,
         }
         for p in active_positions
     ])
