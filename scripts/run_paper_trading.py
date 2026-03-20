@@ -77,7 +77,7 @@ def base_stop_pct_for_ticker(ticker: str, params: dict) -> float:
 
 def stepped_stop_pct_for_ticker(ticker: str, gain_pct: float, params: dict) -> float:
     """
-    EXP03 logic retained in EXP05:
+    EXP03 logic retained in EXP06:
     stop distance tightens in steps as profit grows.
     gain_pct is decimal:
       0.10 = +10%
@@ -305,21 +305,21 @@ def main():
                 )
                 continue
 
-            # --- EXP05 only change ---
-            # After 5 days, if trade never proved strength (+5%)
+            # --- EXP06 only change ---
+            # After 7 days, if trade never proved strength (+5%)
             # and current drawdown from entry hits -8%, exit
             trade_age_days = (pd.to_datetime(trade_date) - pd.to_datetime(position.entry_date)).days
             max_gain_pct = current_gain_pct
             current_drawdown_from_entry = (bar["low"] - position.entry_price) / position.entry_price
 
-            if trade_age_days >= 5 and max_gain_pct < 0.05 and current_drawdown_from_entry <= -0.08:
+            if trade_age_days >= 7 and max_gain_pct < 0.05 and current_drawdown_from_entry <= -0.08:
                 trade_log.append(
                     close_position(
                         position=position,
                         exit_date=trade_date,
                         exit_price=bar["open"],
-                        exit_signal="Early Damage 5D",
-                        exit_type="early_damage_5d",
+                        exit_signal="Early Damage 7D",
+                        exit_type="early_damage_7d",
                     )
                 )
                 continue
