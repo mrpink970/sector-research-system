@@ -284,25 +284,10 @@ def main():
                 survivors.append(position)
                 continue
 
-            # EXP04 only change:
-            # Early damage exit if trade never proved strength (+5%)
-            # and current day low hits -8% from entry
-            max_gain_pct = (position.highest_price - position.entry_price) / position.entry_price
-            current_drawdown_from_entry = (bar["low"] - position.entry_price) / position.entry_price
+            # --- preserve EXP03 order exactly ---
+            new_high = max(position.highest_price, bar["high"])
+            position.highest_price = new_high
 
-            if max_gain_pct < 0.05 and current_drawdown_from_entry <= -0.08:
-                trade_log.append(
-                    close_position(
-                        position=position,
-                        exit_date=trade_date,
-                        exit_price=bar["open"],
-                        exit_signal="Early Damage",
-                        exit_type="early_damage",
-                    )
-                )
-                continue
-
-            # EXP03 logic retained:
             current_gain_pct = (position.highest_price - position.entry_price) / position.entry_price
             position.stop_pct = stepped_stop_pct_for_ticker(position.ticker, current_gain_pct, params)
             position.trailing_stop = position.highest_price * (1 - position.stop_pct)
@@ -316,6 +301,22 @@ def main():
                         exit_price=bar["open"],
                         exit_signal="Stop",
                         exit_type="trailing_stop",
+                    )
+                )
+                continue
+
+            # --- EXP04 only change, inserted AFTER trailing stop logic ---
+            max_gain_pct = current_gain_pct
+            current_drawdown_from_entry = (bar["low"] - position.entry_price) / position.entry_price
+
+            if max_gain_pct < 0.05 and current_drawdown_from_entry <= -0.08:
+                trade_log.append(
+                    close_position(
+                        position=position,
+                        exit_date=trade_date,
+                        exit_price=bar["open"],
+                        exit_signal="Early Damage",
+                        exit_type="early_damage",
                     )
                 )
                 continue
@@ -351,13 +352,6 @@ def main():
                     )
                 )
             else:
-                new_high = max(position.highest_price, bar["high"])
-                position.highest_price = new_high
-
-                current_gain_pct = (position.highest_price - position.entry_price) / position.entry_price
-                position.stop_pct = stepped_stop_pct_for_ticker(position.ticker, current_gain_pct, params)
-                position.trailing_stop = position.highest_price * (1 - position.stop_pct)
-
                 survivors.append(position)
 
         active_positions = survivors
