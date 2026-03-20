@@ -3,12 +3,10 @@ Utilities,UTSL,long,2024-04-25,23.4,2024-04-30,23.53,100,Bull,Neutral,13.0,0.555
 Utilities,UTSL,long,2024-05-09,27.39,2024-05-14,28.75,100,Bull,Neutral,136.0,4.9653,5,signal_change
 Semiconductors,SOXL,long,2024-05-17,47.02,2024-05-20,45.96,100,Bull,Neutral,-106.0,-2.2544,3,signal_change
 Semiconductors,SOXL,long,2024-05-29,51.15,2024-06-21,58.42,100,Bull,Stop,727.0,14.2131,23,trailing_stop
-Technology,TECL,long,2024-05-31,79.32,2024-06-24,97.01,100,Bull,Stop,1769.0,22.3021,24,trailing_stop
 Semiconductors,SOXL,long,2024-06-21,58.42,2024-06-25,54.23,100,Bull,Neutral,-419.0,-7.1722,4,signal_change
-Technology,TECL,long,2024-06-24,97.01,2024-06-25,94.75,100,Bull,Neutral,-226.0,-2.3297,1,signal_change
-Communication Services,LTL,long,2024-06-26,17.08,2024-07-15,17.1925,100,Bull,Neutral,11.25,0.6587,19,signal_change
+Technology,TECL,long,2024-05-31,79.32,2024-07-16,107.64,100,Bull,Neutral,2832.0,35.7035,46,signal_change
 Consumer Discretionary,WANT,long,2024-06-25,32.7,2024-07-24,33.81,100,Bull,Stop,111.0,3.3945,29,trailing_stop
-Biotechnology,LABU,long,2024-07-15,137.69,2024-08-02,122.68,100,Strong Bull,Stop,-1501.0,-10.9013,18,trailing_stop
+Biotechnology,LABU,long,2024-07-16,144.0,2024-08-02,122.68,100,Strong Bull,Stop,-2132.0,-14.8056,17,trailing_stop
 Financials,FAS,long,2024-07-24,114.0,2024-08-05,99.11,100,Bull,Stop,-1489.0,-13.0614,12,trailing_stop
 Utilities,UTSL,long,2024-08-02,32.25,2024-08-19,31.57,100,Strong Bull,Neutral,-68.0,-2.1085,17,signal_change
 Consumer Staples,UGE,long,2024-08-05,18.33,2024-08-19,19.32,100,Bull,Neutral,99.0,5.401,14,signal_change
@@ -26,9 +24,9 @@ Semiconductors,SOXL,long,2024-10-15,40.49,2024-10-16,35.75,100,Bull,Neutral,-474
 Financials,FAS,long,2024-10-16,144.33,2024-10-22,143.73,100,Bull,Neutral,-60.0,-0.4157,6,signal_change
 Consumer Discretionary,WANT,long,2024-10-22,38.3,2024-10-24,38.83,100,Bull,Neutral,53.0,1.3838,2,signal_change
 Communication Services,LTL,long,2024-10-03,18.22,2024-11-18,20.4325,100,Bull,Neutral,221.25,12.1433,46,signal_change
-Financials,FAS,long,2024-10-24,144.5,2024-12-10,164.9,100,Bull,Stop,2040.0,14.1176,47,trailing_stop
+Financials,FAS,long,2024-10-24,144.5,2024-12-11,165.89,100,Bull,Neutral,2139.0,14.8028,48,signal_change
 Consumer Discretionary,WANT,long,2024-11-18,49.85,2024-12-18,65.36,100,Bull,Stop,1551.0,31.1133,30,trailing_stop
-Communication Services,LTL,long,2024-12-10,22.43,2024-12-19,21.52,100,Bull,Neutral,-91.0,-4.0571,9,signal_change
+Communication Services,LTL,long,2024-12-11,22.66,2024-12-19,21.52,100,Bull,Neutral,-114.0,-5.0309,8,signal_change
 Consumer Discretionary,WANT,long,2024-12-19,60.18,2025-01-02,54.75,100,Bull,Stop,-543.0,-9.0229,14,trailing_stop
 Nasdaq Growth,TQQQ,long,2024-12-18,45.825,2025-01-03,39.995,100,Bull,Neutral,-583.0,-12.7223,16,signal_change
 Semiconductors,SOXL,long,2025-01-07,33.57,2025-01-10,29.06,100,Strong Bull,Stop,-451.0,-13.4346,3,trailing_stop
@@ -50,25 +48,19 @@ Consumer Staples,UGE,long,2025-04-16,18.72,2025-04-17,18.85,100,Strong Bull,Neut
 Consumer Staples,UGE,long,2025-04-22,19.34,2025-04-24,18.71,100,Bull,Neutral,-63.0,-3.2575,2,signal_change
 Utilities,UTSL,long,2025-04-29,33.47,2025-05-02,34.65,100,Bull,Neutral,118.0,3.5255,3,signal_change
 Nasdaq Growth,TQQQ,long,2025-05-05,28.95,2025-05-08,29.6,100,Bull,Neutral,65.0,2.2452,3,signal_change
-Semiconductors,SOXL,long,2025-05-08,13.84,2025-05-21,17.56,100,Strong Bull,Stop,372.0,26.8786,13,trailing_stop
-Technology,TECL,long,2025-05-05,58.75,2025-05-23,66.77,100,Bull,Stop,802.0,13.6511,18,trailing_stop
-Consumer Discretionary,WANT,long,2025-05-21,40.66,2025-05-27,39.62,100,Bull,Neutral,-104.0,-2.5578,6,signal_change
-Semiconductors,SOXL,long,2025-05-23,15.21,2025-05-30,16.9,100,Bull,Stop,169.0,11.1111,7,trailing_stop
-Consumer Staples,UGE,long,2025-05-30,19.35,2025-06-09,18.66,100,Bull,Neutral,-69.0,-3.5659,10,signal_change
-Materials,UYM,long,2025-05-27,22.95,2025-06-25,23.25,100,Bull,Neutral,30.0,1.3072,29,signal_change
-Communication Services,LTL,long,2025-06-25,23.57,2025-07-03,24.4625,100,Bull,Neutral,89.25,3.7866,8,signal_change
-Materials,UYM,long,2025-07-03,25.79,2025-07-08,25.42,100,Bull,Neutral,-37.0,-1.4347,5,signal_change
-Semiconductors,SOXL,long,2025-06-09,19.71,2025-07-16,26.6,100,Strong Bull,Stop,689.0,34.9569,37,trailing_stop
-Biotechnology,LABU,long,2025-07-16,63.46,2025-07-22,61.58,100,Bull,Neutral,-188.0,-2.9625,6,signal_change
-Semiconductors,SOXL,long,2025-07-22,27.12,2025-07-28,26.38,100,Bull,Neutral,-74.0,-2.7286,6,signal_change
+Semiconductors,SOXL,long,2025-05-08,13.84,2025-05-23,15.21,100,Strong Bull,Stop,137.0,9.8988,15,trailing_stop
+Consumer Discretionary,WANT,long,2025-05-23,37.59,2025-06-06,38.87,100,Bull,Neutral,128.0,3.4052,14,signal_change
+Biotechnology,LABU,long,2025-06-06,58.37,2025-06-24,57.21,100,Bull,Neutral,-116.0,-1.9873,18,signal_change
+Technology,TECL,long,2025-05-05,58.75,2025-07-07,96.3,100,Bull,Neutral,3755.0,63.9149,63,signal_change
+Materials,UYM,long,2025-07-07,25.35,2025-07-08,25.42,100,Bull,Neutral,7.0,0.2761,1,signal_change
+Semiconductors,SOXL,long,2025-06-24,22.66,2025-07-31,26.7,100,Bull,Stop,404.0,17.8288,37,trailing_stop
 Consumer Discretionary,WANT,long,2025-07-08,42.35,2025-08-01,40.54,100,Bull,Stop,-181.0,-4.2739,24,trailing_stop
-Communication Services,LTL,long,2025-07-28,24.1925,2025-08-01,23.81,100,Bull,Neutral,-38.25,-1.5811,4,signal_change
 Consumer Discretionary,WANT,long,2025-08-01,40.54,2025-08-04,40.79,100,Bull,Neutral,25.0,0.6167,3,signal_change
 Industrials,DUSL,long,2025-08-04,70.99,2025-08-11,71.4,100,Bull,Neutral,41.0,0.5776,7,signal_change
-Utilities,UTSL,long,2025-08-01,42.03,2025-08-18,41.92,100,Bull,Neutral,-11.0,-0.2617,17,signal_change
+Utilities,UTSL,long,2025-07-31,40.94,2025-08-19,41.34,100,Bull,Neutral,40.0,0.977,19,signal_change
 Semiconductors,SOXL,long,2025-08-11,26.03,2025-08-20,26.11,100,Bull,Stop,8.0,0.3073,9,trailing_stop
 Healthcare,CURE,long,2025-08-20,80.38,2025-09-16,79.04,100,Bull,Neutral,-134.0,-1.6671,27,signal_change
-Biotechnology,LABU,long,2025-08-18,71.6,2025-09-17,78.56,100,Strong Bull,Neutral,696.0,9.7207,30,signal_change
+Biotechnology,LABU,long,2025-08-19,69.0,2025-09-17,78.56,100,Bull,Neutral,956.0,13.8551,29,signal_change
 Communication Services,LTL,long,2025-09-16,28.8125,2025-09-25,28.3875,100,Bull,Neutral,-42.5,-1.4751,9,signal_change
 Consumer Discretionary,WANT,long,2025-09-17,54.64,2025-10-06,52.87,100,Bull,Neutral,-177.0,-3.2394,19,signal_change
 Semiconductors,SOXL,long,2025-09-25,32.44,2025-10-10,42.52,100,Strong Bull,Stop,1008.0,31.0728,15,trailing_stop
@@ -77,16 +69,15 @@ Biotechnology,LABU,long,2025-10-10,113.38,2025-11-04,116.21,100,Bull,Neutral,283
 Semiconductors,SOXL,long,2025-10-30,48.5,2025-11-05,43.22,100,Strong Bull,Neutral,-528.0,-10.8866,6,signal_change
 Technology,TECL,long,2025-11-04,141.09,2025-11-05,136.12,100,Bull,Neutral,-497.0,-3.5226,1,signal_change
 Nasdaq Growth,TQQQ,long,2025-11-05,55.34,2025-11-18,49.985,100,Bull,Neutral,-535.5,-9.6765,13,signal_change
-Biotechnology,LABU,long,2025-11-18,133.72,2025-12-02,152.98,100,Strong Bull,Stop,1926.0,14.4032,14,trailing_stop
 Healthcare,CURE,long,2025-11-06,93.48,2025-12-03,110.99,100,Bull,Neutral,1751.0,18.7313,27,signal_change
-Biotechnology,LABU,long,2025-12-02,152.98,2025-12-03,149.4,100,Bull,Neutral,-358.0,-2.3402,1,signal_change
 Semiconductors,SOXL,long,2025-12-03,44.45,2025-12-05,46.47,100,Bull,Neutral,202.0,4.5444,2,signal_change
-Consumer Staples,UGE,long,2025-12-03,17.3,2025-12-08,16.78,100,Bull,Neutral,-52.0,-3.0058,5,signal_change
+Communication Services,LTL,long,2025-12-05,27.96,2025-12-08,28.27,100,Bull,Neutral,31.0,1.1087,3,signal_change
 Energy,ERX,long,2025-12-08,58.0,2025-12-09,57.54,100,Bull,Neutral,-46.0,-0.7931,1,signal_change
 Semiconductors,SOXL,long,2025-12-09,47.04,2025-12-12,46.92,100,Strong Bull,Stop,-12.0,-0.2551,3,trailing_stop
-Biotechnology,LABU,long,2025-12-05,167.99,2026-01-05,156.99,100,Bull,Stop,-1100.0,-6.548,31,trailing_stop
+Biotechnology,LABU,long,2025-11-18,133.72,2026-01-05,156.99,100,Strong Bull,Stop,2327.0,17.402,48,trailing_stop
 Biotechnology,LABU,long,2026-01-05,156.99,2026-01-08,170.5,100,Bull,Stop,1351.0,8.6056,3,trailing_stop
 Financials,FAS,long,2025-12-12,171.52,2026-01-14,160.82,100,Bull,Neutral,-1070.0,-6.2383,33,signal_change
-Semiconductors,SOXL,long,2026-01-08,51.8,2026-01-29,70.4,100,Strong Bull,Stop,1860.0,35.9073,21,trailing_stop
-Consumer Staples,UGE,long,2026-01-14,18.2,2026-03-06,19.56,100,Strong Bull,Stop,136.0,7.4725,51,trailing_stop
-Materials,UYM,long,2026-01-29,30.23,2026-03-06,29.56,100,Bull,Stop,-67.0,-2.2163,36,trailing_stop
+Semiconductors,SOXL,long,2026-01-08,51.8,2026-01-30,67.12,100,Strong Bull,Stop,1532.0,29.5753,22,trailing_stop
+Consumer Staples,UGE,long,2026-01-14,18.2,2026-03-09,19.84,100,Strong Bull,Neutral,164.0,9.011,54,signal_change
+Communication Services,LTL,long,2026-03-09,27.27,2026-03-13,26.72,100,Bull,Neutral,-55.0,-2.0169,4,signal_change
+Real Estate,DRN,long,2026-03-13,9.6,2026-03-16,9.64,100,Bull,Neutral,4.0,0.4167,3,signal_change
