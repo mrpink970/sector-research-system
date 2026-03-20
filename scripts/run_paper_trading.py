@@ -22,7 +22,6 @@ class Position:
     trailing_stop: float
     entry_signal: str
     entry_strength: float
-    phased_stop_activated: bool
 
 
 def load_yaml(path: str | Path) -> dict:
@@ -66,7 +65,7 @@ def leverage_for_ticker(ticker: str) -> int:
     return 1
 
 
-def stop_pct_for_ticker(ticker: str, params: dict) -> float:
+def base_stop_pct_for_ticker(ticker: str, params: dict) -> float:
     lev = leverage_for_ticker(ticker)
     stops = params["stops"]
     if lev == 3:
@@ -76,13 +75,46 @@ def stop_pct_for_ticker(ticker: str, params: dict) -> float:
     return float(stops["leverage_1x_pct"]) / 100.0
 
 
-def tightened_stop_pct_for_ticker(ticker: str, current_stop_pct: float) -> float:
+def stepped_stop_pct_for_ticker(ticker: str, gain_pct: float, params: dict) -> float:
+    """
+    EXP03 only change:
+    stop distance tightens in steps as profit grows.
+    gain_pct is decimal, so:
+      0.10 = +10%
+      0.20 = +20%
+      0.40 = +40%
+    """
     lev = leverage_for_ticker(ticker)
+
     if lev == 3:
-        return 0.14
+        if gain_pct >= 0.40:
+            return 0.10
+        elif gain_pct >= 0.20:
+            return 0.12
+        elif gain_pct >= 0.10:
+            return 0.14
+        else:
+            return 0.18
+
     if lev == 2:
-        return 0.11
-    return 0.09
+        if gain_pct >= 0.40:
+            return 0.08
+        elif gain_pct >= 0.20:
+            return 0.09
+        elif gain_pct >= 0.10:
+            return 0.11
+        else:
+            return 0.14
+
+    # 1x
+    if gain_pct >= 0.40:
+        return 0.06
+    elif gain_pct >= 0.20:
+        return 0.07
+    elif gain_pct >= 0.10:
+        return 0.09
+    else:
+        return 0.10
 
 
 def load_price_table(market_data: pd.DataFrame) -> Dict[Tuple[str, str], dict]:
@@ -236,6 +268,7 @@ def main():
     active_positions: List[Position] = []
     trade_log: List[dict] = []
 
+    # yesterday's signal drives today's open
     for i in range(1, len(all_dates)):
         signal_date = all_dates[i - 1]
         trade_date = all_dates[i]
@@ -243,6 +276,7 @@ def main():
         signal_day = latest_scores_for_date(scores, signal_date)
         signal_by_sector = {row["sector"]: row for _, row in signal_day.iterrows()}
 
+        # 1) exits
         survivors: List[Position] = []
         for position in active_positions:
             bar = price_map.get((trade_date, position.ticker))
@@ -250,13 +284,12 @@ def main():
                 survivors.append(position)
                 continue
 
-            # EXP02 only change: same +10% trigger, looser tightened stop than EXP01
-            if not position.phased_stop_activated:
-                if position.highest_price >= position.entry_price * 1.10:
-                    position.stop_pct = tightened_stop_pct_for_ticker(position.ticker, position.stop_pct)
-                    position.trailing_stop = position.highest_price * (1 - position.stop_pct)
-                    position.phased_stop_activated = True
+            # EXP03 only change: stepped trailing stop by gain level
+            current_gain_pct = (position.highest_price - position.entry_price) / position.entry_price
+            position.stop_pct = stepped_stop_pct_for_ticker(position.ticker, current_gain_pct, params)
+            position.trailing_stop = position.highest_price * (1 - position.stop_pct)
 
+            # trailing stop always active
             if bar["low"] <= position.trailing_stop:
                 trade_log.append(
                     close_position(
@@ -280,8 +313,10 @@ def main():
 
             exit_type: Optional[str] = None
 
+            # long-only: exit if no longer bullish
             if not is_bullish_signal(raw_signal):
                 exit_type = "signal_change"
+            # or if the mapped ETF rotated away from current
             elif row_direction != "long":
                 exit_type = "direction_change"
             elif row_ticker != "" and row_ticker != position.ticker:
@@ -300,11 +335,17 @@ def main():
             else:
                 new_high = max(position.highest_price, bar["high"])
                 position.highest_price = new_high
-                position.trailing_stop = new_high * (1 - position.stop_pct)
+
+                # recalc stop after updating new high
+                current_gain_pct = (position.highest_price - position.entry_price) / position.entry_price
+                position.stop_pct = stepped_stop_pct_for_ticker(position.ticker, current_gain_pct, params)
+                position.trailing_stop = position.highest_price * (1 - position.stop_pct)
+
                 survivors.append(position)
 
         active_positions = survivors
 
+        # 2) entries (long-only)
         candidates = []
         for _, row in signal_day.iterrows():
             sector = row["sector"]
@@ -342,7 +383,7 @@ def main():
             if not bar:
                 continue
 
-            stop_pct = stop_pct_for_ticker(candidate["ticker"], params)
+            stop_pct = base_stop_pct_for_ticker(candidate["ticker"], params)
             highest_price = float(bar["high"])
             trailing_stop = highest_price * (1 - stop_pct)
 
@@ -359,7 +400,6 @@ def main():
                     trailing_stop=trailing_stop,
                     entry_signal=candidate["signal"],
                     entry_strength=float(candidate["strength"]),
-                    phased_stop_activated=False,
                 )
             )
 
@@ -376,7 +416,6 @@ def main():
             "trailing_stop": round(p.trailing_stop, 4),
             "entry_signal": p.entry_signal,
             "entry_strength": round(p.entry_strength, 4),
-            "phased_stop_activated": p.phased_stop_activated,
         }
         for p in active_positions
     ])
