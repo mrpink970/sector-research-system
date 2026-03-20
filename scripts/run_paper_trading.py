@@ -77,9 +77,9 @@ def base_stop_pct_for_ticker(ticker: str, params: dict) -> float:
 
 def stepped_stop_pct_for_ticker(ticker: str, gain_pct: float, params: dict) -> float:
     """
-    EXP03 logic retained in EXP06:
+    EXP03 only change:
     stop distance tightens in steps as profit grows.
-    gain_pct is decimal:
+    gain_pct is decimal, so:
       0.10 = +10%
       0.20 = +20%
       0.40 = +40%
@@ -284,10 +284,7 @@ def main():
                 survivors.append(position)
                 continue
 
-            # --- preserve EXP03 order exactly ---
-            new_high = max(position.highest_price, bar["high"])
-            position.highest_price = new_high
-
+            # EXP03 only change: stepped trailing stop by gain level
             current_gain_pct = (position.highest_price - position.entry_price) / position.entry_price
             position.stop_pct = stepped_stop_pct_for_ticker(position.ticker, current_gain_pct, params)
             position.trailing_stop = position.highest_price * (1 - position.stop_pct)
@@ -301,25 +298,6 @@ def main():
                         exit_price=bar["open"],
                         exit_signal="Stop",
                         exit_type="trailing_stop",
-                    )
-                )
-                continue
-
-            # --- EXP06 only change ---
-            # After 7 days, if trade never proved strength (+5%)
-            # and current drawdown from entry hits -8%, exit
-            trade_age_days = (pd.to_datetime(trade_date) - pd.to_datetime(position.entry_date)).days
-            max_gain_pct = current_gain_pct
-            current_drawdown_from_entry = (bar["low"] - position.entry_price) / position.entry_price
-
-            if trade_age_days >= 7 and max_gain_pct < 0.05 and current_drawdown_from_entry <= -0.08:
-                trade_log.append(
-                    close_position(
-                        position=position,
-                        exit_date=trade_date,
-                        exit_price=bar["open"],
-                        exit_signal="Early Damage 7D",
-                        exit_type="early_damage_7d",
                     )
                 )
                 continue
@@ -355,6 +333,14 @@ def main():
                     )
                 )
             else:
+                new_high = max(position.highest_price, bar["high"])
+                position.highest_price = new_high
+
+                # recalc stop after updating new high
+                current_gain_pct = (position.highest_price - position.entry_price) / position.entry_price
+                position.stop_pct = stepped_stop_pct_for_ticker(position.ticker, current_gain_pct, params)
+                position.trailing_stop = position.highest_price * (1 - position.stop_pct)
+
                 survivors.append(position)
 
         active_positions = survivors
