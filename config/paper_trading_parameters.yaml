@@ -1,5 +1,5 @@
-# Updated paper trading parameters with risk management improvements
-# Based on analysis of exp03 trade data
+# Updated paper trading parameters with corrected thresholds
+# Based on actual sector_scores.csv data (scores range 0-7, not 0-100)
 
 # Account and risk settings
 account:
@@ -8,43 +8,40 @@ account:
 
 # Position management
 positions:
-  max_concurrent_positions: 3              # Increased from 2
-  # No fixed shares - now using risk-based sizing
+  max_concurrent_positions: 3              # Up to 3 positions at once
+  # No fixed shares - using risk-based sizing
 
 # Stop loss configuration
 stops:
   # Hard stops (active immediately at entry)
   hard_stop:
-    leverage_3x_pct: 9.0    # 9% hard stop for 3x ETFs (was 18% trailing only)
-    leverage_2x_pct: 7.0    # 7% hard stop for 2x ETFs (was 14% trailing only)
-    leverage_1x_pct: 5.0    # 5% hard stop for 1x ETFs (was 10% trailing only)
+    leverage_3x_pct: 9.0    # 9% hard stop for 3x ETFs
+    leverage_2x_pct: 7.0    # 7% hard stop for 2x ETFs
+    leverage_1x_pct: 5.0    # 5% hard stop for 1x ETFs
   
-  # Trailing stop (activates after profit threshold)
-  trailing_stop:
-    activation_pct: 5.0     # Start trailing after 5% gain (was 10%)
-    distance_pct: 3.0       # Trail by 3% from peak (was stepped: 10-18%)
-  
-  # Legacy stepped stops (keep for reference, not used if trailing_stop above is enabled)
+  # Legacy stops (used for initial trailing stop calculation)
   leverage_1x_pct: 10.0
   leverage_2x_pct: 14.0
   leverage_3x_pct: 18.0
 
 # Entry filters
 entry:
-  min_score_threshold: 50.0                # NEW: Minimum sector score to enter
-  required_consecutive_closes: 2           # Keep existing
-  excluded_sectors:                        # NEW: Sectors to never trade
-    - Utilities
+  # IMPORTANT: Scores in sector_scores.csv range from 0-7
+  # Bull signals: score 3-4
+  # Strong Bull signals: score 5-7
+  min_score_threshold: 3.0                 # Minimum score to enter (captures Bull and Strong Bull)
+  required_consecutive_closes: 2           # 2-day confirmation required
+  excluded_sectors: []                     # No sectors excluded for now
   strong_bull_multiplier: 1.5              # Strong Bull gets 50% larger position
 
-# Market regime filter
+# Market regime filter (disabled for initial testing)
 market_filter:
-  enabled: true
+  enabled: false                           # Disabled to test entry logic first
   benchmark: SPY
   ma_period: 50
   require_above_ma: true
 
-# Existing settings (keep as is)
+# Existing settings
 confirmation:
   required_consecutive_closes: 2
 
