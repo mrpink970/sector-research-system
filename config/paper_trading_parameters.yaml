@@ -1,43 +1,55 @@
 # Updated paper trading parameters with risk management improvements
 # Based on analysis of exp03 trade data
 
+# Account and risk settings
+account:
+  initial_balance: 10000.0  # Starting account value for paper trading
+  risk_per_trade_pct: 2.0   # 2% of account risked per trade
+
+# Position management
 positions:
   max_concurrent_positions: 3              # Increased from 2
-  # Removed shares_per_trade - now using risk-based sizing
+  # No fixed shares - now using risk-based sizing
 
-risk:
-  # Risk per trade as percentage of account value
-  risk_per_trade_pct: 2.0                  # 2% of account per trade
-  
+# Stop loss configuration
+stops:
   # Hard stops (active immediately at entry)
   hard_stop:
-    leverage_3x_pct: 9.0                   # Down from 18%
-    leverage_2x_pct: 7.0                   # Down from 14%
-    leverage_1x_pct: 5.0                   # Down from 10%
+    leverage_3x_pct: 9.0    # 9% hard stop for 3x ETFs (was 18% trailing only)
+    leverage_2x_pct: 7.0    # 7% hard stop for 2x ETFs (was 14% trailing only)
+    leverage_1x_pct: 5.0    # 5% hard stop for 1x ETFs (was 10% trailing only)
   
   # Trailing stop (activates after profit threshold)
   trailing_stop:
-    activation_pct: 5.0                    # Start trailing after 5% gain
-    distance_pct: 3.0                      # Trail by 3% from peak
-
-entry:
-  min_score_threshold: 50.0                # NEW: Filter out low-quality signals
-  required_consecutive_closes: 2           # Keep existing
-  excluded_sectors:                        # NEW: Sectors to avoid
-    - Utilities
+    activation_pct: 5.0     # Start trailing after 5% gain (was 10%)
+    distance_pct: 3.0       # Trail by 3% from peak (was stepped: 10-18%)
   
-  # Strong Bull gets larger position size
-  strong_bull_multiplier: 1.5              # 50% larger than Bull positions
+  # Legacy stepped stops (keep for reference, not used if trailing_stop above is enabled)
+  leverage_1x_pct: 10.0
+  leverage_2x_pct: 14.0
+  leverage_3x_pct: 18.0
 
+# Entry filters
+entry:
+  min_score_threshold: 50.0                # NEW: Minimum sector score to enter
+  required_consecutive_closes: 2           # Keep existing
+  excluded_sectors:                        # NEW: Sectors to never trade
+    - Utilities
+  strong_bull_multiplier: 1.5              # Strong Bull gets 50% larger position
+
+# Market regime filter
 market_filter:
-  enabled: true                            # NEW: Market regime filter
+  enabled: true
   benchmark: SPY
   ma_period: 50
   require_above_ma: true
 
-# Keep existing sections
+# Existing settings (keep as is)
 confirmation:
   required_consecutive_closes: 2
+
+replacement:
+  min_strength_advantage_points: 2.0
 
 direction:
   non_tradable_state: Neutral
