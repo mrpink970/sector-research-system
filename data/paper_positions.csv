@@ -1,3 +1,3 @@
-sector,ticker,direction,entry_date,entry_price,shares,highest_price,hard_stop,stop_pct,trailing_stop,entry_signal,entry_strength
-Energy,ERX,long,2026-01-16,62.89,25,99.53,57.2299,0.1,87.777,Bull,5.0
-Utilities,UTSL,long,2026-03-20,50.45,41,50.965,45.9095,0.18,41.7913,Bull,4.0
+sector,ticker,direction,entry_date,entry_price,shares,highest_price,stop_pct,trailing_stop,entry_signal,entry_strength
+Energy,ERX,long,2026-01-30,70.12,100,99.53,0.1,89.577,Bull,5.0
+Utilities,UTSL,long,2026-03-20,50.45,100,50.965,0.18,41.7913,Bull,4.0
