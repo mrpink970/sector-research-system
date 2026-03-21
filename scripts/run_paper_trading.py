@@ -7,6 +7,7 @@ from typing import Dict, List, Optional, Tuple
 
 import pandas as pd
 import yaml
+import yfinance as yf
 
 
 @dataclass
@@ -18,10 +19,49 @@ class Position:
     entry_price: float
     shares: int
     highest_price: float
-    stop_pct: float
-    trailing_stop: float
+    hard_stop: float              # Hard stop loss price
+    stop_pct: float               # Trailing stop percentage
+    trailing_stop: float          # Current trailing stop price
     entry_signal: str
     entry_strength: float
+
+
+class MarketRegimeFilter:
+    """Simple market filter using SPY moving average"""
+    
+    def __init__(self, ma_period: int = 50):
+        self.ma_period = ma_period
+        self.spy_data = None
+        self.spy_ma = None
+    
+    def load_data(self, start_date: str, end_date: str) -> bool:
+        """Load SPY data for the period"""
+        try:
+            spy = yf.download('SPY', start=start_date, end=end_date, progress=False)
+            if spy.empty:
+                return False
+            self.spy_data = spy['Close']
+            self.spy_ma = self.spy_data.rolling(self.ma_period).mean()
+            return True
+        except Exception as e:
+            print(f"Warning: Could not load SPY data: {e}")
+            return False
+    
+    def is_favorable(self, date: str) -> bool:
+        """Return True if market conditions are favorable for entry"""
+        if self.spy_data is None or self.spy_ma is None:
+            return True  # Default to allow if no data
+        
+        try:
+            spy_value = self.spy_data.asof(pd.to_datetime(date))
+            ma_value = self.spy_ma.asof(pd.to_datetime(date))
+            
+            if pd.isna(spy_value) or pd.isna(ma_value):
+                return True
+            
+            return spy_value > ma_value
+        except:
+            return True
 
 
 def load_yaml(path: str | Path) -> dict:
@@ -65,27 +105,27 @@ def leverage_for_ticker(ticker: str) -> int:
     return 1
 
 
-def base_stop_pct_for_ticker(ticker: str, params: dict) -> float:
+def get_hard_stop_pct(ticker: str, params: dict) -> float:
+    """Get hard stop percentage for a ticker based on leverage"""
     lev = leverage_for_ticker(ticker)
-    stops = params["stops"]
+    hard_stops = params["stops"]["hard_stop"]
+    
     if lev == 3:
-        return float(stops["leverage_3x_pct"]) / 100.0
-    if lev == 2:
-        return float(stops["leverage_2x_pct"]) / 100.0
-    return float(stops["leverage_1x_pct"]) / 100.0
+        return hard_stops["leverage_3x_pct"] / 100.0
+    elif lev == 2:
+        return hard_stops["leverage_2x_pct"] / 100.0
+    else:
+        return hard_stops["leverage_1x_pct"] / 100.0
 
 
-def stepped_stop_pct_for_ticker(ticker: str, gain_pct: float, params: dict) -> float:
+def get_trailing_stop_pct(ticker: str, gain_pct: float, params: dict) -> float:
     """
-    EXP03 only change:
-    stop distance tightens in steps as profit grows.
-    gain_pct is decimal, so:
-      0.10 = +10%
-      0.20 = +20%
-      0.40 = +40%
+    Get trailing stop percentage based on current gain.
+    Uses the stepped logic from exp03 but with tighter initial stops.
     """
     lev = leverage_for_ticker(ticker)
-
+    
+    # Use stepped logic for trailing (tightens as profit grows)
     if lev == 3:
         if gain_pct >= 0.40:
             return 0.10
@@ -95,7 +135,7 @@ def stepped_stop_pct_for_ticker(ticker: str, gain_pct: float, params: dict) -> f
             return 0.14
         else:
             return 0.18
-
+    
     if lev == 2:
         if gain_pct >= 0.40:
             return 0.08
@@ -105,7 +145,7 @@ def stepped_stop_pct_for_ticker(ticker: str, gain_pct: float, params: dict) -> f
             return 0.11
         else:
             return 0.14
-
+    
     # 1x
     if gain_pct >= 0.40:
         return 0.06
@@ -115,6 +155,36 @@ def stepped_stop_pct_for_ticker(ticker: str, gain_pct: float, params: dict) -> f
         return 0.09
     else:
         return 0.10
+
+
+def calculate_position_size(
+    account_value: float,
+    entry_price: float,
+    hard_stop_pct: float,
+    risk_per_trade_pct: float,
+    signal_multiplier: float = 1.0
+) -> int:
+    """
+    Calculate position size based on account risk.
+    
+    Args:
+        account_value: Current account value
+        entry_price: Entry price per share
+        hard_stop_pct: Stop loss percentage (decimal, e.g., 0.09)
+        risk_per_trade_pct: Risk per trade as decimal (e.g., 0.02)
+        signal_multiplier: 1.0 for Bull, 1.5 for Strong Bull
+    
+    Returns:
+        Number of shares to buy
+    """
+    risk_dollars = account_value * risk_per_trade_pct * signal_multiplier
+    stop_distance = entry_price * hard_stop_pct
+    
+    if stop_distance <= 0:
+        return 0
+    
+    shares = int(risk_dollars / stop_distance)
+    return max(1, shares)  # At least 1 share
 
 
 def load_price_table(market_data: pd.DataFrame) -> Dict[Tuple[str, str], dict]:
@@ -261,9 +331,24 @@ def main():
         raise SystemExit("Need at least 2 aligned market/signal dates to replay paper trades.")
 
     price_map = load_price_table(market)
+    
+    # Load parameters
     max_positions = int(params["positions"]["max_concurrent_positions"])
-    shares_per_trade = int(params["positions"]["shares_per_trade"])
     required_closes = int(params["confirmation"]["required_consecutive_closes"])
+    
+    # Account and risk parameters
+    account_value = float(params["account"]["initial_balance"])
+    risk_per_trade_pct = params["account"]["risk_per_trade_pct"] / 100.0
+    strong_bull_multiplier = params["entry"]["strong_bull_multiplier"]
+    min_score_threshold = params["entry"]["min_score_threshold"]
+    excluded_sectors = params["entry"].get("excluded_sectors", [])
+    
+    # Market filter
+    market_filter_enabled = params["market_filter"]["enabled"]
+    market_filter = None
+    if market_filter_enabled:
+        market_filter = MarketRegimeFilter(ma_period=params["market_filter"]["ma_period"])
+        market_filter.load_data(all_dates[0], all_dates[-1])
 
     active_positions: List[Position] = []
     trade_log: List[dict] = []
@@ -284,12 +369,27 @@ def main():
                 survivors.append(position)
                 continue
 
-            # EXP03 only change: stepped trailing stop by gain level
+            # Check hard stop first
+            if bar["low"] <= position.hard_stop:
+                trade_log.append(
+                    close_position(
+                        position=position,
+                        exit_date=trade_date,
+                        exit_price=bar["open"],
+                        exit_signal="Stop",
+                        exit_type="hard_stop",
+                    )
+                )
+                # Update account value after exit
+                account_value += (bar["open"] * position.shares)
+                continue
+
+            # Update trailing stop based on current gain
             current_gain_pct = (position.highest_price - position.entry_price) / position.entry_price
-            position.stop_pct = stepped_stop_pct_for_ticker(position.ticker, current_gain_pct, params)
+            position.stop_pct = get_trailing_stop_pct(position.ticker, current_gain_pct, params)
             position.trailing_stop = position.highest_price * (1 - position.stop_pct)
 
-            # trailing stop always active
+            # Check trailing stop
             if bar["low"] <= position.trailing_stop:
                 trade_log.append(
                     close_position(
@@ -300,8 +400,10 @@ def main():
                         exit_type="trailing_stop",
                     )
                 )
+                account_value += (bar["open"] * position.shares)
                 continue
 
+            # Check signal-based exits
             signal_row = signal_by_sector.get(position.sector)
             if signal_row is None:
                 survivors.append(position)
@@ -313,10 +415,8 @@ def main():
 
             exit_type: Optional[str] = None
 
-            # long-only: exit if no longer bullish
             if not is_bullish_signal(raw_signal):
                 exit_type = "signal_change"
-            # or if the mapped ETF rotated away from current
             elif row_direction != "long":
                 exit_type = "direction_change"
             elif row_ticker != "" and row_ticker != position.ticker:
@@ -332,20 +432,21 @@ def main():
                         exit_type=exit_type,
                     )
                 )
+                account_value += (bar["open"] * position.shares)
             else:
                 new_high = max(position.highest_price, bar["high"])
                 position.highest_price = new_high
-
-                # recalc stop after updating new high
-                current_gain_pct = (position.highest_price - position.entry_price) / position.entry_price
-                position.stop_pct = stepped_stop_pct_for_ticker(position.ticker, current_gain_pct, params)
-                position.trailing_stop = position.highest_price * (1 - position.stop_pct)
-
                 survivors.append(position)
 
         active_positions = survivors
 
         # 2) entries (long-only)
+        # Market filter check
+        if market_filter_enabled and market_filter:
+            if not market_filter.is_favorable(trade_date):
+                # Skip entries for this day
+                continue
+
         candidates = []
         for _, row in signal_day.iterrows():
             sector = row["sector"]
@@ -353,6 +454,14 @@ def main():
             ticker = str(row["selected_etf"]).strip()
             total_score = float(row["total_score"])
             normalized_signal = normalize_signal(row[signal_col])
+
+            # Filter by minimum score threshold
+            if total_score < min_score_threshold:
+                continue
+
+            # Filter out excluded sectors
+            if sector in excluded_sectors:
+                continue
 
             if direction != "long":
                 continue
@@ -383,9 +492,47 @@ def main():
             if not bar:
                 continue
 
-            stop_pct = base_stop_pct_for_ticker(candidate["ticker"], params)
-            highest_price = float(bar["high"])
-            trailing_stop = highest_price * (1 - stop_pct)
+            entry_price = float(bar["open"])
+            
+            # Calculate position size based on risk
+            hard_stop_pct = get_hard_stop_pct(candidate["ticker"], params)
+            signal_multiplier = strong_bull_multiplier if candidate["signal"] == "Strong Bull" else 1.0
+            
+            shares = calculate_position_size(
+                account_value=account_value,
+                entry_price=entry_price,
+                hard_stop_pct=hard_stop_pct,
+                risk_per_trade_pct=risk_per_trade_pct,
+                signal_multiplier=signal_multiplier
+            )
+            
+            if shares <= 0:
+                continue
+            
+            # Calculate stop prices
+            hard_stop = entry_price * (1 - hard_stop_pct)
+            
+            # Initial trailing stop (use base stop from legacy settings)
+            base_stop_pct = 0.18  # Default for 3x, will be updated dynamically
+            if leverage_for_ticker(candidate["ticker"]) == 1:
+                base_stop_pct = 0.10
+            elif leverage_for_ticker(candidate["ticker"]) == 2:
+                base_stop_pct = 0.14
+            else:
+                base_stop_pct = 0.18
+            
+            trailing_stop = float(bar["high"]) * (1 - base_stop_pct)
+            
+            # Deduct position cost from account (simulate capital allocation)
+            position_cost = entry_price * shares
+            if position_cost > account_value:
+                # Not enough capital for full position, reduce shares
+                shares = int(account_value / entry_price)
+                if shares <= 0:
+                    continue
+                position_cost = entry_price * shares
+            
+            account_value -= position_cost
 
             active_positions.append(
                 Position(
@@ -393,15 +540,32 @@ def main():
                     ticker=candidate["ticker"],
                     direction="long",
                     entry_date=trade_date,
-                    entry_price=float(bar["open"]),
-                    shares=shares_per_trade,
-                    highest_price=highest_price,
-                    stop_pct=float(stop_pct),
+                    entry_price=entry_price,
+                    shares=shares,
+                    highest_price=float(bar["high"]),
+                    hard_stop=hard_stop,
+                    stop_pct=base_stop_pct,
                     trailing_stop=trailing_stop,
                     entry_signal=candidate["signal"],
                     entry_strength=float(candidate["strength"]),
                 )
             )
+
+    # Add remaining open positions to trade log at last price
+    if active_positions and all_dates:
+        last_date = all_dates[-1]
+        for position in active_positions:
+            bar = price_map.get((last_date, position.ticker))
+            if bar:
+                trade_log.append(
+                    close_position(
+                        position=position,
+                        exit_date=last_date,
+                        exit_price=bar["close"],
+                        exit_signal="End",
+                        exit_type="end_of_period",
+                    )
+                )
 
     positions_df = pd.DataFrame([
         {
@@ -412,6 +576,7 @@ def main():
             "entry_price": round(p.entry_price, 4),
             "shares": p.shares,
             "highest_price": round(p.highest_price, 4),
+            "hard_stop": round(p.hard_stop, 4),
             "stop_pct": round(p.stop_pct, 4),
             "trailing_stop": round(p.trailing_stop, 4),
             "entry_signal": p.entry_signal,
@@ -426,7 +591,12 @@ def main():
     trade_log_df.to_csv(data_dir / "paper_trade_log.csv", index=False)
     perf_df.to_csv(data_dir / "paper_performance.csv", index=False)
 
-    print(f"Paper trading complete. Open positions: {len(active_positions)} | Closed trades: {len(trade_log)}")
+    print(f"Paper trading complete.")
+    print(f"  Final account value: ${account_value:,.2f}")
+    print(f"  Open positions: {len(active_positions)}")
+    print(f"  Closed trades: {len(trade_log)}")
+    print(f"  Net profit: ${perf_df['net_profit_dollars'].iloc[0]:,.2f}")
+    print(f"  Total return: {perf_df['total_return_pct'].iloc[0]}%")
 
 
 if __name__ == "__main__":
