@@ -94,4 +94,3 @@ Biotechnology,LABU,long,2026-01-05,156.99,2026-01-07,162.41,100,Bull,Neutral,542
 Financials,FAS,long,2025-12-12,171.52,2026-01-14,160.82,100,Bull,Neutral,-1070.0,-6.2383,33,signal_change
 Semiconductors,SOXL,long,2026-01-07,52.2,2026-01-30,67.12,100,Strong Bull,Stop,1492.0,28.5824,23,trailing_stop
 Consumer Staples,UGE,long,2026-01-14,18.2,2026-03-06,19.56,100,Strong Bull,Stop,136.0,7.4725,51,trailing_stop
-Utilities,UTSL,long,2026-03-06,51.14,2026-03-20,50.45,100,Bull,Stop,-69.0,-1.3492,14,trailing_stop
