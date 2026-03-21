@@ -1,49 +1,17 @@
-# Updated paper trading parameters with corrected thresholds
-# Based on actual sector_scores.csv data (scores range 0-7, not 0-100)
+# Exp03 Original Parameters
+# Reverting all changes
 
-# Account and risk settings
-account:
-  initial_balance: 10000.0  # Starting account value for paper trading
-  risk_per_trade_pct: 2.0   # 2% of account risked per trade
-
-# Position management
 positions:
-  max_concurrent_positions: 3              # Up to 3 positions at once
-  # No fixed shares - using risk-based sizing
+  max_concurrent_positions: 2
+  shares_per_trade: 100
 
-# Stop loss configuration
+confirmation:
+  required_consecutive_closes: 2
+
 stops:
-  # Hard stops (active immediately at entry)
-  hard_stop:
-    leverage_3x_pct: 9.0    # 9% hard stop for 3x ETFs
-    leverage_2x_pct: 7.0    # 7% hard stop for 2x ETFs
-    leverage_1x_pct: 5.0    # 5% hard stop for 1x ETFs
-  
-  # Legacy stops (used for initial trailing stop calculation)
   leverage_1x_pct: 10.0
   leverage_2x_pct: 14.0
   leverage_3x_pct: 18.0
-
-# Entry filters
-entry:
-  # IMPORTANT: Scores in sector_scores.csv range from 0-7
-  # Bull signals: score 3-4
-  # Strong Bull signals: score 5-7
-  min_score_threshold: 3.0                 # Minimum score to enter (captures Bull and Strong Bull)
-  required_consecutive_closes: 2           # 2-day confirmation required
-  excluded_sectors: []                     # No sectors excluded for now
-  strong_bull_multiplier: 1.5              # Strong Bull gets 50% larger position
-
-# Market regime filter (disabled for initial testing)
-market_filter:
-  enabled: false                           # Disabled to test entry logic first
-  benchmark: SPY
-  ma_period: 50
-  require_above_ma: true
-
-# Existing settings
-confirmation:
-  required_consecutive_closes: 2
 
 replacement:
   min_strength_advantage_points: 2.0
