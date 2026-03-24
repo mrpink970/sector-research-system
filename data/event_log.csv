@@ -1209,6 +1209,7 @@ date,sector,signal_etf,event_type,old_value,new_value,total_score,signal_state,r
 2026-03-05,Healthcare,XLV,Signal Change,Bull,Neutral,-1,Neutral,6,
 2026-03-06,Healthcare,XLV,Signal Change,Neutral,Bear,-3,Bear,4,
 2026-03-23,Healthcare,XLV,Signal Change,Bear,Strong Bear,-6,Strong Bear,5,
+2026-03-24,Healthcare,XLV,Signal Change,Strong Bear,Bear,-4,Bear,4,
 2024-04-03,Industrials,XLI,Rank #1 End,1,2,0,Neutral,2,
 2024-04-04,Industrials,XLI,Rank #1 Start,2,1,0,Neutral,1,
 2024-04-09,Industrials,XLI,Rank #1 End,1,2,0,Neutral,2,
@@ -2500,3 +2501,4 @@ date,sector,signal_etf,event_type,old_value,new_value,total_score,signal_state,r
 2026-03-06,Utilities,XLU,Rank #1 Start,2,1,5,Bull,1,
 2026-03-09,Utilities,XLU,Rank #1 End,1,2,3,Bull,2,
 2026-03-20,Utilities,XLU,Signal Change,Bull,Bear,-3,Bear,3,
+2026-03-24,Utilities,XLU,Signal Change,Bear,Neutral,-1,Neutral,2,
