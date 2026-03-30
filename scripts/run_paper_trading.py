@@ -23,7 +23,7 @@ entry_signal: str
 entry_strength: float
 
 def load_yaml(path: str | Path) -> dict:
-with open(path, “r”, encoding=“utf-8”) as f:
+with open(path, "r", encoding="utf-8") as f:
 return yaml.safe_load(f)
 
 def normalize_signal(signal: str) -> str:
