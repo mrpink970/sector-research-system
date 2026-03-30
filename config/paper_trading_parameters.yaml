@@ -1,12 +1,76 @@
-# Exp03 Original Parameters
-# Reverting all changes
+# EXP06 Parameters — dollar-based sizing + QQQ filter + min hold 10 days
+# Changes from EXP05: QQQ regime filter added at entry.
+# Only enter new positions when QQQ (Nasdaq Growth) is Bull or Strong Bull.
+# QQQ is already scored daily by the sector system — no new data needed.
+# Exits are never filtered; open positions run to completion regardless of QQQ.
+#
+# Experiment history:
+#   EXP03 baseline (all sectors, signal-state exit):
+#     97 trades | 44.3% win | +134.9% total | -139.6% max DD | exp 1.39 | $3,007 net
+#
+#   EXP05 (top 5 sector filter):
+#     92 trades | 37.0% win | +204.0% total | -58.4% max DD  | exp 2.22 | $4,342 net
+#
+#   EXP06 sweep results:
+#     QQQ filter only:          73 trades | 41.1% win | +271.2% | -39.6% DD | exp 3.72 | $9,606  <-- selected
+#     QQQ + score ceiling 5:    72 trades | 41.7% win | +260.4% | -39.6% DD | exp 3.62 | $10,200
+#     QQQ + score ceiling 4:    63 trades | 42.9% win | +233.0% | -27.6% DD | exp 3.70 | $9,130
+#     Score ceiling 4 only:     81 trades | 42.0% win | +205.0% | -50.3% DD | exp 2.53 | $5,981
+#
+#   EXP06a (QQQ filter only) selected:
+#     Best total return (+271%) and net profit ($9,606) with acceptable drawdown (-39.6%).
+#     Score ceiling hurt total return without meaningfully improving win rate.
+#     Healthcare flagged for monitoring — 6 trades, 17% win rate, carried by one trade.
+#
+# To disable QQQ filter and revert to EXP05: set require_qqq_bull to false.
+# To re-test score ceiling: add max_entry_score key under filters.
 
 positions:
   max_concurrent_positions: 2
-  shares_per_trade: 100
+  # Dollar-based sizing — replaces fixed shares_per_trade.
+  # buying_power = account_size * (1 + margin_pct)
+  # shares per trade = floor(buying_power / max_concurrent_positions / entry_price)
+  account_size: 5000
+  margin_pct: 0.20
 
 confirmation:
   required_consecutive_closes: 2
+
+sectors:
+  # Only these sectors are eligible for entry.
+  # Positive track record required before adding a sector.
+  # Do not add sectors based on intuition alone — rerun the backtest first.
+  allowed:
+    - Semiconductors
+    - Consumer Discretionary
+    - Biotechnology
+    - Communication Services
+    - Healthcare
+
+filters:
+  # EXP06a: gate all new entries on QQQ market regime.
+  # When QQQ (Nasdaq Growth sector) is Neutral or Bear, no new positions open.
+  # Open positions continue to be managed normally.
+  require_qqq_bull: true
+
+exit:
+  # Minimum calendar days a position must be held before a signal_change or
+  # direction_change exit is allowed to fire.
+  # Trailing stops are NEVER blocked — they always fire immediately.
+  # Set to 0 to disable.
+  #
+  # Sweep results (all with QQQ filter + top 5 sectors, $5k account):
+  #   0 days:  73 trades | 41.1% win | 271% return | exp 3.72 | $13,104 acct
+  #   2 days:  71 trades | 43.7% win | 281% return | exp 3.96 | $13,387 acct
+  #   5 days:  71 trades | 49.3% win | 260% return | exp 3.66 | $12,762 acct
+  #   8 days:  63 trades | 50.8% win | 266% return | exp 4.23 | $12,969 acct
+  #  10 days:  55 trades | 52.7% win | 332% return | exp 6.04 | $14,925 acct  <-- selected
+  #  14 days:  51 trades | 60.8% win | 346% return | exp 6.78 | $15,316 acct
+  #
+  # 10 days selected: expectancy doubles vs baseline, large total return jump,
+  # drawdown stays controlled. Signal_change exits now avg +3.82% vs negative.
+  # Trailing stops correctly handle genuine crashes under the hold window.
+  min_hold_days: 10
 
 stops:
   leverage_1x_pct: 10.0
