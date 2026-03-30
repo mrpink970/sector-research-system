@@ -1,1 +1,345 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Trading Dashboard &mdash; 2026-03-30</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=DM+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'DM Sans',sans-serif;background:#f0f2f5;color:#111;min-height:100vh}
+  .container{max-width:960px;margin:0 auto;padding:24px 16px}
+  @media(max-width:600px){
+    .container{padding:12px 8px}
+    .kpi-grid{flex-direction:column!important}
+    .sector-grid{flex-direction:column!important}
+  }
+</style>
+</head>
+<body>
 
+<!-- Header -->
+<div style="background:linear-gradient(135deg,#1e1e2f 0%,#2d2d4e 100%);padding:20px 0;margin-bottom:0">
+  <div style="max-width:960px;margin:0 auto;padding:0 16px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px">
+    <div>
+      <div style="font-size:11px;font-weight:600;color:#818cf8;text-transform:uppercase;letter-spacing:.12em;margin-bottom:4px">Automated Sector Rotation</div>
+      <h1 style="font-size:22px;font-weight:800;color:#fff;font-family:'DM Sans',sans-serif">Trading Dashboard</h1>
+      <div style="font-size:12px;color:#94a3b8;margin-top:3px">2026-03-30 &nbsp;&bull;&nbsp; EXP06a &nbsp;&bull;&nbsp; Paper Trading</div>
+    </div>
+    <div style="text-align:right">
+      <div style="font-size:28px;font-weight:800;color:#fff;font-family:'DM Mono',monospace">$5,000.00</div>
+      <div style="font-size:13px;color:#10b981;font-weight:600">
+        &#9660; $0.00 (0.0%)
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="container">
+
+<!-- QQQ Banner -->
+<div style="margin-bottom:16px">
+
+    <div style="background:#fee2e2;border-radius:12px;padding:18px 24px;display:flex;align-items:center;gap:16px">
+      <div style="width:14px;height:14px;border-radius:50%;background:#ef4444;flex-shrink:0;box-shadow:0 0 0 4px #ef444433"></div>
+      <div>
+        <div style="font-weight:700;font-size:14px;color:#111">
+          QQQ MARKET REGIME: BEAR &nbsp;
+          <span style="font-size:12px;color:#6b7280;font-weight:400">Score: -3</span>
+          &nbsp;&mdash;&nbsp;
+          <span style="font-weight:800">NEW ENTRIES BLOCKED</span>
+        </div>
+        <div style="font-size:12px;color:#6b7280;margin-top:3px">Open positions continue running with trailing stops active.</div>
+      </div>
+    </div>
+</div>
+
+<!-- KPI Cards -->
+
+    <div style="background:#fff;border-radius:16px;padding:24px;box-shadow:0 1px 4px rgba(0,0,0,.07);margin-bottom:16px">
+      <h2 style="margin:0 0 18px 0;font-size:15px;font-weight:700;color:#111;display:flex;align-items:center;gap:8px">
+        <span style="font-size:18px">&#127942;</span>Performance Overview
+      </h2>
+      <div style="display:flex;gap:16px;flex-wrap:wrap">
+    <div style="background:#fff;border-radius:12px;padding:24px 20px;flex:1;min-width:160px;box-shadow:0 1px 3px rgba(0,0,0,.08)">
+      <div style="font-size:11px;font-weight:600;color:#9ca3af;text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">Account Balance</div>
+      <div style="font-size:28px;font-weight:800;font-family:'DM Mono',monospace;">$5,000.00</div>
+      <div style="font-size:11px;color:#9ca3af;margin-top:6px">Started: $5,000.00 &nbsp;|&nbsp; Buying power: $6,000.00</div>
+    </div>
+    <div style="background:#fff;border-radius:12px;padding:24px 20px;flex:1;min-width:160px;box-shadow:0 1px 3px rgba(0,0,0,.08)">
+      <div style="font-size:11px;font-weight:600;color:#9ca3af;text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">Net Profit</div>
+      <div style="font-size:28px;font-weight:800;font-family:'DM Mono',monospace;color:#10b981">&#9644; $0.00 <span style="font-size:18px">(0.0%)</span></div>
+      <div style="font-size:11px;color:#9ca3af;margin-top:6px">Margin interest paid: $0.00</div>
+    </div>
+    <div style="background:#fff;border-radius:12px;padding:24px 20px;flex:1;min-width:160px;box-shadow:0 1px 3px rgba(0,0,0,.08)">
+      <div style="font-size:11px;font-weight:600;color:#9ca3af;text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">Win Rate</div>
+      <div style="font-size:28px;font-weight:800;font-family:'DM Mono',monospace;color:#ef4444">0.0%</div>
+      <div style="font-size:11px;color:#9ca3af;margin-top:6px">0 total trades &nbsp;|&nbsp; Max drawdown: 0.0%</div>
+    </div>
+    <div style="background:#fff;border-radius:12px;padding:24px 20px;flex:1;min-width:160px;box-shadow:0 1px 3px rgba(0,0,0,.08)">
+      <div style="font-size:11px;font-weight:600;color:#9ca3af;text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">Expectancy</div>
+      <div style="font-size:28px;font-weight:800;font-family:'DM Mono',monospace;color:#10b981">0.0%</div>
+      <div style="font-size:11px;color:#9ca3af;margin-top:6px">Average net return per trade</div>
+    </div></div>
+    </div>
+
+<!-- Charts -->
+
+    <div style="background:#fff;border-radius:16px;padding:24px;box-shadow:0 1px 4px rgba(0,0,0,.07);margin-bottom:16px">
+      <h2 style="margin:0 0 18px 0;font-size:15px;font-weight:700;color:#111;display:flex;align-items:center;gap:8px">
+        <span style="font-size:18px">&#128202;</span>Equity Curve &amp; Drawdown
+      </h2>
+      
+        <div style="display:flex;gap:16px;flex-wrap:wrap">
+          <div style="flex:1;min-width:280px;background:#fff;border-radius:12px;padding:24px;text-align:center;color:#9ca3af;box-shadow:0 1px 3px rgba(0,0,0,.08)">
+            <div style="font-size:13px;font-weight:600;color:#374151;margin-bottom:16px">Equity Curve</div>
+            <div style="font-size:32px;margin-bottom:8px">&#128202;</div>
+            <div>No trades yet. Chart will appear after first closed trade.</div>
+          </div>
+          <div style="flex:1;min-width:280px;background:#fff;border-radius:12px;padding:24px;text-align:center;color:#9ca3af;box-shadow:0 1px 3px rgba(0,0,0,.08)">
+            <div style="font-size:13px;font-weight:600;color:#374151;margin-bottom:16px">Drawdown</div>
+            <div style="font-size:32px;margin-bottom:8px">&#128201;</div>
+            <div>No trades yet. Chart will appear after first closed trade.</div>
+          </div>
+        </div>
+    </div>
+
+<!-- Open Positions -->
+
+    <div style="background:#fff;border-radius:16px;padding:24px;box-shadow:0 1px 4px rgba(0,0,0,.07);margin-bottom:16px">
+      <h2 style="margin:0 0 18px 0;font-size:15px;font-weight:700;color:#111;display:flex;align-items:center;gap:8px">
+        <span style="font-size:18px">&#128202;</span>Open Positions
+      </h2>
+      
+        <div style="text-align:center;padding:40px;color:#9ca3af">
+          <div style="font-size:32px;margin-bottom:8px">&#128683;</div>
+          <div style="font-weight:600;font-size:15px">No open positions</div>
+          <div style="font-size:12px;margin-top:4px">System is in cash. Waiting for confirmed Bull signal with QQQ approval.</div>
+        </div>
+    </div>
+
+<!-- Sector Signals -->
+
+    <div style="background:#fff;border-radius:16px;padding:24px;box-shadow:0 1px 4px rgba(0,0,0,.07);margin-bottom:16px">
+      <h2 style="margin:0 0 18px 0;font-size:15px;font-weight:700;color:#111;display:flex;align-items:center;gap:8px">
+        <span style="font-size:18px">&#128268;</span>Sector Signals
+      </h2>
+      
+    <div style="display:flex;gap:12px;flex-wrap:wrap">
+        <div class="sector-card" style="background:#fff;border-radius:12px;padding:18px;flex:1;min-width:160px;position:relative;cursor:pointer;box-shadow:0 1px 3px rgba(0,0,0,.08);transition:box-shadow .15s"
+             onmouseenter="this.querySelector('.tooltip-content').style.display='block'"
+             onmouseleave="this.querySelector('.tooltip-content').style.display='none'">
+          <div style="font-weight:700;font-size:13px;margin-bottom:10px;color:#111">Semiconductors</div>
+          <div style="background:#fee2e2;border-radius:8px;padding:8px 10px;margin-bottom:10px">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+              <span style="font-weight:800;font-size:12px;color:#991b1b">BEAR</span>
+              <span style="font-size:11px;color:#991b1b"><span style="color:#9ca3af">&#9644; 0</span></span>
+            </div>
+            <div style="background:rgba(0,0,0,.1);border-radius:99px;height:5px">
+              <div style="background:#ef4444;border-radius:99px;height:5px;width:28%;transition:width .3s"></div>
+            </div>
+            <div style="font-size:11px;color:#991b1b;margin-top:4px;font-family:'DM Mono',monospace">Score: -3</div>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;font-size:11px">
+            <span style="color:#9ca3af">Signal: <strong style="color:#111">SMH</strong> &rarr; <strong style="color:#111">SOXL</strong></span>
+            <span><span style="color:#ef4444">&#10007; Not tradable</span></span>
+          </div>
+          
+        <div class="tooltip-content" style="display:none;position:absolute;z-index:99;background:#1f2937;border-radius:8px;padding:12px 14px;min-width:200px;box-shadow:0 8px 24px rgba(0,0,0,.3);top:0;left:105%">
+          <div style="font-weight:700;color:#fff;margin-bottom:8px;font-size:12px">Semiconductors Breakdown</div>
+          <table><tr><td style="padding:2px 8px 2px 0;color:#d1d5db;font-size:11px">Trend (MA50)</td><td style="padding:2px 0;color:#ef4444;font-weight:700;font-size:11px">-2</td></tr><tr><td style="padding:2px 8px 2px 0;color:#d1d5db;font-size:11px">Trend Ignition</td><td style="padding:2px 0;color:#ef4444;font-weight:700;font-size:11px">-1</td></tr><tr><td style="padding:2px 8px 2px 0;color:#d1d5db;font-size:11px">Momentum</td><td style="padding:2px 0;color:#9ca3af;font-weight:700;font-size:11px">+0</td></tr><tr><td style="padding:2px 8px 2px 0;color:#d1d5db;font-size:11px">Rel. Strength</td><td style="padding:2px 0;color:#9ca3af;font-weight:700;font-size:11px">+0</td></tr><tr><td style="padding:2px 8px 2px 0;color:#d1d5db;font-size:11px">RS Persistence</td><td style="padding:2px 0;color:#9ca3af;font-weight:700;font-size:11px">+0</td></tr><tr><td style="padding:2px 8px 2px 0;color:#d1d5db;font-size:11px">Exhaustion</td><td style="padding:2px 0;color:#9ca3af;font-weight:700;font-size:11px">+0</td></tr><tr><td style="padding:2px 8px 2px 0;color:#d1d5db;font-size:11px">Volatility</td><td style="padding:2px 0;color:#9ca3af;font-weight:700;font-size:11px">+0</td></tr></table>
+          <div style="border-top:1px solid #374151;margin-top:8px;padding-top:8px;font-weight:700;color:#fff;font-size:12px">Total: -3</div>
+        </div>
+        </div>
+        <div class="sector-card" style="background:#fff;border-radius:12px;padding:18px;flex:1;min-width:160px;position:relative;cursor:pointer;box-shadow:0 1px 3px rgba(0,0,0,.08);transition:box-shadow .15s"
+             onmouseenter="this.querySelector('.tooltip-content').style.display='block'"
+             onmouseleave="this.querySelector('.tooltip-content').style.display='none'">
+          <div style="font-weight:700;font-size:13px;margin-bottom:10px;color:#111">Consumer Discretionary</div>
+          <div style="background:#fee2e2;border-radius:8px;padding:8px 10px;margin-bottom:10px">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+              <span style="font-weight:800;font-size:12px;color:#991b1b">BEAR</span>
+              <span style="font-size:11px;color:#991b1b"><span style="color:#9ca3af">&#9644; 0</span></span>
+            </div>
+            <div style="background:rgba(0,0,0,.1);border-radius:99px;height:5px">
+              <div style="background:#ef4444;border-radius:99px;height:5px;width:28%;transition:width .3s"></div>
+            </div>
+            <div style="font-size:11px;color:#991b1b;margin-top:4px;font-family:'DM Mono',monospace">Score: -3</div>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;font-size:11px">
+            <span style="color:#9ca3af">Signal: <strong style="color:#111">XLY</strong> &rarr; <strong style="color:#111">WANT</strong></span>
+            <span><span style="color:#ef4444">&#10007; Not tradable</span></span>
+          </div>
+          
+        <div class="tooltip-content" style="display:none;position:absolute;z-index:99;background:#1f2937;border-radius:8px;padding:12px 14px;min-width:200px;box-shadow:0 8px 24px rgba(0,0,0,.3);top:0;left:105%">
+          <div style="font-weight:700;color:#fff;margin-bottom:8px;font-size:12px">Consumer Discretionary Breakdown</div>
+          <table><tr><td style="padding:2px 8px 2px 0;color:#d1d5db;font-size:11px">Trend (MA50)</td><td style="padding:2px 0;color:#ef4444;font-weight:700;font-size:11px">-2</td></tr><tr><td style="padding:2px 8px 2px 0;color:#d1d5db;font-size:11px">Trend Ignition</td><td style="padding:2px 0;color:#ef4444;font-weight:700;font-size:11px">-1</td></tr><tr><td style="padding:2px 8px 2px 0;color:#d1d5db;font-size:11px">Momentum</td><td style="padding:2px 0;color:#9ca3af;font-weight:700;font-size:11px">+0</td></tr><tr><td style="padding:2px 8px 2px 0;color:#d1d5db;font-size:11px">Rel. Strength</td><td style="padding:2px 0;color:#9ca3af;font-weight:700;font-size:11px">+0</td></tr><tr><td style="padding:2px 8px 2px 0;color:#d1d5db;font-size:11px">RS Persistence</td><td style="padding:2px 0;color:#9ca3af;font-weight:700;font-size:11px">+0</td></tr><tr><td style="padding:2px 8px 2px 0;color:#d1d5db;font-size:11px">Exhaustion</td><td style="padding:2px 0;color:#9ca3af;font-weight:700;font-size:11px">+0</td></tr><tr><td style="padding:2px 8px 2px 0;color:#d1d5db;font-size:11px">Volatility</td><td style="padding:2px 0;color:#9ca3af;font-weight:700;font-size:11px">+0</td></tr></table>
+          <div style="border-top:1px solid #374151;margin-top:8px;padding-top:8px;font-weight:700;color:#fff;font-size:12px">Total: -3</div>
+        </div>
+        </div>
+        <div class="sector-card" style="background:#fff;border-radius:12px;padding:18px;flex:1;min-width:160px;position:relative;cursor:pointer;box-shadow:0 1px 3px rgba(0,0,0,.08);transition:box-shadow .15s"
+             onmouseenter="this.querySelector('.tooltip-content').style.display='block'"
+             onmouseleave="this.querySelector('.tooltip-content').style.display='none'">
+          <div style="font-weight:700;font-size:13px;margin-bottom:10px;color:#111">Biotechnology</div>
+          <div style="background:#e5e7eb;border-radius:8px;padding:8px 10px;margin-bottom:10px">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+              <span style="font-weight:800;font-size:12px;color:#374151">NEUTRAL</span>
+              <span style="font-size:11px;color:#374151"><span style="color:#9ca3af">&#9644; 0</span></span>
+            </div>
+            <div style="background:rgba(0,0,0,.1);border-radius:99px;height:5px">
+              <div style="background:#ef4444;border-radius:99px;height:5px;width:35%;transition:width .3s"></div>
+            </div>
+            <div style="font-size:11px;color:#374151;margin-top:4px;font-family:'DM Mono',monospace">Score: -2</div>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;font-size:11px">
+            <span style="color:#9ca3af">Signal: <strong style="color:#111">XBI</strong> &rarr; <strong style="color:#111">LABU</strong></span>
+            <span><span style="color:#ef4444">&#10007; Not tradable</span></span>
+          </div>
+          
+        <div class="tooltip-content" style="display:none;position:absolute;z-index:99;background:#1f2937;border-radius:8px;padding:12px 14px;min-width:200px;box-shadow:0 8px 24px rgba(0,0,0,.3);top:0;left:105%">
+          <div style="font-weight:700;color:#fff;margin-bottom:8px;font-size:12px">Biotechnology Breakdown</div>
+          <table><tr><td style="padding:2px 8px 2px 0;color:#d1d5db;font-size:11px">Trend (MA50)</td><td style="padding:2px 0;color:#ef4444;font-weight:700;font-size:11px">-2</td></tr><tr><td style="padding:2px 8px 2px 0;color:#d1d5db;font-size:11px">Trend Ignition</td><td style="padding:2px 0;color:#ef4444;font-weight:700;font-size:11px">-1</td></tr><tr><td style="padding:2px 8px 2px 0;color:#d1d5db;font-size:11px">Momentum</td><td style="padding:2px 0;color:#9ca3af;font-weight:700;font-size:11px">+0</td></tr><tr><td style="padding:2px 8px 2px 0;color:#d1d5db;font-size:11px">Rel. Strength</td><td style="padding:2px 0;color:#10b981;font-weight:700;font-size:11px">+1</td></tr><tr><td style="padding:2px 8px 2px 0;color:#d1d5db;font-size:11px">RS Persistence</td><td style="padding:2px 0;color:#9ca3af;font-weight:700;font-size:11px">+0</td></tr><tr><td style="padding:2px 8px 2px 0;color:#d1d5db;font-size:11px">Exhaustion</td><td style="padding:2px 0;color:#9ca3af;font-weight:700;font-size:11px">+0</td></tr><tr><td style="padding:2px 8px 2px 0;color:#d1d5db;font-size:11px">Volatility</td><td style="padding:2px 0;color:#9ca3af;font-weight:700;font-size:11px">+0</td></tr></table>
+          <div style="border-top:1px solid #374151;margin-top:8px;padding-top:8px;font-weight:700;color:#fff;font-size:12px">Total: -2</div>
+        </div>
+        </div>
+        <div class="sector-card" style="background:#fff;border-radius:12px;padding:18px;flex:1;min-width:160px;position:relative;cursor:pointer;box-shadow:0 1px 3px rgba(0,0,0,.08);transition:box-shadow .15s"
+             onmouseenter="this.querySelector('.tooltip-content').style.display='block'"
+             onmouseleave="this.querySelector('.tooltip-content').style.display='none'">
+          <div style="font-weight:700;font-size:13px;margin-bottom:10px;color:#111">Communication Services</div>
+          <div style="background:#fecaca;border-radius:8px;padding:8px 10px;margin-bottom:10px">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+              <span style="font-weight:800;font-size:12px;color:#7f1d1d">STRONG BEAR</span>
+              <span style="font-size:11px;color:#7f1d1d"><span style="color:#ef4444">&#9660; -2</span></span>
+            </div>
+            <div style="background:rgba(0,0,0,.1);border-radius:99px;height:5px">
+              <div style="background:#ef4444;border-radius:99px;height:5px;width:0%;transition:width .3s"></div>
+            </div>
+            <div style="font-size:11px;color:#7f1d1d;margin-top:4px;font-family:'DM Mono',monospace">Score: -7</div>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;font-size:11px">
+            <span style="color:#9ca3af">Signal: <strong style="color:#111">XLC</strong> &rarr; <strong style="color:#111">LTL</strong></span>
+            <span><span style="color:#ef4444">&#10007; Not tradable</span></span>
+          </div>
+          
+        <div class="tooltip-content" style="display:none;position:absolute;z-index:99;background:#1f2937;border-radius:8px;padding:12px 14px;min-width:200px;box-shadow:0 8px 24px rgba(0,0,0,.3);top:0;left:105%">
+          <div style="font-weight:700;color:#fff;margin-bottom:8px;font-size:12px">Communication Services Breakdown</div>
+          <table><tr><td style="padding:2px 8px 2px 0;color:#d1d5db;font-size:11px">Trend (MA50)</td><td style="padding:2px 0;color:#ef4444;font-weight:700;font-size:11px">-2</td></tr><tr><td style="padding:2px 8px 2px 0;color:#d1d5db;font-size:11px">Trend Ignition</td><td style="padding:2px 0;color:#ef4444;font-weight:700;font-size:11px">-1</td></tr><tr><td style="padding:2px 8px 2px 0;color:#d1d5db;font-size:11px">Momentum</td><td style="padding:2px 0;color:#ef4444;font-weight:700;font-size:11px">-2</td></tr><tr><td style="padding:2px 8px 2px 0;color:#d1d5db;font-size:11px">Rel. Strength</td><td style="padding:2px 0;color:#ef4444;font-weight:700;font-size:11px">-1</td></tr><tr><td style="padding:2px 8px 2px 0;color:#d1d5db;font-size:11px">RS Persistence</td><td style="padding:2px 0;color:#ef4444;font-weight:700;font-size:11px">-1</td></tr><tr><td style="padding:2px 8px 2px 0;color:#d1d5db;font-size:11px">Exhaustion</td><td style="padding:2px 0;color:#9ca3af;font-weight:700;font-size:11px">+0</td></tr><tr><td style="padding:2px 8px 2px 0;color:#d1d5db;font-size:11px">Volatility</td><td style="padding:2px 0;color:#9ca3af;font-weight:700;font-size:11px">+0</td></tr></table>
+          <div style="border-top:1px solid #374151;margin-top:8px;padding-top:8px;font-weight:700;color:#fff;font-size:12px">Total: -7</div>
+        </div>
+        </div>
+        <div class="sector-card" style="background:#fff;border-radius:12px;padding:18px;flex:1;min-width:160px;position:relative;cursor:pointer;box-shadow:0 1px 3px rgba(0,0,0,.08);transition:box-shadow .15s"
+             onmouseenter="this.querySelector('.tooltip-content').style.display='block'"
+             onmouseleave="this.querySelector('.tooltip-content').style.display='none'">
+          <div style="font-weight:700;font-size:13px;margin-bottom:10px;color:#111">Healthcare</div>
+          <div style="background:#fee2e2;border-radius:8px;padding:8px 10px;margin-bottom:10px">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+              <span style="font-weight:800;font-size:12px;color:#991b1b">BEAR</span>
+              <span style="font-size:11px;color:#991b1b"><span style="color:#9ca3af">&#9644; 0</span></span>
+            </div>
+            <div style="background:rgba(0,0,0,.1);border-radius:99px;height:5px">
+              <div style="background:#ef4444;border-radius:99px;height:5px;width:28%;transition:width .3s"></div>
+            </div>
+            <div style="font-size:11px;color:#991b1b;margin-top:4px;font-family:'DM Mono',monospace">Score: -3</div>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;font-size:11px">
+            <span style="color:#9ca3af">Signal: <strong style="color:#111">XLV</strong> &rarr; <strong style="color:#111">CURE</strong></span>
+            <span><span style="color:#ef4444">&#10007; Not tradable</span></span>
+          </div>
+          
+        <div class="tooltip-content" style="display:none;position:absolute;z-index:99;background:#1f2937;border-radius:8px;padding:12px 14px;min-width:200px;box-shadow:0 8px 24px rgba(0,0,0,.3);top:0;left:105%">
+          <div style="font-weight:700;color:#fff;margin-bottom:8px;font-size:12px">Healthcare Breakdown</div>
+          <table><tr><td style="padding:2px 8px 2px 0;color:#d1d5db;font-size:11px">Trend (MA50)</td><td style="padding:2px 0;color:#ef4444;font-weight:700;font-size:11px">-2</td></tr><tr><td style="padding:2px 8px 2px 0;color:#d1d5db;font-size:11px">Trend Ignition</td><td style="padding:2px 0;color:#ef4444;font-weight:700;font-size:11px">-1</td></tr><tr><td style="padding:2px 8px 2px 0;color:#d1d5db;font-size:11px">Momentum</td><td style="padding:2px 0;color:#9ca3af;font-weight:700;font-size:11px">+0</td></tr><tr><td style="padding:2px 8px 2px 0;color:#d1d5db;font-size:11px">Rel. Strength</td><td style="padding:2px 0;color:#9ca3af;font-weight:700;font-size:11px">+0</td></tr><tr><td style="padding:2px 8px 2px 0;color:#d1d5db;font-size:11px">RS Persistence</td><td style="padding:2px 0;color:#9ca3af;font-weight:700;font-size:11px">+0</td></tr><tr><td style="padding:2px 8px 2px 0;color:#d1d5db;font-size:11px">Exhaustion</td><td style="padding:2px 0;color:#9ca3af;font-weight:700;font-size:11px">+0</td></tr><tr><td style="padding:2px 8px 2px 0;color:#d1d5db;font-size:11px">Volatility</td><td style="padding:2px 0;color:#9ca3af;font-weight:700;font-size:11px">+0</td></tr></table>
+          <div style="border-top:1px solid #374151;margin-top:8px;padding-top:8px;font-weight:700;color:#fff;font-size:12px">Total: -3</div>
+        </div>
+        </div></div>
+    <div style="font-size:11px;color:#9ca3af;margin-top:10px;padding:0 4px">
+      &#9432; Score components: Trend (MA50), Trend Ignition (MA20 slope), Momentum (5-day ROC),
+      Relative Strength vs VOO, RS Persistence, Momentum Exhaustion, Volatility (ATR).
+      Hover any card to see breakdown. Range: -7 to +7.
+    </div>
+    </div>
+
+<!-- Recent Trades -->
+
+    <div style="background:#fff;border-radius:16px;padding:24px;box-shadow:0 1px 4px rgba(0,0,0,.07);margin-bottom:16px">
+      <h2 style="margin:0 0 18px 0;font-size:15px;font-weight:700;color:#111;display:flex;align-items:center;gap:8px">
+        <span style="font-size:18px">&#128203;</span>Recent Closed Trades
+      </h2>
+      
+        <div style="text-align:center;padding:40px;color:#9ca3af">
+          <div style="font-size:32px;margin-bottom:8px">&#128203;</div>
+          <div style="font-weight:600">No closed trades yet</div>
+          <div style="font-size:12px;margin-top:4px">Trades will appear here after positions close.</div>
+        </div>
+    </div>
+
+<!-- Performance Metrics -->
+
+    <div style="background:#fff;border-radius:16px;padding:24px;box-shadow:0 1px 4px rgba(0,0,0,.07);margin-bottom:16px">
+      <h2 style="margin:0 0 18px 0;font-size:15px;font-weight:700;color:#111;display:flex;align-items:center;gap:8px">
+        <span style="font-size:18px">&#128200;</span>Performance Breakdown
+      </h2>
+      <div style="display:flex;gap:10px;flex-wrap:wrap">
+        <div style="background:#fff;border-radius:10px;padding:14px 16px;flex:1;min-width:120px;box-shadow:0 1px 3px rgba(0,0,0,.06)">
+          <div style="font-size:10px;font-weight:600;color:#9ca3af;text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px">Avg Win</div>
+          <div style="font-size:18px;font-weight:700;font-family:'DM Mono',monospace;">--</div>
+        </div>
+        <div style="background:#fff;border-radius:10px;padding:14px 16px;flex:1;min-width:120px;box-shadow:0 1px 3px rgba(0,0,0,.06)">
+          <div style="font-size:10px;font-weight:600;color:#9ca3af;text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px">Avg Loss</div>
+          <div style="font-size:18px;font-weight:700;font-family:'DM Mono',monospace;">--</div>
+        </div>
+        <div style="background:#fff;border-radius:10px;padding:14px 16px;flex:1;min-width:120px;box-shadow:0 1px 3px rgba(0,0,0,.06)">
+          <div style="font-size:10px;font-weight:600;color:#9ca3af;text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px">Largest Win</div>
+          <div style="font-size:18px;font-weight:700;font-family:'DM Mono',monospace;">--</div>
+        </div>
+        <div style="background:#fff;border-radius:10px;padding:14px 16px;flex:1;min-width:120px;box-shadow:0 1px 3px rgba(0,0,0,.06)">
+          <div style="font-size:10px;font-weight:600;color:#9ca3af;text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px">Largest Loss</div>
+          <div style="font-size:18px;font-weight:700;font-family:'DM Mono',monospace;">--</div>
+        </div>
+        <div style="background:#fff;border-radius:10px;padding:14px 16px;flex:1;min-width:120px;box-shadow:0 1px 3px rgba(0,0,0,.06)">
+          <div style="font-size:10px;font-weight:600;color:#9ca3af;text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px">Avg Hold (Winners)</div>
+          <div style="font-size:18px;font-weight:700;font-family:'DM Mono',monospace;">--</div>
+        </div>
+        <div style="background:#fff;border-radius:10px;padding:14px 16px;flex:1;min-width:120px;box-shadow:0 1px 3px rgba(0,0,0,.06)">
+          <div style="font-size:10px;font-weight:600;color:#9ca3af;text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px">Avg Hold (Losers)</div>
+          <div style="font-size:18px;font-weight:700;font-family:'DM Mono',monospace;">--</div>
+        </div>
+        <div style="background:#fff;border-radius:10px;padding:14px 16px;flex:1;min-width:120px;box-shadow:0 1px 3px rgba(0,0,0,.06)">
+          <div style="font-size:10px;font-weight:600;color:#9ca3af;text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px">Profit Factor</div>
+          <div style="font-size:18px;font-weight:700;font-family:'DM Mono',monospace;">--</div>
+        </div>
+        <div style="background:#fff;border-radius:10px;padding:14px 16px;flex:1;min-width:120px;box-shadow:0 1px 3px rgba(0,0,0,.06)">
+          <div style="font-size:10px;font-weight:600;color:#9ca3af;text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px">Total Interest</div>
+          <div style="font-size:18px;font-weight:700;font-family:'DM Mono',monospace;">--</div>
+        </div></div>
+    </div>
+
+<!-- Footer -->
+<div style="background:#fff;border-radius:16px;padding:20px 24px;box-shadow:0 1px 4px rgba(0,0,0,.07)">
+  <div style="font-size:12px;color:#9ca3af;line-height:1.8">
+    <div style="margin-bottom:6px">
+      <strong style="color:#374151">System Config:</strong>
+      Max positions: 2 &nbsp;|&nbsp;
+      Min hold: 10 days &nbsp;|&nbsp;
+      Entry confirmation: 2 closes &nbsp;|&nbsp;
+      Margin: 20% @ 11.825%/yr &nbsp;|&nbsp;
+      QQQ filter: On &nbsp;|&nbsp;
+      Live since: 2026-03-31
+    </div>
+    <div style="margin-bottom:6px">
+      <strong style="color:#374151">Data:</strong>
+      Last market data: 2026-03-27 &nbsp;|&nbsp;
+      Dashboard generated: 2026-03-30 22:14 ET &nbsp;|&nbsp;
+      Source: Yahoo Finance via yfinance
+    </div>
+    <div style="background:#fef9c3;border-radius:8px;padding:10px 14px;margin-top:10px;color:#854d0e">
+      &#9888; This is a <strong>paper trading simulation</strong>. No real money is at risk.
+      Strategy: EXP06a | QQQ Filter | Top 5 Sectors | 10-Day Min Hold | Compounding + Margin Interest
+    </div>
+  </div>
+</div>
+
+</div><!-- /container -->
+</body>
+</html>
