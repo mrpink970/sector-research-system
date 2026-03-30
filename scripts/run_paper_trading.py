@@ -23,7 +23,7 @@ entry_signal: str
 entry_strength: float
 
 def load_yaml(path: str | Path) -> dict:
-with open(path, "r", encoding="utf-8") as f:
+with open(path, “r”, encoding=“utf-8”) as f:
 return yaml.safe_load(f)
 
 def normalize_signal(signal: str) -> str:
@@ -274,11 +274,11 @@ if sector_cfg and "allowed" in sector_cfg:
     allowed_sectors = set(sector_cfg["allowed"])
     print(f"Sector filter active: {sorted(allowed_sectors)}")
 else:
-    print("No sector filter — all sectors eligible.")
+    print("No sector filter -- all sectors eligible.")
 
 # EXP06a: QQQ regime filter
 # Only enter new positions when QQQ (Nasdaq Growth) is Bull or Strong Bull.
-# QQQ is already scored daily — no new data needed.
+# QQQ is already scored daily -- no new data needed.
 # Exits are not affected; open positions run to completion regardless of QQQ.
 qqq_filter_enabled: bool = params.get("filters", {}).get("require_qqq_bull", False)
 qqq_signal_table = build_qqq_signal_table(scores, signal_col)
@@ -292,7 +292,7 @@ max_positions = int(params["positions"]["max_concurrent_positions"])
 required_closes = int(params["confirmation"]["required_consecutive_closes"])
 
 # Minimum hold period for signal_change and direction_change exits.
-# Trailing stops are NEVER blocked — they fire immediately at all times.
+# Trailing stops are NEVER blocked -- they fire immediately at all times.
 # A signal wobble in the first few days should not flush a position that
 # hasn't had time to develop. Set to 0 to disable.
 min_hold_days = int(params.get("exit", {}).get("min_hold_days", 0))
@@ -323,7 +323,7 @@ for i in range(1, len(all_dates)):
     signal_day = latest_scores_for_date(scores, signal_date)
     signal_by_sector = {row["sector"]: row for _, row in signal_day.iterrows()}
 
-    # 1) Exits — no filters applied; all open positions managed to completion
+    # 1) Exits -- no filters applied; all open positions managed to completion
     survivors: List[Position] = []
     for position in active_positions:
         bar = price_map.get((trade_date, position.ticker))
@@ -365,14 +365,14 @@ for i in range(1, len(all_dates)):
 
         if not is_bullish_signal(raw_signal):
             # Only exit on signal change if minimum hold is met.
-            # If not yet met, keep holding — the trailing stop still protects.
+            # If not yet met, keep holding -- the trailing stop still protects.
             if hold_satisfied:
                 exit_type = "signal_change"
         elif row_direction != "long":
             if hold_satisfied:
                 exit_type = "direction_change"
         elif row_ticker != "" and row_ticker != position.ticker:
-            # Ticker rotation exits always fire — same as trailing stop,
+            # Ticker rotation exits always fire -- same as trailing stop,
             # the position is already meaningfully different.
             exit_type = "ticker_changed"
 
@@ -396,13 +396,13 @@ for i in range(1, len(all_dates)):
 
     active_positions = survivors
 
-    # 2) Entries — all filters applied here only
+    # 2) Entries -- all filters applied here only
     # EXP06a: check QQQ regime on signal date before evaluating any entries
     qqq_raw = qqq_signal_table.get(signal_date, "Neutral")
     qqq_is_bull = normalize_signal(qqq_raw) in {"Bull", "Strong Bull"}
 
     if qqq_filter_enabled and not qqq_is_bull:
-        # QQQ not bullish — skip all entries today, exits above still processed
+        # QQQ not bullish -- skip all entries today, exits above still processed
         continue
 
     candidates = []
