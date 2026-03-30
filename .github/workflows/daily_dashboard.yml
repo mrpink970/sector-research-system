@@ -1,1 +1,112 @@
+name: Daily Dashboard
+
+on:
+  schedule:
+    - cron: "15 0 * * 1-5"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-dashboard:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install pandas pyyaml
+
+      - name: Generate dashboard
+        run: python scripts/generate_dashboard.py
+
+      - name: Set email variables
+        id: vars
+        run: |
+          BALANCE=$(python3 -c "
+          import pandas as pd, yaml
+          perf = pd.read_csv('data/paper_performance.csv')
+          p = yaml.safe_load(open('config/paper_trading_parameters.yaml'))
+          acct = float(p['positions']['account_size'])
+          net  = float(perf.iloc[0].get('net_profit_dollars', 0)) if not perf.empty else 0
+          bal  = acct + net
+          pct  = net / acct * 100 if acct else 0
+          sign = '+' if net >= 0 else ''
+          print(f'\${bal:,.0f} ({sign}{pct:.0f}%)')
+          ")
+          WIN=$(python3 -c "
+          import pandas as pd
+          perf = pd.read_csv('data/paper_performance.csv')
+          if not perf.empty and perf.iloc[0]['total_trades'] > 0:
+              print(f\"{perf.iloc[0]['win_rate_pct']:.1f}\")
+          else:
+              print('0.0')
+          ")
+          OPEN=$(python3 -c "
+          import pandas as pd
+          try:
+              pos = pd.read_csv('data/paper_positions.csv')
+              print(len(pos))
+          except:
+              print(0)
+          ")
+          QQQ=$(python3 -c "
+          import pandas as pd
+          sc = pd.read_csv('data/sector_scores.csv')
+          latest = sc[sc['date']==sc['date'].max()]
+          qqq = latest[latest['sector']=='Nasdaq Growth']
+          state = qqq.iloc[0]['signal_state'] if not qqq.empty else 'Unknown'
+          bull = state in ('Bull','Strong Bull')
+          print(f\"{state} -- entries {'allowed' if bull else 'blocked'}\")
+          ")
+          TODAY=$(date '+%Y-%m-%d')
+          echo "balance=$BALANCE" >> $GITHUB_OUTPUT
+          echo "win=$WIN" >> $GITHUB_OUTPUT
+          echo "open=$OPEN" >> $GITHUB_OUTPUT
+          echo "qqq=$QQQ" >> $GITHUB_OUTPUT
+          echo "today=$TODAY" >> $GITHUB_OUTPUT
+
+      - name: Commit dashboard
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add dashboard.html
+          git commit -m "Dashboard update ${{ steps.vars.outputs.today }}" || echo "No changes"
+          git push
+
+      - name: Send email notification
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: smtp.gmail.com
+          server_port: 587
+          secure: false
+          username: ${{ secrets.EMAIL_FROM }}
+          password: ${{ secrets.EMAIL_PASSWORD }}
+          to: ${{ secrets.EMAIL_TO }}
+          from: Trading Dashboard <${{ secrets.EMAIL_FROM }}>
+          subject: "[Trading Dashboard] ${{ steps.vars.outputs.today }} - ${{ steps.vars.outputs.balance }}"
+          body: |
+            Your trading dashboard has been updated.
+
+            View Dashboard:
+            https://github.com/${{ github.repository }}/blob/main/dashboard.html
+
+            Bookmark this link. Updates nightly at 8 PM ET (Mon-Fri).
+
+            Summary for ${{ steps.vars.outputs.today }}:
+              Balance:       ${{ steps.vars.outputs.balance }}
+              Win Rate:      ${{ steps.vars.outputs.win }}%
+              Open Positions:${{ steps.vars.outputs.open }}
+              QQQ Regime:    ${{ steps.vars.outputs.qqq }}
+
+            ---
+            Automated message from GitHub Actions.
+            This is a paper trading simulation. No real money is at risk.
 
