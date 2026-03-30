@@ -414,6 +414,6 @@ perf_df = performance_row(trade_log_df)
 positions_df.to_csv(data_dir / "paper_positions.csv", index=False)
 trade_log_df.to_csv(data_dir / "paper_trade_log.csv", index=False)
 perf_df.to_csv(data_dir / "paper_performance.csv", index=False)
-print(f"Paper trading complete. Open positions: {len(active_positions)} | Closed trades:
+print(f"Paper trading complete. Open positions: {len(active_positions)} | Closed trades:")
 if __name__ == "__main__":
 main()
