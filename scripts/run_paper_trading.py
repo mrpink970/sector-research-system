@@ -191,7 +191,7 @@ tl["equity_curve_pct"] = tl["return_pct"].cumsum()
 tl["equity_peak_pct"] = tl["equity_curve_pct"].cummax()
 tl["drawdown_pct"] = tl["equity_curve_pct"] - tl["equity_peak_pct"]
 max_drawdown = float(tl["drawdown_pct"].min()) if not tl.empty else 0.0
-gross_profit = float(trade_log.loc[trade_log["gross_pnl_dollars"] > 0, "gross_pnl_dollars
+gross_profit = float(trade_log.loc[trade_log["gross_pnl_dollars"] > 0, "gross_pnl_dollars"
 gross_loss = float(trade_log.loc[trade_log["gross_pnl_dollars"] < 0, "gross_pnl_dollars"]
 net_profit = float(trade_log["gross_pnl_dollars"].sum())
 return pd.DataFrame([{
