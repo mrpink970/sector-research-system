@@ -172,10 +172,20 @@ def close_position(
     exit_price: float,
     exit_signal: str,
     exit_type: str,
+    margin_daily_rate: float = 0.0,
+    margin_pct: float = 0.0,
 ) -> dict:
     gross_pnl = (exit_price - position.entry_price) * position.shares
     return_pct = ((exit_price - position.entry_price) / position.entry_price) * 100.0
     duration_days = (pd.to_datetime(exit_date) - pd.to_datetime(position.entry_date)).days
+
+    # Margin interest: charged only on the borrowed portion of the position.
+    # margin_borrowed = position_cost * margin_pct
+    # interest = margin_borrowed * daily_rate * days_held
+    position_cost    = position.entry_price * position.shares
+    margin_borrowed  = position_cost * margin_pct
+    margin_interest  = margin_borrowed * margin_daily_rate * duration_days
+    net_pnl          = gross_pnl - margin_interest
 
     return {
         "sector": position.sector,
@@ -190,6 +200,8 @@ def close_position(
         "entry_strength": round(position.entry_strength, 4),
         "exit_signal": exit_signal,
         "gross_pnl_dollars": round(gross_pnl, 2),
+        "margin_interest_dollars": round(margin_interest, 4),
+        "net_pnl_dollars": round(net_pnl, 2),
         "return_pct": round(return_pct, 4),
         "trade_duration_days": int(duration_days),
         "exit_type": exit_type,
@@ -231,9 +243,10 @@ def performance_row(trade_log: pd.DataFrame) -> pd.DataFrame:
     tl["drawdown_pct"] = tl["equity_curve_pct"] - tl["equity_peak_pct"]
     max_drawdown = float(tl["drawdown_pct"].min()) if not tl.empty else 0.0
 
-    gross_profit = float(trade_log.loc[trade_log["gross_pnl_dollars"] > 0, "gross_pnl_dollars"].sum())
-    gross_loss = float(trade_log.loc[trade_log["gross_pnl_dollars"] < 0, "gross_pnl_dollars"].sum())
-    net_profit = float(trade_log["gross_pnl_dollars"].sum())
+    gross_profit      = float(trade_log.loc[trade_log["gross_pnl_dollars"] > 0, "gross_pnl_dollars"].sum())
+    gross_loss        = float(trade_log.loc[trade_log["gross_pnl_dollars"] < 0, "gross_pnl_dollars"].sum())
+    total_interest    = float(trade_log["margin_interest_dollars"].sum()) if "margin_interest_dollars" in trade_log.columns else 0.0
+    net_profit        = float(trade_log["net_pnl_dollars"].sum()) if "net_pnl_dollars" in trade_log.columns else float(trade_log["gross_pnl_dollars"].sum())
 
     return pd.DataFrame([{
         "total_trades": total_trades,
@@ -248,6 +261,7 @@ def performance_row(trade_log: pd.DataFrame) -> pd.DataFrame:
         "expectancy_per_trade_pct": round(expectancy, 4),
         "gross_profit_dollars": round(gross_profit, 2),
         "gross_loss_dollars": round(gross_loss, 2),
+        "total_margin_interest_dollars": round(total_interest, 2),
         "net_profit_dollars": round(net_profit, 2),
     }])
 
@@ -302,18 +316,25 @@ def main():
     if min_hold_days:
         print(f"Minimum hold period: {min_hold_days} days (trailing stops exempt).")
 
-    # Dollar-based position sizing.
-    # account_size:      cash on hand
-    # margin_pct:        additional buying power as fraction of account (0.20 = 20%)
-    # buying_power:      total capital available across all positions
-    # dollars_per_trade: budget per position = buying_power / max_positions
+    # Compounding position sizing.
+    # The account balance grows with each closed trade. Position size is
+    # recalculated at every entry using the current running balance, so
+    # profits compound into larger positions over time.
+    #
+    # running_balance:   starts at account_size, updated after every close
+    # buying_power:      running_balance * (1 + margin_pct)
+    # dollars_per_trade: buying_power / max_positions
     # Shares = floor(dollars_per_trade / entry_open_price), minimum 1.
-    account_size      = float(params["positions"]["account_size"])
-    margin_pct        = float(params["positions"].get("margin_pct", 0.0))
-    buying_power      = account_size * (1.0 + margin_pct)
-    dollars_per_trade = buying_power / max_positions
-    print(f"Account: ${account_size:,.0f} | Margin: {margin_pct:.0%} | "
-          f"Buying power: ${buying_power:,.0f} | Per position: ${dollars_per_trade:,.0f}")
+    #
+    # Capital in open positions is already deployed -- it is NOT added back
+    # to buying power until the position closes. This prevents double-counting.
+    account_size        = float(params["positions"]["account_size"])
+    margin_pct          = float(params["positions"].get("margin_pct", 0.0))
+    margin_annual_rate  = float(params["positions"].get("margin_annual_rate", 0.0))
+    margin_daily_rate   = margin_annual_rate / 365.0
+    running_balance     = account_size
+    print(f"Starting account: ${account_size:,.0f} | Margin: {margin_pct:.0%} | "
+          f"Rate: {margin_annual_rate:.3%} annual | Compounding enabled.")
 
     active_positions: List[Position] = []
     trade_log: List[dict] = []
@@ -339,15 +360,17 @@ def main():
             position.trailing_stop = position.highest_price * (1 - position.stop_pct)
 
             if bar["low"] <= position.trailing_stop:
-                trade_log.append(
-                    close_position(
-                        position=position,
-                        exit_date=trade_date,
-                        exit_price=bar["open"],
-                        exit_signal="Stop",
-                        exit_type="trailing_stop",
-                    )
+                closed = close_position(
+                    position=position,
+                    exit_date=trade_date,
+                    exit_price=bar["open"],
+                    exit_signal="Stop",
+                    exit_type="trailing_stop",
+                    margin_daily_rate=margin_daily_rate,
+                    margin_pct=margin_pct,
                 )
+                trade_log.append(closed)
+                running_balance += closed["net_pnl_dollars"]
                 continue
 
             signal_row = signal_by_sector.get(position.sector)
@@ -380,15 +403,17 @@ def main():
                 exit_type = "ticker_changed"
 
             if exit_type:
-                trade_log.append(
-                    close_position(
-                        position=position,
-                        exit_date=trade_date,
-                        exit_price=bar["open"],
-                        exit_signal=raw_signal,
-                        exit_type=exit_type,
-                    )
+                closed = close_position(
+                    position=position,
+                    exit_date=trade_date,
+                    exit_price=bar["open"],
+                    exit_signal=raw_signal,
+                    exit_type=exit_type,
+                    margin_daily_rate=margin_daily_rate,
+                    margin_pct=margin_pct,
                 )
+                trade_log.append(closed)
+                running_balance += closed["net_pnl_dollars"]
             else:
                 new_high = max(position.highest_price, bar["high"])
                 position.highest_price = new_high
@@ -452,6 +477,12 @@ def main():
             highest_price = float(bar["high"])
             trailing_stop = highest_price * (1 - stop_pct)
 
+            # Recalculate position size from current running balance.
+            # This is where compounding takes effect -- each entry reflects
+            # all profits (and losses) from previously closed trades.
+            dollars_per_trade = (running_balance * (1.0 + margin_pct)) / max_positions
+            shares = max(1, int(dollars_per_trade / float(bar["open"])))
+
             active_positions.append(
                 Position(
                     sector=candidate["sector"],
@@ -459,7 +490,7 @@ def main():
                     direction="long",
                     entry_date=trade_date,
                     entry_price=float(bar["open"]),
-                    shares=max(1, int(dollars_per_trade / float(bar["open"]))),
+                    shares=shares,
                     highest_price=highest_price,
                     stop_pct=float(stop_pct),
                     trailing_stop=trailing_stop,
@@ -492,6 +523,7 @@ def main():
     perf_df.to_csv(data_dir / "paper_performance.csv", index=False)
 
     print(f"Paper trading complete. Open positions: {len(active_positions)} | Closed trades: {len(trade_log)}")
+    print(f"Final account balance: ${running_balance:,.2f} (started: ${account_size:,.2f})")
 
 
 if __name__ == "__main__":
