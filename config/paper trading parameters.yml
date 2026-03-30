@@ -1,7 +1,7 @@
-# EXP06 Parameters — dollar-based sizing + QQQ filter + min hold 10 days
+# EXP06 Parameters -- dollar-based sizing + QQQ filter + min hold 10 days
 # Changes from EXP05: QQQ regime filter added at entry.
 # Only enter new positions when QQQ (Nasdaq Growth) is Bull or Strong Bull.
-# QQQ is already scored daily by the sector system — no new data needed.
+# QQQ is already scored daily by the sector system -- no new data needed.
 # Exits are never filtered; open positions run to completion regardless of QQQ.
 #
 # Experiment history:
@@ -20,18 +20,23 @@
 #   EXP06a (QQQ filter only) selected:
 #     Best total return (+271%) and net profit ($9,606) with acceptable drawdown (-39.6%).
 #     Score ceiling hurt total return without meaningfully improving win rate.
-#     Healthcare flagged for monitoring — 6 trades, 17% win rate, carried by one trade.
+#     Healthcare flagged for monitoring -- 6 trades, 17% win rate, carried by one trade.
 #
 # To disable QQQ filter and revert to EXP05: set require_qqq_bull to false.
 # To re-test score ceiling: add max_entry_score key under filters.
 
 positions:
   max_concurrent_positions: 2
-  # Dollar-based sizing — replaces fixed shares_per_trade.
-  # buying_power = account_size * (1 + margin_pct)
+  # Dollar-based compounding sizing.
+  # buying_power = running_balance * (1 + margin_pct)
   # shares per trade = floor(buying_power / max_concurrent_positions / entry_price)
+  # running_balance grows with each closed trade (profits compound).
   account_size: 5000
   margin_pct: 0.20
+  # Annual margin interest rate charged on the borrowed portion of each position.
+  # Interest = (position_cost * margin_pct) * (annual_rate / 365) * days_held
+  # Set to 0.0 to disable interest calculation.
+  margin_annual_rate: 0.11825
 
 confirmation:
   required_consecutive_closes: 2
@@ -39,7 +44,7 @@ confirmation:
 sectors:
   # Only these sectors are eligible for entry.
   # Positive track record required before adding a sector.
-  # Do not add sectors based on intuition alone — rerun the backtest first.
+  # Do not add sectors based on intuition alone -- rerun the backtest first.
   allowed:
     - Semiconductors
     - Consumer Discretionary
@@ -56,7 +61,7 @@ filters:
 exit:
   # Minimum calendar days a position must be held before a signal_change or
   # direction_change exit is allowed to fire.
-  # Trailing stops are NEVER blocked — they always fire immediately.
+  # Trailing stops are NEVER blocked -- they always fire immediately.
   # Set to 0 to disable.
   #
   # Sweep results (all with QQQ filter + top 5 sectors, $5k account):
