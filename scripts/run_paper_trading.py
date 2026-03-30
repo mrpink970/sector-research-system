@@ -222,7 +222,7 @@ scores["direction"] = scores["direction"].fillna("none").astype(str)
 signal_col = "signal_state" if "signal_state" in scores.columns else "signal"
 all_dates = sorted(set(market["date"]).intersection(set(scores["date"])))
 if len(all_dates) < 2:
-raise SystemExit("Need at least 2 aligned market/signal dates to replay paper trades.
+raise SystemExit("Need at least 2 aligned market/signal dates to replay paper trades.")
 # EXP05: sector filter
 allowed_sectors: Optional[Set[str]] = None
 sector_cfg = params.get("sectors", {})
