@@ -1,56 +1,56 @@
-sector,ticker,direction,entry_date,entry_price,exit_date,exit_price,shares,entry_signal,entry_strength,exit_signal,gross_pnl_dollars,return_pct,trade_duration_days,exit_type
-Biotechnology,LABU,long,2024-06-10,107.67,2024-06-17,109.5,27,Bull,3.0,Stop,49.41,1.6996,7,trailing_stop
-Semiconductors,SOXL,long,2024-06-10,50.52,2024-06-21,58.42,59,Strong Bull,7.0,Stop,466.1,15.6374,11,trailing_stop
-Biotechnology,LABU,long,2024-06-17,109.5,2024-06-27,112.04,27,Bull,3.0,Neutral,68.58,2.3196,10,signal_change
-Semiconductors,SOXL,long,2024-06-21,58.42,2024-07-01,55.36,51,Bull,4.0,Neutral,-156.06,-5.2379,10,signal_change
-Communication Services,LTL,long,2024-06-27,17.335,2024-07-15,17.1925,173,Bull,3.0,Neutral,-24.65,-0.822,18,signal_change
-Consumer Discretionary,WANT,long,2024-07-01,33.36,2024-07-16,38.65,89,Bull,3.0,Neutral,470.81,15.8573,15,signal_change
-Biotechnology,LABU,long,2024-07-15,137.69,2024-08-02,122.68,21,Strong Bull,6.0,Stop,-315.21,-10.9013,18,trailing_stop
-Healthcare,CURE,long,2024-07-17,123.56,2024-08-08,120.36,24,Bull,3.0,Neutral,-76.8,-2.5898,22,signal_change
-Consumer Discretionary,WANT,long,2024-08-19,32.44,2024-08-29,33.1,92,Bull,3.0,Neutral,60.72,2.0345,10,signal_change
-Biotechnology,LABU,long,2024-09-03,139.35,2024-09-06,128.34,21,Bull,3.0,Stop,-231.21,-7.901,3,trailing_stop
-Healthcare,CURE,long,2024-08-16,131.45,2024-09-18,136.42,22,Bull,3.0,Neutral,109.34,3.7809,33,signal_change
-Consumer Discretionary,WANT,long,2024-09-13,35.63,2024-10-03,38.26,84,Bull,5.0,Neutral,220.92,7.3814,20,signal_change
-Semiconductors,SOXL,long,2024-10-04,37.31,2024-10-15,40.49,80,Bull,4.0,Stop,254.4,8.5232,11,trailing_stop
-Semiconductors,SOXL,long,2024-10-15,40.49,2024-10-21,34.84,74,Bull,5.0,Stop,-418.1,-13.9541,6,trailing_stop
-Communication Services,LTL,long,2024-09-18,17.5275,2024-11-15,20.7375,171,Bull,5.0,Neutral,548.91,18.3141,58,signal_change
-Consumer Discretionary,WANT,long,2024-10-21,39.355,2024-12-18,65.36,76,Bull,3.0,Stop,1976.38,66.078,58,trailing_stop
-Communication Services,LTL,long,2024-11-22,21.025,2024-12-19,21.52,142,Bull,3.0,Stop,70.29,2.3543,27,trailing_stop
-Consumer Discretionary,WANT,long,2024-12-18,65.36,2024-12-30,56.07,45,Bull,4.0,Stop,-418.05,-14.2136,12,trailing_stop
-Communication Services,LTL,long,2024-12-24,21.69,2025-01-03,21.5925,138,Bull,3.0,Neutral,-13.45,-0.4495,10,signal_change
-Semiconductors,SOXL,long,2024-12-30,28.24,2025-01-10,29.06,106,Bull,5.0,Stop,86.92,2.9037,11,trailing_stop
-Semiconductors,SOXL,long,2025-01-23,33.44,2025-01-27,27.66,89,Bull,5.0,Stop,-514.42,-17.2847,4,trailing_stop
-Healthcare,CURE,long,2025-01-27,106.34,2025-02-18,103.61,28,Bull,3.0,Neutral,-76.44,-2.5672,22,signal_change
-Semiconductors,SOXL,long,2025-02-18,29.2,2025-02-24,29.16,102,Bull,4.0,Stop,-4.08,-0.137,6,trailing_stop
-Communication Services,LTL,long,2025-02-05,23.27,2025-03-04,22.075,128,Bull,5.0,Stop,-152.96,-5.1354,27,trailing_stop
-Healthcare,CURE,long,2025-02-24,108.53,2025-03-13,103.86,27,Bull,3.0,Neutral,-126.09,-4.303,17,signal_change
-Semiconductors,SOXL,long,2025-05-06,12.33,2025-05-19,17.15,243,Bull,4.0,Stop,1171.26,39.0916,13,trailing_stop
-Semiconductors,SOXL,long,2025-05-19,17.15,2025-05-23,15.21,174,Strong Bull,6.0,Stop,-337.56,-11.312,4,trailing_stop
-Consumer Discretionary,WANT,long,2025-05-12,40.0,2025-05-27,39.62,75,Bull,3.0,Neutral,-28.5,-0.95,15,signal_change
-Semiconductors,SOXL,long,2025-05-23,15.21,2025-05-30,16.9,197,Bull,4.0,Stop,332.93,11.1111,7,trailing_stop
-Consumer Discretionary,WANT,long,2025-05-30,40.152,2025-06-09,38.52,74,Bull,3.0,Neutral,-120.77,-4.0646,10,signal_change
-Communication Services,LTL,long,2025-05-29,21.9825,2025-07-03,24.4625,136,Bull,3.0,Neutral,337.28,11.2817,35,signal_change
-Semiconductors,SOXL,long,2025-06-09,19.71,2025-07-16,26.6,152,Strong Bull,7.0,Stop,1047.28,34.9569,37,trailing_stop
-Biotechnology,LABU,long,2025-07-16,63.46,2025-07-29,63.32,47,Bull,4.0,Neutral,-6.58,-0.2206,13,signal_change
-Consumer Discretionary,WANT,long,2025-07-03,43.5,2025-08-04,40.79,68,Bull,3.0,Neutral,-184.28,-6.2299,32,signal_change
-Semiconductors,SOXL,long,2025-08-04,24.59,2025-08-18,27.1,122,Bull,3.0,Neutral,306.22,10.2074,14,signal_change
-Biotechnology,LABU,long,2025-08-19,69.0,2025-09-16,77.26,43,Bull,5.0,Neutral,355.18,11.971,28,signal_change
-Communication Services,LTL,long,2025-07-29,23.96,2025-09-25,28.3875,125,Bull,3.0,Neutral,553.44,18.4787,58,signal_change
-Semiconductors,SOXL,long,2025-09-16,30.33,2025-10-07,42.78,98,Bull,4.0,Stop,1220.1,41.0485,21,trailing_stop
-Semiconductors,SOXL,long,2025-10-07,42.78,2025-10-10,42.52,70,Strong Bull,7.0,Stop,-18.2,-0.6078,3,trailing_stop
-Biotechnology,LABU,long,2025-09-25,84.78,2025-10-17,114.11,35,Bull,4.0,Stop,1026.55,34.5954,22,trailing_stop
-Biotechnology,LABU,long,2025-10-17,114.11,2025-10-27,122.655,26,Bull,5.0,Neutral,222.17,7.4884,10,signal_change
-Healthcare,CURE,long,2025-10-10,93.25,2025-10-30,91.19,32,Bull,4.0,Neutral,-65.92,-2.2091,20,signal_change
-Semiconductors,SOXL,long,2025-10-27,45.49,2025-11-04,44.77,65,Bull,3.0,Stop,-46.8,-1.5828,8,trailing_stop
-Semiconductors,SOXL,long,2025-11-04,44.77,2025-11-07,41.1,67,Bull,4.0,Stop,-245.89,-8.1975,3,trailing_stop
-Biotechnology,LABU,long,2025-10-30,123.23,2025-12-02,152.98,24,Bull,3.0,Stop,714.0,24.1418,33,trailing_stop
-Healthcare,CURE,long,2025-11-07,94.6,2025-12-02,112.82,31,Bull,3.0,Neutral,564.82,19.26,25,signal_change
-Biotechnology,LABU,long,2025-12-02,152.98,2025-12-18,157.04,19,Bull,4.0,Stop,77.14,2.6539,16,trailing_stop
-Consumer Discretionary,WANT,long,2025-12-02,49.18,2025-12-31,51.255,61,Bull,3.0,Neutral,126.58,4.2192,29,signal_change
-Biotechnology,LABU,long,2025-12-22,167.2,2026-01-05,156.99,17,Bull,3.0,Stop,-173.57,-6.1065,14,trailing_stop
-Semiconductors,SOXL,long,2025-12-31,43.89,2026-01-23,62.48,68,Bull,4.0,Stop,1264.12,42.3559,23,trailing_stop
-Biotechnology,LABU,long,2026-01-14,165.4,2026-01-29,171.37,18,Bull,3.0,Stop,107.46,3.6094,15,trailing_stop
-Semiconductors,SOXL,long,2026-01-23,62.48,2026-01-30,67.12,48,Bull,4.0,Stop,222.72,7.4264,7,trailing_stop
-Semiconductors,SOXL,long,2026-01-30,67.12,2026-02-03,66.81,44,Bull,5.0,Stop,-13.64,-0.4619,4,trailing_stop
-Biotechnology,LABU,long,2026-01-29,171.37,2026-02-05,164.43,17,Bull,3.0,Stop,-117.98,-4.0497,7,trailing_stop
-Communication Services,LTL,long,2026-02-03,28.67,2026-02-13,26.56,104,Bull,5.0,Bear,-219.44,-7.3596,10,signal_change
+sector,ticker,direction,entry_date,entry_price,exit_date,exit_price,shares,entry_signal,entry_strength,exit_signal,gross_pnl_dollars,margin_interest_dollars,net_pnl_dollars,return_pct,trade_duration_days,exit_type
+Biotechnology,LABU,long,2024-06-10,107.67,2024-06-17,109.5,27,Bull,3.0,Stop,49.41,1.3185,48.09,1.6996,7,trailing_stop
+Semiconductors,SOXL,long,2024-06-10,50.52,2024-06-21,58.42,59,Strong Bull,7.0,Stop,466.1,2.1244,463.98,15.6374,11,trailing_stop
+Biotechnology,LABU,long,2024-06-17,109.5,2024-06-27,112.04,27,Bull,3.0,Neutral,68.58,1.9157,66.66,2.3196,10,signal_change
+Semiconductors,SOXL,long,2024-06-21,58.42,2024-07-01,55.36,56,Bull,4.0,Neutral,-171.36,2.1198,-173.48,-5.2379,10,signal_change
+Communication Services,LTL,long,2024-06-27,17.335,2024-07-15,17.1925,193,Bull,3.0,Neutral,-27.5,3.902,-31.4,-0.822,18,signal_change
+Consumer Discretionary,WANT,long,2024-07-01,33.36,2024-07-16,38.65,97,Bull,3.0,Neutral,513.13,3.145,509.99,15.8573,15,signal_change
+Biotechnology,LABU,long,2024-07-15,137.69,2024-08-02,122.68,23,Strong Bull,6.0,Stop,-345.23,3.6935,-348.92,-10.9013,18,trailing_stop
+Healthcare,CURE,long,2024-07-17,123.56,2024-08-08,120.36,28,Bull,3.0,Neutral,-89.6,4.9317,-94.53,-2.5898,22,signal_change
+Consumer Discretionary,WANT,long,2024-08-19,32.44,2024-08-29,33.1,100,Bull,3.0,Neutral,66.0,2.1019,63.9,2.0345,10,signal_change
+Biotechnology,LABU,long,2024-09-03,139.35,2024-09-06,128.34,23,Bull,3.0,Stop,-253.23,0.623,-253.85,-7.901,3,trailing_stop
+Healthcare,CURE,long,2024-08-16,131.45,2024-09-18,136.42,24,Bull,3.0,Neutral,119.28,6.7457,112.53,3.7809,33,signal_change
+Consumer Discretionary,WANT,long,2024-09-13,35.63,2024-10-03,38.26,88,Bull,5.0,Neutral,231.44,4.0632,227.38,7.3814,20,signal_change
+Semiconductors,SOXL,long,2024-10-04,37.31,2024-10-15,40.49,89,Bull,4.0,Stop,283.02,2.3667,280.65,8.5232,11,trailing_stop
+Semiconductors,SOXL,long,2024-10-15,40.49,2024-10-21,34.84,86,Bull,5.0,Stop,-485.9,1.3537,-487.25,-13.9541,6,trailing_stop
+Communication Services,LTL,long,2024-09-18,17.5275,2024-11-15,20.7375,183,Bull,5.0,Neutral,587.43,12.0542,575.38,18.3141,58,signal_change
+Consumer Discretionary,WANT,long,2024-10-21,39.355,2024-12-18,65.36,82,Bull,3.0,Stop,2132.41,12.1277,2120.28,66.078,58,trailing_stop
+Communication Services,LTL,long,2024-11-22,21.025,2024-12-19,21.52,170,Bull,3.0,Stop,84.15,6.253,77.9,2.3543,27,trailing_stop
+Consumer Discretionary,WANT,long,2024-12-18,65.36,2024-12-30,56.07,74,Bull,4.0,Stop,-687.46,3.7607,-691.22,-14.2136,12,trailing_stop
+Communication Services,LTL,long,2024-12-24,21.69,2025-01-03,21.5925,225,Bull,3.0,Neutral,-21.94,3.1621,-25.1,-0.4495,10,signal_change
+Semiconductors,SOXL,long,2024-12-30,28.24,2025-01-10,29.06,158,Bull,5.0,Stop,129.56,3.1802,126.38,2.9037,11,trailing_stop
+Semiconductors,SOXL,long,2025-01-23,33.44,2025-01-27,27.66,135,Bull,5.0,Stop,-780.3,1.17,-781.47,-17.2847,4,trailing_stop
+Healthcare,CURE,long,2025-01-27,106.34,2025-02-18,103.61,38,Bull,3.0,Neutral,-103.74,5.7602,-109.5,-2.5672,22,signal_change
+Semiconductors,SOXL,long,2025-02-18,29.2,2025-02-24,29.16,137,Bull,4.0,Stop,-5.48,1.5552,-7.04,-0.137,6,trailing_stop
+Communication Services,LTL,long,2025-02-05,23.27,2025-03-04,22.075,174,Bull,5.0,Stop,-207.93,7.0835,-215.01,-5.1354,27,trailing_stop
+Healthcare,CURE,long,2025-02-24,108.53,2025-03-13,103.86,36,Bull,3.0,Neutral,-168.12,4.3037,-172.42,-4.303,17,signal_change
+Semiconductors,SOXL,long,2025-05-06,12.33,2025-05-19,17.15,305,Bull,4.0,Stop,1470.1,3.1677,1466.93,39.0916,13,trailing_stop
+Semiconductors,SOXL,long,2025-05-19,17.15,2025-05-23,15.21,271,Strong Bull,6.0,Stop,-525.74,1.2046,-526.94,-11.312,4,trailing_stop
+Consumer Discretionary,WANT,long,2025-05-12,40.0,2025-05-27,39.62,94,Bull,3.0,Neutral,-35.72,3.6544,-39.37,-0.95,15,signal_change
+Semiconductors,SOXL,long,2025-05-23,15.21,2025-05-30,16.9,284,Bull,4.0,Stop,479.96,1.9592,478.0,11.1111,7,trailing_stop
+Consumer Discretionary,WANT,long,2025-05-30,40.152,2025-06-09,38.52,114,Bull,3.0,Neutral,-186.05,2.9659,-189.01,-4.0646,10,signal_change
+Communication Services,LTL,long,2025-05-29,21.9825,2025-07-03,24.4625,196,Bull,3.0,Neutral,486.08,9.771,476.31,11.2817,35,signal_change
+Semiconductors,SOXL,long,2025-06-09,19.71,2025-07-16,26.6,227,Strong Bull,7.0,Stop,1564.03,10.7264,1553.3,34.9569,37,trailing_stop
+Biotechnology,LABU,long,2025-07-16,63.46,2025-07-29,63.32,89,Bull,4.0,Neutral,-12.46,4.7574,-17.22,-0.2206,13,signal_change
+Consumer Discretionary,WANT,long,2025-07-03,43.5,2025-08-04,40.79,109,Bull,3.0,Neutral,-295.39,9.8311,-305.22,-6.2299,32,signal_change
+Semiconductors,SOXL,long,2025-08-04,24.59,2025-08-18,27.1,223,Bull,3.0,Neutral,559.73,4.9743,554.76,10.2074,14,signal_change
+Biotechnology,LABU,long,2025-08-19,69.0,2025-09-16,77.26,84,Bull,5.0,Neutral,693.84,10.5154,683.32,11.971,28,signal_change
+Communication Services,LTL,long,2025-07-29,23.96,2025-09-25,28.3875,237,Bull,3.0,Neutral,1049.32,21.3403,1027.98,18.4787,58,signal_change
+Semiconductors,SOXL,long,2025-09-16,30.33,2025-10-07,42.78,206,Bull,4.0,Stop,2564.7,8.5015,2556.2,41.0485,21,trailing_stop
+Semiconductors,SOXL,long,2025-10-07,42.78,2025-10-10,42.52,196,Strong Bull,7.0,Stop,-50.96,1.6299,-52.59,-0.6078,3,trailing_stop
+Biotechnology,LABU,long,2025-09-25,84.78,2025-10-17,114.11,80,Bull,4.0,Stop,2346.4,9.6682,2336.73,34.5954,22,trailing_stop
+Biotechnology,LABU,long,2025-10-17,114.11,2025-10-27,122.655,85,Bull,5.0,Neutral,726.32,6.2846,720.04,7.4884,10,signal_change
+Healthcare,CURE,long,2025-10-10,93.25,2025-10-30,91.19,89,Bull,4.0,Neutral,-183.34,10.7549,-194.09,-2.2091,20,signal_change
+Semiconductors,SOXL,long,2025-10-27,45.49,2025-11-04,44.77,224,Bull,3.0,Stop,-161.28,5.2819,-166.56,-1.5828,8,trailing_stop
+Semiconductors,SOXL,long,2025-11-04,44.77,2025-11-07,41.1,223,Bull,4.0,Stop,-818.41,1.9407,-820.35,-8.1975,3,trailing_stop
+Biotechnology,LABU,long,2025-10-30,123.23,2025-12-02,152.98,81,Bull,3.0,Stop,2409.75,21.3429,2388.41,24.1418,33,trailing_stop
+Healthcare,CURE,long,2025-11-07,94.6,2025-12-02,112.82,100,Bull,3.0,Neutral,1822.0,15.3239,1806.68,19.26,25,signal_change
+Biotechnology,LABU,long,2025-12-02,152.98,2025-12-18,157.04,78,Bull,4.0,Stop,316.68,12.3705,304.31,2.6539,16,trailing_stop
+Consumer Discretionary,WANT,long,2025-12-02,49.18,2025-12-31,51.255,244,Bull,3.0,Neutral,506.3,22.5483,483.75,4.2192,29,signal_change
+Biotechnology,LABU,long,2025-12-22,167.2,2026-01-05,156.99,72,Bull,3.0,Stop,-735.12,10.9203,-746.04,-6.1065,14,trailing_stop
+Semiconductors,SOXL,long,2025-12-31,43.89,2026-01-23,62.48,284,Bull,4.0,Stop,5279.56,18.5759,5260.98,42.3559,23,trailing_stop
+Biotechnology,LABU,long,2026-01-14,165.4,2026-01-29,171.37,72,Bull,3.0,Stop,429.84,11.5744,418.27,3.6094,15,trailing_stop
+Semiconductors,SOXL,long,2026-01-23,62.48,2026-01-30,67.12,243,Bull,4.0,Stop,1127.52,6.8863,1120.63,7.4264,7,trailing_stop
+Semiconductors,SOXL,long,2026-01-30,67.12,2026-02-03,66.81,240,Bull,5.0,Stop,-74.4,4.175,-78.58,-0.4619,4,trailing_stop
+Biotechnology,LABU,long,2026-01-29,171.37,2026-02-05,164.43,90,Bull,3.0,Stop,-624.6,6.9954,-631.6,-4.0497,7,trailing_stop
+Communication Services,LTL,long,2026-02-03,28.67,2026-02-13,26.56,560,Bull,5.0,Bear,-1181.6,10.4029,-1192.0,-7.3596,10,signal_change
