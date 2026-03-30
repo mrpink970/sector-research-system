@@ -25,6 +25,12 @@
 # To disable QQQ filter and revert to EXP05: set require_qqq_bull to false.
 # To re-test score ceiling: add max_entry_score key under filters.
 
+# Live paper trading start date.
+# The engine ignores all historical score dates before this date.
+# Set this once when you go live -- do not change it afterward.
+# Format: YYYY-MM-DD
+paper_trading_start_date: "2026-03-31"
+
 positions:
   max_concurrent_positions: 2
   # Dollar-based compounding sizing.
