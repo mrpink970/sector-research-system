@@ -1,0 +1,35 @@
+name: Weekly Candidate Scraper
+
+on:
+  schedule:
+    - cron: '0 12 * * 6'   # Saturday at 12:00 PM ET
+  workflow_dispatch:        # Manual trigger for testing
+
+jobs:
+  run-scraper:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      
+      - name: Install dependencies
+        run: |
+          pip install pandas yfinance
+      
+      - name: Run weekly candidate scraper
+        run: |
+          python scripts/stocks/weekly_candidate_scraper.py
+      
+      - name: Commit outputs
+        run: |
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
+          git add data/stocks/weekly_candidates.csv
+          git commit -m "Weekly candidate update $(date '+%Y-%m-%d')" || echo "No changes to commit"
+          git push
