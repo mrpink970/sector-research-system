@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stock Universe Manager</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background: #f0f2f5;
+            padding: 20px;
+            color: #1a1a2e;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            overflow: hidden;
+        }
+        .header {
+            background: #1a1a2e;
+            color: white;
+            padding: 20px 24px;
+            border-bottom: 3px solid #00d4ff;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 20px;
+            font-weight: 600;
+        }
+        .header p {
+            margin: 8px 0 0;
+            font-size: 13px;
+            opacity: 0.75;
+        }
+        .section {
+            padding: 20px 24px;
+            border-bottom: 1px solid #e9ecef;
+        }
+        .section-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin: 0 0 16px 0;
+            border-left: 3px solid #00d4ff;
+            padding-left: 12px;
+        }
+        .form-group {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            align-items: flex-end;
+            margin-bottom: 20px;
+            background: #f8f9fa;
+            padding: 16px;
+            border-radius: 8px;
+        }
+        .form-field {
+            flex: 1;
+            min-width: 150px;
+        }
+        .form-field label {
+            display: block;
+            font-size: 12px;
+            font-weight: 600;
+            color: #495057;
+            margin-bottom: 4px;
+        }
+        .form-field input, .form-field select {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #ced4da;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+        .form-field input:focus, .form-field select:focus {
+            outline: none;
+            border-color: #00d4ff;
+            box-shadow: 0 0 0 2px rgba(0,212,255,0.2);
+        }
+        button {
+            background: #00d4ff;
+            color: #1a1a2e;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        button:hover {
+            background: #00c0e8;
+        }
+        button.danger {
+            background: #ef4444;
+            color: white;
+        }
+        button.danger:hover {
+            background: #dc2626;
+        }
+        button.secondary {
+            background: #6c757d;
+            color: white;
+        }
+        button.secondary:hover {
+            background: #5a6268;
+        }
+        .status {
+            padding: 10px 16px;
+            border-radius: 6px;
+            margin-bottom: 16px;
+            font-size: 13px;
+        }
+        .status.success {
+            background: #d1fae5;
+            color: #065f46;
+            border-left: 3px solid #10b981;
+        }
+        .status.error {
+            background: #fee2e2;
+            color: #991b1b;
+            border-left: 3px solid #ef4444;
+        }
+        .status.info {
+            background: #e5e7eb;
+            color: #374151;
+            border-left: 3px solid #6b7280;
+        }
+        .status.warning {
+            background: #fef3c7;
+            color: #92400e;
+            border-left: 3px solid #f59e0b;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+        th {
+            text-align: left;
+            padding: 12px 8px;
+            background: #f8f9fa;
+            font-weight: 600;
+            border-bottom: 1px solid #dee2e6;
+        }
+        td {
+            padding: 10px 8px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        .search-box {
+            margin-bottom: 16px;
+            display: flex;
+            gap: 12px;
+        }
+        .search-box input {
+            flex: 1;
+            padding: 8px 12px;
+            border: 1px solid #ced4da;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+        .bulk-area {
+            margin-top: 16px;
+            padding: 12px;
+            background: #f8f9fa;
+            border-radius: 6px;
+        }
+        .bulk-area textarea {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ced4da;
+            border-radius: 6px;
+            font-family: monospace;
+            font-size: 12px;
+            margin-bottom: 8px;
+        }
+        .badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+        .badge-anchor {
+            background: #d1fae5;
+            color: #065f46;
+        }
+        .badge-emerging {
+            background: #fef3c7;
+            color: #92400e;
+        }
+        .validation-result {
+            font-size: 11px;
+            margin-top: 4px;
+        }
+        .validation-result.valid {
+            color: #10b981;
+        }
+        .validation-result.invalid {
+            color: #ef4444;
+        }
+        .validation-result.loading {
+            color: #6c757d;
+        }
+        .flex-between {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+        .timestamp {
+            font-size: 12px;
+            color: #6c757d;
+        }
+        .action-buttons {
+            display: flex;
+            gap: 8px;
+        }
+        .footer {
+            background: #f8f9fa;
+            padding: 12px 24px;
+            font-size: 11px;
+            color: #6c757d;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h1>📊 Stock Universe Manager</h1>
+        <p>Manage stocks screened by the Stock Discovery System</p>
+    </div>
+
+    <div class="section">
+        <div class="section-title">Add New Stock</div>
+        <div class="form-group">
+            <div class="form-field">
+                <label>Ticker Symbol</label>
+                <input type="text" id="tickerInput" placeholder="e.g., RDDT, SPACE" autocomplete="off">
+                <div id="validationResult" class="validation-result"></div>
+            </div>
+            <div class="form-field">
+                <label>Source</label>
+                <select id="sourceSelect">
+                    <option value="anchor">Anchor (Quality)</option>
+                    <option value="emerging">Emerging (Growth)</option>
+                </select>
+            </div>
+            <div class="form-field">
+                <label>&nbsp;</label>
+                <button id="addBtn">+ Add Stock</button>
+            </div>
+        </div>
+
+        <div class="bulk-area">
+            <details>
+                <summary style="cursor: pointer; font-weight: 600; margin-bottom: 8px;">📦 Bulk Add (comma-separated)</summary>
+                <textarea id="bulkTickers" rows="2" placeholder="AAPL,MSFT,GOOGL,TSLA,NVDA"></textarea>
+                <select id="bulkSourceSelect" style="margin-right: 8px; padding: 6px;">
+                    <option value="anchor">Anchor</option>
+                    <option value="emerging">Emerging</option>
+                </select>
+                <button id="bulkAddBtn">Add All</button>
+            </details>
+        </div>
+    </div>
+
+    <div class="section">
+        <div class="flex-between">
+            <div class="section-title" style="margin-bottom: 0;">Current Universe</div>
+            <div class="timestamp" id="timestamp">Not loaded</div>
+        </div>
+        
+        <div class="search-box">
+            <input type="text" id="searchInput" placeholder="🔍 Search ticker or company name..." autocomplete="off">
+            <button id="refreshBtn" class="secondary">⟳ Refresh</button>
+        </div>
+        
+        <div id="statusMessage"></div>
+        
+        <div style="overflow-x: auto;">
+            <table id="universeTable">
+                <thead>
+                    <tr><th>Ticker</th><th>Company</th><th>Source</th><th>Action</th></tr>
+                </thead>
+                <tbody id="tableBody">
+                    <tr><td colspan="4" style="text-align: center;">Loading...</td></tr>
+                </tbody>
+            </table>
+        </div>
+        
+        <div style="margin-top: 16px; display: flex; gap: 12px; justify-content: flex-end;">
+            <button id="saveBtn">💾 Save Changes to GitHub</button>
+            <button id="discardBtn" class="secondary">↺ Discard Changes</button>
+        </div>
+    </div>
+
+    <div class="footer">
+        <div>⚠️ Changes are saved directly to your GitHub repository</div>
+        <div style="margin-top: 4px;">System will use updated universe on next scheduled run</div>
+    </div>
+</div>
+
+<script>
+    // GitHub configuration
+    const REPO_OWNER = "mrpink970";
+    const REPO_NAME = "sector-research-system";
+    const FILE_PATH = "data/stocks/stock_universe.csv";
+    const BRANCH = "main";
+    
+    // State
+    let currentUniverse = [];  // Array of {ticker, source, companyName}
+    let originalUniverse = [];  // For discard
+    let pendingChanges = false;
+    let githubToken = null;
+    
+    // DOM elements
+    const tickerInput = document.getElementById('tickerInput');
+    const sourceSelect = document.getElementById('sourceSelect');
+    const addBtn = document.getElementById('addBtn');
+    const bulkAddBtn = document.getElementById('bulkAddBtn');
+    const bulkTickers = document.getElementById('bulkTickers');
+    const bulkSourceSelect = document.getElementById('bulkSourceSelect');
+    const searchInput = document.getElementById('searchInput');
+    const refreshBtn = document.getElementById('refreshBtn');
+    const saveBtn = document.getElementById('saveBtn');
+    const discardBtn = document.getElementById('discardBtn');
+    const tableBody = document.getElementById('tableBody');
+    const statusDiv = document.getElementById('statusMessage');
+    const timestampSpan = document.getElementById('timestamp');
+    const validationResult = document.getElementById('validationResult');
+    
+    let validationTimeout = null;
+    
+    // Show status message
+    function showStatus(message, type = 'info') {
+        statusDiv.innerHTML = `<div class="status ${type}">${message}</div>`;
+        setTimeout(() => {
+            if (statusDiv.innerHTML.includes(message)) {
+                statusDiv.innerHTML = '';
+            }
+        }, 5000);
+    }
+    
+    // Show pending changes indicator
+    function updatePendingIndicator() {
+        const hasChanges = JSON.stringify(currentUniverse) !== JSON.stringify(originalUniverse);
+        pendingChanges = hasChanges;
+        saveBtn.disabled = !hasChanges;
+        discardBtn.disabled = !hasChanges;
+        if (hasChanges) {
+            showStatus('⚠️ You have unsaved changes', 'warning');
+        }
+    }
+    
+    // Validate ticker with yfinance
+    async function validateTicker(ticker) {
+        if (!ticker) return null;
+        
+        validationResult.innerHTML = '<span class="loading">⏳ Checking ticker...</span>';
+        
+        try {
+            const response = await fetch(`https://query1.finance.yahoo.com/v8/finance/chart/${ticker}`);
+            const data = await response.json();
+            
+            if (data.chart?.error || !data.chart?.result?.[0]?.meta) {
+                validationResult.innerHTML = '<span class="invalid">❌ Invalid ticker symbol</span>';
+                return null;
+            }
+            
+            const companyName = data.chart.result[0].meta.longName || data.chart.result[0].meta.shortName || ticker.toUpperCase();
+            validationResult.innerHTML = `<span class="valid">✅ ${companyName}</span>`;
+            return companyName;
+        } catch (error) {
+            validationResult.innerHTML = '<span class="invalid">❌ Could not validate ticker</span>';
+            return null;
+        }
+    }
+    
+    // Debounced validation
+    tickerInput.addEventListener('input', () => {
+        clearTimeout(validationTimeout);
+        const ticker = tickerInput.value.trim().toUpperCase();
+        if (!ticker) {
+            validationResult.innerHTML = '';
+            return;
+        }
+        validationTimeout = setTimeout(() => validateTicker(ticker), 500);
+    });
+    
+    // Fetch current universe from GitHub
+    async function fetchUniverse() {
+        try {
+            const response = await fetch(`https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${FILE_PATH}?ref=${BRANCH}`);
+            
+            if (!response.ok) {
+                if (response.status === 404) {
+                    showStatus('File not found. Creating new universe file.', 'warning');
+                    currentUniverse = [];
+                    originalUniverse = [];
+                    renderTable();
+                    updateTimestamp();
+                    return;
+                }
+                throw new Error(`HTTP ${response.status}`);
+            }
+            
+            const data = await response.json();
+            const content = atob(data.content);
+            
+            // Parse CSV
+            const lines = content.trim().split('\n');
+            const stocks = [];
+            
+            for (let i = 1; i < lines.length; i++) {  // Skip header
+                const line = lines[i].trim();
+                if (!line) continue;
+                const parts = line.split(',');
+                if (parts.length >= 2) {
+                    const ticker = parts[0].trim().toUpperCase();
+                    const source = parts[1].trim().toLowerCase();
+                    stocks.push({ ticker, source, companyName: ticker });
+                }
+            }
+            
+            // Fetch company names in batches
+            for (let stock of stocks) {
+                try {
+                    const name = await getCompanyName(stock.ticker);
+                    stock.companyName = name;
+                } catch (e) {
+                    stock.companyName = stock.ticker;
+                }
+                await new Promise(r => setTimeout(r, 100)); // Rate limit
+            }
+            
+            currentUniverse = stocks;
+            originalUniverse = JSON.parse(JSON.stringify(stocks));
+            renderTable();
+            updateTimestamp();
+            updatePendingIndicator();
+            showStatus(`Loaded ${stocks.length} stocks`, 'success');
+            
+        } catch (error) {
+            console.error(error);
+            showStatus(`Error loading universe: ${error.message}`, 'error');
+        }
+    }
+    
+    async function getCompanyName(ticker) {
+        try {
+            const response = await fetch(`https://query1.finance.yahoo.com/v8/finance/chart/${ticker}`);
+            const data = await response.json();
+            if (data.chart?.result?.[0]?.meta) {
+                return data.chart.result[0].meta.longName || data.chart.result[0].meta.shortName || ticker;
+            }
+            return ticker;
+        } catch {
+            return ticker;
+        }
+    }
+    
+    // Render table with search filter
+    async function renderTable() {
+        const searchTerm = searchInput.value.toLowerCase();
+        const filtered = currentUniverse.filter(s => 
+            s.ticker.toLowerCase().includes(searchTerm) || 
+            (s.companyName && s.companyName.toLowerCase().includes(searchTerm))
+        );
+        
+        if (filtered.length === 0) {
+            tableBody.innerHTML = '<tr><td colspan="4" style="text-align: center;">No stocks found</td></tr>';
+            return;
+        }
+        
+        tableBody.innerHTML = filtered.map(stock => `
+            <tr data-ticker="${stock.ticker}">
+                <td><strong>${stock.ticker}</strong></td>
+                <td>${stock.companyName || stock.ticker}</td>
+                <td><span class="badge ${stock.source === 'anchor' ? 'badge-anchor' : 'badge-emerging'}">${stock.source === 'anchor' ? 'Anchor' : 'Emerging'}</span></td>
+                <td><button class="delete-btn danger" data-ticker="${stock.ticker}" style="padding: 4px 12px; font-size: 12px;">Remove</button></td>
+            </tr>
+        `).join('');
+        
+        // Attach delete handlers
+        document.querySelectorAll('.delete-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const ticker = btn.getAttribute('data-ticker');
+                deleteStock(ticker);
+            });
+        });
+    }
+    
+    // Add stock
+    async function addStock() {
+        const ticker = tickerInput.value.trim().toUpperCase();
+        if (!ticker) {
+            showStatus('Please enter a ticker symbol', 'error');
+            return;
+        }
+        
+        // Check for duplicates
+        if (currentUniverse.some(s => s.ticker === ticker)) {
+            showStatus(`❌ ${ticker} is already in the universe`, 'error');
+            return;
+        }
+        
+        // Validate ticker
+        const companyName = await validateTicker(ticker);
+        if (!companyName) {
+            showStatus(`❌ Invalid ticker: ${ticker}`, 'error');
+            return;
+        }
+        
+        const source = sourceSelect.value;
+        currentUniverse.push({ ticker, source, companyName });
+        currentUniverse.sort((a, b) => a.ticker.localeCompare(b.ticker));
+        
+        tickerInput.value = '';
+        validationResult.innerHTML = '';
+        renderTable();
+        updatePendingIndicator();
+        showStatus(`✅ Added ${ticker} (${companyName})`, 'success');
+    }
+    
+    // Delete stock
+    function deleteStock(ticker) {
+        currentUniverse = currentUniverse.filter(s => s.ticker !== ticker);
+        renderTable();
+        updatePendingIndicator();
+        showStatus(`🗑 Removed ${ticker}`, 'info');
+    }
+    
+    // Bulk add
+    async function bulkAdd() {
+        const tickersText = bulkTickers.value.trim();
+        if (!tickersText) {
+            showStatus('Please enter tickers to add', 'error');
+            return;
+        }
+        
+        const tickers = tickersText.split(',').map(t => t.trim().toUpperCase()).filter(t => t);
+        const source = bulkSourceSelect.value;
+        let added = 0;
+        let failed = 0;
+        
+        for (const ticker of tickers) {
+            if (currentUniverse.some(s => s.ticker === ticker)) {
+                failed++;
+                continue;
+            }
+            
+            const companyName = await getCompanyName(ticker);
+            currentUniverse.push({ ticker, source, companyName });
+            added++;
+            await new Promise(r => setTimeout(r, 200));
+        }
+        
+        currentUniverse.sort((a, b) => a.ticker.localeCompare(b.ticker));
+        bulkTickers.value = '';
+        renderTable();
+        updatePendingIndicator();
+        showStatus(`Added ${added} stocks${failed > 0 ? ` (${failed} duplicates skipped)` : ''}`, 'success');
+    }
+    
+    // Save to GitHub
+    async function saveToGitHub() {
+        if (!pendingChanges) {
+            showStatus('No changes to save', 'info');
+            return;
+        }
+        
+        // Ask for token (first time only)
+        if (!githubToken) {
+            githubToken = prompt('🔐 Enter your GitHub Personal Access Token (needs repo write access):');
+            if (!githubToken) {
+                showStatus('Save cancelled - token required', 'error');
+                return;
+            }
+        }
+        
+        // Build CSV content
+        let csvContent = 'ticker,source\n';
+        for (const stock of currentUniverse) {
+            csvContent += `${stock.ticker},${stock.source}\n`;
+        }
+        
+        try {
+            // Get current file SHA
+            const fileResponse = await fetch(`https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${FILE_PATH}?ref=${BRANCH}`, {
+                headers: { 'Authorization': `token ${githubToken}` }
+            });
+            
+            let sha = null;
+            if (fileResponse.ok) {
+                const fileData = await fileResponse.json();
+                sha = fileData.sha;
+            }
+            
+            // Commit changes
+            const commitResponse = await fetch(`https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${FILE_PATH}`, {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `token ${githubToken}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    message: `Update stock universe: ${currentUniverse.length} stocks`,
+                    content: btoa(csvContent),
+                    sha: sha,
+                    branch: BRANCH
+                })
+            });
+            
+            if (commitResponse.ok) {
+                originalUniverse = JSON.parse(JSON.stringify(currentUniverse));
+                updatePendingIndicator();
+                updateTimestamp();
+                showStatus(`✅ Saved ${currentUniverse.length} stocks to GitHub`, 'success');
+            } else {
+                const error = await commitResponse.json();
+                throw new Error(error.message || 'Commit failed');
+            }
+            
+        } catch (error) {
+            console.error(error);
+            showStatus(`Error saving: ${error.message}`, 'error');
+            githubToken = null; // Reset token on error
+        }
+    }
+    
+    // Discard changes
+    function discardChanges() {
+        currentUniverse = JSON.parse(JSON.stringify(originalUniverse));
+        renderTable();
+        updatePendingIndicator();
+        showStatus('Changes discarded', 'info');
+    }
+    
+    // Update timestamp
+    function updateTimestamp() {
+        const now = new Date();
+        timestampSpan.innerHTML = `📅 Last loaded: ${now.toLocaleString()}`;
+    }
+    
+    // Event listeners
+    addBtn.addEventListener('click', addStock);
+    bulkAddBtn.addEventListener('click', bulkAdd);
+    refreshBtn.addEventListener('click', fetchUniverse);
+    saveBtn.addEventListener('click', saveToGitHub);
+    discardBtn.addEventListener('click', discardChanges);
+    searchInput.addEventListener('input', renderTable);
+    
+    // Enter key in ticker input
+    tickerInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') addStock();
+    });
+    
+    // Initial load
+    fetchUniverse();
+</script>
+</body>
+</html>
