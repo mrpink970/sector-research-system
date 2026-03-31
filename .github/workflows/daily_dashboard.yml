@@ -96,7 +96,7 @@ jobs:
             Your trading dashboard has been updated.
 
             View Dashboard:
-            https://github.com/${{ github.repository }}/blob/main/dashboard.html
+            https://mrpink970.github.io/sector-research-system/dashboard.html
 
             Bookmark this link. Updates nightly at 8 PM ET (Mon-Fri).
 
