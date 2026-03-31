@@ -195,19 +195,6 @@
             background: #fef3c7;
             color: #92400e;
         }
-        .validation-result {
-            font-size: 11px;
-            margin-top: 4px;
-        }
-        .validation-result.valid {
-            color: #10b981;
-        }
-        .validation-result.invalid {
-            color: #ef4444;
-        }
-        .validation-result.loading {
-            color: #6c757d;
-        }
         .flex-between {
             display: flex;
             justify-content: space-between;
@@ -217,10 +204,6 @@
         .timestamp {
             font-size: 12px;
             color: #6c757d;
-        }
-        .action-buttons {
-            display: flex;
-            gap: 8px;
         }
         .footer {
             background: #f8f9fa;
@@ -243,8 +226,7 @@
         <div class="form-group">
             <div class="form-field">
                 <label>Ticker Symbol</label>
-                <input type="text" id="tickerInput" placeholder="e.g., RDDT, SPACE" autocomplete="off">
-                <div id="validationResult" class="validation-result"></div>
+                <input type="text" id="tickerInput" placeholder="e.g., RDDT, SPACE, AAPL" autocomplete="off">
             </div>
             <div class="form-field">
                 <label>Source</label>
@@ -279,7 +261,7 @@
         </div>
         
         <div class="search-box">
-            <input type="text" id="searchInput" placeholder="🔍 Search ticker or company name..." autocomplete="off">
+            <input type="text" id="searchInput" placeholder="🔍 Search ticker..." autocomplete="off">
             <button id="refreshBtn" class="secondary">⟳ Refresh</button>
         </div>
         
@@ -288,10 +270,10 @@
         <div style="overflow-x: auto;">
             <table id="universeTable">
                 <thead>
-                    <tr><th>Ticker</th><th>Company</th><th>Source</th><th>Action</th></tr>
+                    <tr><th>Ticker</th><th>Source</th><th>Action</th></tr>
                 </thead>
                 <tbody id="tableBody">
-                    <tr><td colspan="4" style="text-align: center;">Loading...</td></tr>
+                    <tr><td colspan="3" style="text-align: center;">Loading...</td></tr>
                 </tbody>
             </table>
         </div>
@@ -316,8 +298,8 @@
     const BRANCH = "main";
     
     // State
-    let currentUniverse = [];  // Array of {ticker, source, companyName}
-    let originalUniverse = [];  // For discard
+    let currentUniverse = [];
+    let originalUniverse = [];
     let pendingChanges = false;
     let githubToken = null;
     
@@ -335,11 +317,7 @@
     const tableBody = document.getElementById('tableBody');
     const statusDiv = document.getElementById('statusMessage');
     const timestampSpan = document.getElementById('timestamp');
-    const validationResult = document.getElementById('validationResult');
     
-    let validationTimeout = null;
-    
-    // Show status message
     function showStatus(message, type = 'info') {
         statusDiv.innerHTML = `<div class="status ${type}">${message}</div>`;
         setTimeout(() => {
@@ -349,7 +327,6 @@
         }, 5000);
     }
     
-    // Show pending changes indicator
     function updatePendingIndicator() {
         const hasChanges = JSON.stringify(currentUniverse) !== JSON.stringify(originalUniverse);
         pendingChanges = hasChanges;
@@ -360,42 +337,6 @@
         }
     }
     
-    // Validate ticker with yfinance
-    async function validateTicker(ticker) {
-        if (!ticker) return null;
-        
-        validationResult.innerHTML = '<span class="loading">⏳ Checking ticker...</span>';
-        
-        try {
-            const response = await fetch(`https://query1.finance.yahoo.com/v8/finance/chart/${ticker}`);
-            const data = await response.json();
-            
-            if (data.chart?.error || !data.chart?.result?.[0]?.meta) {
-                validationResult.innerHTML = '<span class="invalid">❌ Invalid ticker symbol</span>';
-                return null;
-            }
-            
-            const companyName = data.chart.result[0].meta.longName || data.chart.result[0].meta.shortName || ticker.toUpperCase();
-            validationResult.innerHTML = `<span class="valid">✅ ${companyName}</span>`;
-            return companyName;
-        } catch (error) {
-            validationResult.innerHTML = '<span class="invalid">❌ Could not validate ticker</span>';
-            return null;
-        }
-    }
-    
-    // Debounced validation
-    tickerInput.addEventListener('input', () => {
-        clearTimeout(validationTimeout);
-        const ticker = tickerInput.value.trim().toUpperCase();
-        if (!ticker) {
-            validationResult.innerHTML = '';
-            return;
-        }
-        validationTimeout = setTimeout(() => validateTicker(ticker), 500);
-    });
-    
-    // Fetch current universe from GitHub
     async function fetchUniverse() {
         try {
             const response = await fetch(`https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${FILE_PATH}?ref=${BRANCH}`);
@@ -414,33 +355,19 @@
             
             const data = await response.json();
             const content = atob(data.content);
-            
-            // Parse CSV
             const lines = content.trim().split('\n');
             const stocks = [];
             
-            for (let i = 1; i < lines.length; i++) {  // Skip header
+            for (let i = 1; i < lines.length; i++) {
                 const line = lines[i].trim();
                 if (!line) continue;
                 const parts = line.split(',');
                 if (parts.length >= 2) {
-                    const ticker = parts[0].trim().toUpperCase();
-                    const source = parts[1].trim().toLowerCase();
-                    stocks.push({ ticker, source, companyName: ticker });
+                    stocks.push({ ticker: parts[0].trim().toUpperCase(), source: parts[1].trim().toLowerCase() });
                 }
             }
             
-            // Fetch company names in batches
-            for (let stock of stocks) {
-                try {
-                    const name = await getCompanyName(stock.ticker);
-                    stock.companyName = name;
-                } catch (e) {
-                    stock.companyName = stock.ticker;
-                }
-                await new Promise(r => setTimeout(r, 100)); // Rate limit
-            }
-            
+            stocks.sort((a, b) => a.ticker.localeCompare(b.ticker));
             currentUniverse = stocks;
             originalUniverse = JSON.parse(JSON.stringify(stocks));
             renderTable();
@@ -454,42 +381,23 @@
         }
     }
     
-    async function getCompanyName(ticker) {
-        try {
-            const response = await fetch(`https://query1.finance.yahoo.com/v8/finance/chart/${ticker}`);
-            const data = await response.json();
-            if (data.chart?.result?.[0]?.meta) {
-                return data.chart.result[0].meta.longName || data.chart.result[0].meta.shortName || ticker;
-            }
-            return ticker;
-        } catch {
-            return ticker;
-        }
-    }
-    
-    // Render table with search filter
-    async function renderTable() {
+    function renderTable() {
         const searchTerm = searchInput.value.toLowerCase();
-        const filtered = currentUniverse.filter(s => 
-            s.ticker.toLowerCase().includes(searchTerm) || 
-            (s.companyName && s.companyName.toLowerCase().includes(searchTerm))
-        );
+        const filtered = currentUniverse.filter(s => s.ticker.toLowerCase().includes(searchTerm));
         
         if (filtered.length === 0) {
-            tableBody.innerHTML = '<tr><td colspan="4" style="text-align: center;">No stocks found</td></tr>';
+            tableBody.innerHTML = '<tr><td colspan="3" style="text-align: center;">No stocks found</td></tr>';
             return;
         }
         
         tableBody.innerHTML = filtered.map(stock => `
             <tr data-ticker="${stock.ticker}">
                 <td><strong>${stock.ticker}</strong></td>
-                <td>${stock.companyName || stock.ticker}</td>
                 <td><span class="badge ${stock.source === 'anchor' ? 'badge-anchor' : 'badge-emerging'}">${stock.source === 'anchor' ? 'Anchor' : 'Emerging'}</span></td>
                 <td><button class="delete-btn danger" data-ticker="${stock.ticker}" style="padding: 4px 12px; font-size: 12px;">Remove</button></td>
             </tr>
         `).join('');
         
-        // Attach delete handlers
         document.querySelectorAll('.delete-btn').forEach(btn => {
             btn.addEventListener('click', () => {
                 const ticker = btn.getAttribute('data-ticker');
@@ -498,39 +406,28 @@
         });
     }
     
-    // Add stock
-    async function addStock() {
+    function addStock() {
         const ticker = tickerInput.value.trim().toUpperCase();
         if (!ticker) {
             showStatus('Please enter a ticker symbol', 'error');
             return;
         }
         
-        // Check for duplicates
         if (currentUniverse.some(s => s.ticker === ticker)) {
             showStatus(`❌ ${ticker} is already in the universe`, 'error');
             return;
         }
         
-        // Validate ticker
-        const companyName = await validateTicker(ticker);
-        if (!companyName) {
-            showStatus(`❌ Invalid ticker: ${ticker}`, 'error');
-            return;
-        }
-        
         const source = sourceSelect.value;
-        currentUniverse.push({ ticker, source, companyName });
+        currentUniverse.push({ ticker, source });
         currentUniverse.sort((a, b) => a.ticker.localeCompare(b.ticker));
         
         tickerInput.value = '';
-        validationResult.innerHTML = '';
         renderTable();
         updatePendingIndicator();
-        showStatus(`✅ Added ${ticker} (${companyName})`, 'success');
+        showStatus(`✅ Added ${ticker}`, 'success');
     }
     
-    // Delete stock
     function deleteStock(ticker) {
         currentUniverse = currentUniverse.filter(s => s.ticker !== ticker);
         renderTable();
@@ -538,8 +435,7 @@
         showStatus(`🗑 Removed ${ticker}`, 'info');
     }
     
-    // Bulk add
-    async function bulkAdd() {
+    function bulkAdd() {
         const tickersText = bulkTickers.value.trim();
         if (!tickersText) {
             showStatus('Please enter tickers to add', 'error');
@@ -549,35 +445,30 @@
         const tickers = tickersText.split(',').map(t => t.trim().toUpperCase()).filter(t => t);
         const source = bulkSourceSelect.value;
         let added = 0;
-        let failed = 0;
+        let duplicates = 0;
         
         for (const ticker of tickers) {
             if (currentUniverse.some(s => s.ticker === ticker)) {
-                failed++;
-                continue;
+                duplicates++;
+            } else {
+                currentUniverse.push({ ticker, source });
+                added++;
             }
-            
-            const companyName = await getCompanyName(ticker);
-            currentUniverse.push({ ticker, source, companyName });
-            added++;
-            await new Promise(r => setTimeout(r, 200));
         }
         
         currentUniverse.sort((a, b) => a.ticker.localeCompare(b.ticker));
         bulkTickers.value = '';
         renderTable();
         updatePendingIndicator();
-        showStatus(`Added ${added} stocks${failed > 0 ? ` (${failed} duplicates skipped)` : ''}`, 'success');
+        showStatus(`Added ${added} stocks${duplicates > 0 ? ` (${duplicates} duplicates skipped)` : ''}`, 'success');
     }
     
-    // Save to GitHub
     async function saveToGitHub() {
         if (!pendingChanges) {
             showStatus('No changes to save', 'info');
             return;
         }
         
-        // Ask for token (first time only)
         if (!githubToken) {
             githubToken = prompt('🔐 Enter your GitHub Personal Access Token (needs repo write access):');
             if (!githubToken) {
@@ -586,14 +477,12 @@
             }
         }
         
-        // Build CSV content
         let csvContent = 'ticker,source\n';
         for (const stock of currentUniverse) {
             csvContent += `${stock.ticker},${stock.source}\n`;
         }
         
         try {
-            // Get current file SHA
             const fileResponse = await fetch(`https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${FILE_PATH}?ref=${BRANCH}`, {
                 headers: { 'Authorization': `token ${githubToken}` }
             });
@@ -604,7 +493,6 @@
                 sha = fileData.sha;
             }
             
-            // Commit changes
             const commitResponse = await fetch(`https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${FILE_PATH}`, {
                 method: 'PUT',
                 headers: {
@@ -632,11 +520,10 @@
         } catch (error) {
             console.error(error);
             showStatus(`Error saving: ${error.message}`, 'error');
-            githubToken = null; // Reset token on error
+            githubToken = null;
         }
     }
     
-    // Discard changes
     function discardChanges() {
         currentUniverse = JSON.parse(JSON.stringify(originalUniverse));
         renderTable();
@@ -644,26 +531,21 @@
         showStatus('Changes discarded', 'info');
     }
     
-    // Update timestamp
     function updateTimestamp() {
         const now = new Date();
         timestampSpan.innerHTML = `📅 Last loaded: ${now.toLocaleString()}`;
     }
     
-    // Event listeners
     addBtn.addEventListener('click', addStock);
     bulkAddBtn.addEventListener('click', bulkAdd);
     refreshBtn.addEventListener('click', fetchUniverse);
     saveBtn.addEventListener('click', saveToGitHub);
     discardBtn.addEventListener('click', discardChanges);
     searchInput.addEventListener('input', renderTable);
-    
-    // Enter key in ticker input
     tickerInput.addEventListener('keypress', (e) => {
         if (e.key === 'Enter') addStock();
     });
     
-    // Initial load
     fetchUniverse();
 </script>
 </body>
