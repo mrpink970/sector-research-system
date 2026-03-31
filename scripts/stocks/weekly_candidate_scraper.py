@@ -25,6 +25,9 @@ HEADERS = {
     "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
     "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
     "Accept-Language": "en-US,en;q=0.5",
+    "Accept-Encoding": "gzip, deflate, br",
+    "Connection": "keep-alive",
+    "Upgrade-Insecure-Requests": "1",
 }
 
 
@@ -36,37 +39,88 @@ def fetch_finviz_tickers(url: str) -> List[str]:
     """Fetch tickers from Finviz screener page."""
     try:
         print(f"Fetching Finviz screener...")
-        response = requests.get(url, headers=HEADERS, timeout=30)
+        
+        # Use a session to maintain cookies
+        session = requests.Session()
+        session.headers.update(HEADERS)
+        
+        # First request to get cookies
+        response = session.get(url, timeout=30, allow_redirects=True)
         
         if response.status_code != 200:
             print(f"  Failed: HTTP {response.status_code}")
             return []
         
-        # pandas can parse HTML tables with lxml or html5lib
-        # lxml is preferred and now installed
-        tables = pd.read_html(response.text)
-        if not tables:
-            print("  No tables found")
+        # Check if we got HTML or something else
+        content_type = response.headers.get('content-type', '')
+        if 'html' not in content_type:
+            print(f"  Unexpected content type: {content_type}")
             return []
         
-        df = tables[0]
+        html_content = response.text
         
-        # Find ticker column
-        ticker_col = None
-        for col in df.columns:
-            if "ticker" in str(col).lower() or "symbol" in str(col).lower():
-                ticker_col = col
-                break
+        # Check if we hit a block page
+        if "block" in html_content.lower() or "captcha" in html_content.lower():
+            print("  Finviz is blocking the request (captcha or block page)")
+            return []
         
-        if ticker_col is None:
-            ticker_col = df.columns[0]
+        # Try multiple parsing methods
+        tickers = []
         
-        tickers = df[ticker_col].dropna().tolist()
-        tickers = [str(t).strip().upper() for t in tickers]
-        tickers = [t for t in tickers if t and t.isalpha() and len(t) <= 5]
+        # Method 1: Use pandas read_html (requires lxml)
+        try:
+            tables = pd.read_html(html_content)
+            if tables:
+                df = tables[0]
+                # Look for ticker column
+                for col in df.columns:
+                    col_lower = str(col).lower()
+                    if 'ticker' in col_lower or 'symbol' in col_lower:
+                        ticker_col = col
+                        break
+                else:
+                    ticker_col = df.columns[0]
+                
+                tickers = df[ticker_col].dropna().tolist()
+                tickers = [str(t).strip().upper() for t in tickers]
+                tickers = [t for t in tickers if t and t.isalpha() and len(t) <= 5]
+                if tickers:
+                    print(f"  Method 1 (pandas): found {len(tickers)} tickers")
+                    return tickers
+        except Exception as e:
+            print(f"  Method 1 failed: {e}")
         
-        print(f"  Found {len(tickers)} tickers")
-        return tickers
+        # Method 2: Parse HTML manually (fallback)
+        try:
+            import re
+            # Look for pattern: <a href="screener.ashx?t=XXX"
+            pattern = r'screener\.ashx\?t=([A-Z]+)'
+            matches = re.findall(pattern, html_content)
+            if matches:
+                tickers = list(dict.fromkeys(matches))  # Remove duplicates
+                tickers = [t for t in tickers if len(t) <= 5]
+                print(f"  Method 2 (regex): found {len(tickers)} tickers")
+                return tickers
+        except Exception as e:
+            print(f"  Method 2 failed: {e}")
+        
+        # Method 3: Look for table rows with ticker links
+        try:
+            import re
+            # Alternative pattern for ticker in table
+            pattern = r'">([A-Z]{1,5})</a>'
+            matches = re.findall(pattern, html_content)
+            if matches:
+                tickers = list(dict.fromkeys(matches))
+                tickers = [t for t in tickers if t.isalpha() and len(t) <= 5]
+                if tickers:
+                    print(f"  Method 3 (alt regex): found {len(tickers)} tickers")
+                    return tickers
+        except Exception as e:
+            print(f"  Method 3 failed: {e}")
+        
+        print(f"  No tickers found after all methods")
+        return []
         
     except Exception as e:
         print(f"  Error: {e}")
