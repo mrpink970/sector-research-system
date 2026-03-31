@@ -42,6 +42,8 @@ def fetch_finviz_tickers(url: str) -> List[str]:
             print(f"  Failed: HTTP {response.status_code}")
             return []
         
+        # pandas can parse HTML tables with lxml or html5lib
+        # lxml is preferred and now installed
         tables = pd.read_html(response.text)
         if not tables:
             print("  No tables found")
