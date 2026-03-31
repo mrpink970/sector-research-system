@@ -1,7 +1,9 @@
 name: Paper Trading System
 
 on:
-  workflow_dispatch:
+  schedule:
+    - cron: '23 22 * * *'  # 6:23 PM ET (10:23 PM UTC during daylight savings)
+  workflow_dispatch:        # Keep this for manual runs
 
 jobs:
   run-paper-trading:
@@ -29,5 +31,5 @@ jobs:
           git config --global user.name "github-actions"
           git config --global user.email "actions@github.com"
           git add data/paper_positions.csv data/paper_trade_log.csv data/paper_performance.csv || echo "No files"
-          git commit -m "Paper trading update" || echo "No changes"
+          git commit -m "Paper trading update $(date '+%Y-%m-%d %H:%M')" || echo "No changes"
           git push
