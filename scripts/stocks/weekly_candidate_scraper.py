@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
 """
-Weekly Stock Candidate Scraper
-Runs on Saturdays, finds potential breakout candidates from free sources,
-scores them using your breakout logic, and outputs a CSV for manual review.
+Weekly Stock Candidate Scraper (Finviz Version)
+Fetches stocks from a Finviz screener URL, scores them, and outputs candidates.
 
-No API keys required. Uses yfinance for price data and pandas for scoring.
+Uses requests and pandas to parse Finviz tables.
 """
 
 from __future__ import annotations
@@ -14,41 +13,87 @@ from pathlib import Path
 from typing import Dict, List, Optional, Set
 
 import pandas as pd
+import requests
 import yfinance as yf
 
 
-def get_candidate_tickers() -> List[str]:
-    """Get a list of candidate tickers to score"""
-    # List of actively traded stocks across sectors
-    # This covers most high-probability candidates
-    tickers = [
-        # Mega cap
-        "AAPL", "MSFT", "GOOGL", "AMZN", "NVDA", "META", "TSLA", "BRK-B", "UNH", "JNJ",
-        "V", "PG", "JPM", "MA", "HD", "DIS", "BAC", "ADBE", "CRM", "NFLX",
-        "PFE", "INTC", "CMCSA", "VZ", "T", "ABT", "NKE", "WFC", "KO", "MRK",
-        "PEP", "TMO", "AVGO", "COST", "MCD", "CSCO", "ABBV", "DHR", "ACN", "LIN",
-        "AMD", "IBM", "GE", "CVX", "WMT", "QCOM", "TXN", "AMGN", "NEE", "LOW",
-        # Growth/emerging
-        "PLTR", "SNOW", "UBER", "SHOP", "RBLX", "COIN", "SOFI", "NIO", "RIVN",
-        "LCID", "FSLR", "ENPH", "SEDG", "RUN", "PLUG", "FCEL", "QS", "CHPT",
-        "IONQ", "RKLB", "ASTS", "SPCE", "AI", "BBAI", "PATH", "DOCU", "OKTA",
-        "TWLO", "FIVN", "ESTC", "GTLB", "DUOL", "APP", "TTD", "ROKU", "PINS",
-        "SNAP", "U", "TTWO", "EA", "RNG", "ZM", "PTON", "CVNA", "CAR", "ABNB",
-        "EXPE", "BKNG", "DASH", "ETSY", "CHWY", "BYND", "CELH", "ELF", "HIMS",
-        "TDOC", "RXRX", "EXAS", "BEAM", "CRSP", "EDIT", "NTLA", "PACB", "ILMN",
-        "GH", "VRTX", "MRNA", "BNTX", "NVAX", "ALNY", "REGN", "INCY", "ICLR",
-        "IQV", "MEDP", "AXSM", "SAVA", "ADMA", "ARDX", "SRPT", "FATE", "NKLA",
-        "WKHS", "MVST", "ENVX", "STEM", "FLNC", "AMPX", "CHRS", "KURA", "DNA",
-        "TWST", "TXG", "WAL", "ZION", "CMA", "FITB", "KEY", "HBAN", "ALLY",
-        "RKT", "UWMC", "OPEN", "RDFN", "STWD", "BXMT", "ABR", "NLY", "AGNC",
-        "TWO", "ARR", "PMT", "DX", "CLSK", "MARA", "RIOT", "BITF", "HUT",
-        "BTBT", "CAN", "CIFR", "IREN", "WULF", "GREE", "HIVE", "ARBK", "GLBE",
-        "MELI", "SE", "JD", "BILI", "PDD", "TME", "NTES", "BIDU", "CSIQ", "JKS",
-        "MAXN", "SPWR", "FSLY", "AKAM", "PANW", "FTNT", "CYBR", "TEAM", "NOW",
-        "WDAY", "HUBS", "CRM", "ORCL", "ADBE", "INTU", "PYPL", "SQ"
-    ]
-    return tickers
+# ============================================================
+# CONFIGURATION
+# ============================================================
 
+# Your Finviz screener URL
+FINVIZ_URL = "https://finviz.com/screener.ashx?v=111&f=sh_curvol_o300%2Csh_price_o3%2Csh_relvol_o1.5%2Cta_highlow20d_nh%2Cta_rsi_ob60%2Cta_sma50_pa&ft=3"
+
+# Headers to mimic a real browser
+HEADERS = {
+    "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+    "Accept-Language": "en-US,en;q=0.5",
+    "Accept-Encoding": "gzip, deflate, br",
+    "Connection": "keep-alive",
+    "Upgrade-Insecure-Requests": "1",
+}
+
+
+# ============================================================
+# FINVIZ SCRAPER
+# ============================================================
+
+def fetch_finviz_tickers(url: str) -> List[str]:
+    """
+    Fetch tickers from Finviz screener page.
+    Returns list of ticker symbols.
+    """
+    try:
+        print(f"Fetching Finviz screener: {url}")
+        response = requests.get(url, headers=HEADERS, timeout=30)
+        
+        if response.status_code != 200:
+            print(f"  Failed to fetch: HTTP {response.status_code}")
+            return []
+        
+        # Parse HTML table using pandas
+        # Finviz tables are standard HTML tables, pandas can read them
+        tables = pd.read_html(response.text)
+        
+        if not tables:
+            print("  No tables found on page")
+            return []
+        
+        # The screener results table is usually the first one
+        df = tables[0]
+        
+        # The first column is usually "Ticker"
+        # Column names might vary, look for "Ticker" or "Symbol"
+        ticker_col = None
+        for col in df.columns:
+            if "ticker" in col.lower() or "symbol" in col.lower():
+                ticker_col = col
+                break
+        
+        if ticker_col is None:
+            # Fallback: assume first column is ticker
+            ticker_col = df.columns[0]
+            print(f"  Using first column as ticker: {ticker_col}")
+        
+        tickers = df[ticker_col].dropna().tolist()
+        tickers = [str(t).strip().upper() for t in tickers]
+        
+        # Filter out non-ticker entries (e.g., headers, footers)
+        # Tickers are usually 1-5 letters, all uppercase
+        tickers = [t for t in tickers if t and t.isalpha() and len(t) <= 5]
+        
+        print(f"  Found {len(tickers)} tickers")
+        return tickers
+        
+    except Exception as e:
+        print(f"  Error fetching Finviz: {e}")
+        return []
+
+
+# ============================================================
+# PRICE DATA & SCORING
+# ============================================================
 
 def fetch_price_data(ticker: str, period: str = "1y") -> Optional[pd.DataFrame]:
     """Fetch historical price data for a ticker"""
@@ -132,6 +177,8 @@ def calculate_breakout_score(df: pd.DataFrame) -> Dict:
         signal = "Strong Breakout Candidate"
     elif score >= 4:
         signal = "Breakout Watch"
+    elif score >= 2:
+        signal = "Weak Setup"
     else:
         signal = "No Setup"
     
@@ -158,27 +205,58 @@ def load_existing_universe() -> Set[str]:
     return set(df["ticker"].str.upper().tolist())
 
 
+# ============================================================
+# MAIN
+# ============================================================
+
 def main():
-    print("Weekly Stock Candidate Scraper")
+    print("Weekly Stock Candidate Scraper (Finviz Version)")
     print("=" * 50)
     
     # Load existing universe
     existing_tickers = load_existing_universe()
     print(f"Existing universe: {len(existing_tickers)} stocks")
     
-    # Get candidate tickers
-    print("Fetching candidate tickers...")
-    candidates = get_candidate_tickers()
-    print(f"Total candidates to check: {len(candidates)}")
+    # Fetch tickers from Finviz
+    print("\nFetching tickers from Finviz...")
+    finviz_tickers = fetch_finviz_tickers(FINVIZ_URL)
+    
+    if not finviz_tickers:
+        print("\n⚠️ No tickers found from Finviz.")
+        print("   This could mean:")
+        print("   1. Finviz is blocking automated requests")
+        print("   2. The URL structure has changed")
+        print("   3. The screener returned no results")
+        print("\n💡 Fallback: Use static candidate list")
+        
+        # Fallback to static list
+        fallback_tickers = [
+            "RDDT", "ARM", "CRWD", "DDOG", "MDB", "ZS", "NET", "SNOW", "PANW",
+            "FTNT", "TEAM", "NOW", "WDAY", "HUBS", "INTU", "ADSK", "ANET", "CDNS",
+            "SNPS", "MRVL", "ON", "MPWR", "MCHP", "ADI", "LRCX", "KLAC", "AMAT"
+        ]
+        finviz_tickers = [t for t in fallback_tickers if t not in existing_tickers]
+        print(f"  Using fallback list: {len(finviz_tickers)} candidates")
     
     # Filter out existing ones
-    new_candidates = [t for t in candidates if t not in existing_tickers]
-    print(f"New candidates to score: {len(new_candidates)}")
+    new_candidates = [t for t in finviz_tickers if t not in existing_tickers]
+    print(f"\nNew candidates to score: {len(new_candidates)}")
     
-    # Score each new candidate
+    if not new_candidates:
+        print("\n⚠️ No new candidates found.")
+        # Create empty file
+        output_path = Path("data/stocks/weekly_candidates.csv")
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        pd.DataFrame(columns=["ticker", "breakout_score", "breakout_signal", "current_price", 
+                               "ma_20", "ma_50", "compression_ratio", "vol_ratio", 
+                               "proximity_20d", "extension_50ma", "date"]).to_csv(output_path, index=False)
+        print("Created empty weekly_candidates.csv")
+        return
+    
+    # Score each candidate
     scored_results = []
     for i, ticker in enumerate(new_candidates):
-        if i % 50 == 0:
+        if i % 10 == 0:
             print(f"  Scoring {i}/{len(new_candidates)}...")
         
         df = fetch_price_data(ticker)
@@ -186,7 +264,9 @@ def main():
             continue
         
         scores = calculate_breakout_score(df)
-        if scores["breakout_score"] >= 4:
+        
+        # Keep candidates with score >= 2
+        if scores["breakout_score"] >= 2:
             scored_results.append({
                 "ticker": ticker,
                 "breakout_score": scores["breakout_score"],
@@ -216,7 +296,8 @@ def main():
         for i, row in enumerate(df.head(10).to_dict('records')):
             print(f"  {i+1}. {row['ticker']} | Score: {row['breakout_score']} | {row['breakout_signal']} | ${row['current_price']:.2f}")
     else:
-        print("\n⚠️ No new breakout candidates found this week.")
+        print("\n⚠️ No candidates with score >= 2 found.")
+        # Create empty file with headers
         pd.DataFrame(columns=["ticker", "breakout_score", "breakout_signal", "current_price", 
                                "ma_20", "ma_50", "compression_ratio", "vol_ratio", 
                                "proximity_20d", "extension_50ma", "date"]).to_csv(output_path, index=False)
