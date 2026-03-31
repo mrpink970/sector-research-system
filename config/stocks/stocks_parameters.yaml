@@ -29,18 +29,36 @@ scoring:
   volume_ratio: 1.1
   atr_threshold: 0.08
   extension_threshold: 0.25
-
   strong_bullish: 5
   bullish: 3
+
+breakout:
+  compression_strong: 0.85
+  compression_moderate: 0.95
+  volume_ratio_strong: 1.3
+  volume_acceleration_strong: 1.1
+  volume_ratio_moderate: 1.1
+  volume_acceleration_moderate: 1.05
+  proximity_threshold: 0.02
+  rs_acceleration_strong: 0.05
+  rs_acceleration_moderate: 0.0
+  rs_min_strong: -0.05
+  rs_min_moderate: -0.10
+  extension_50ma_strong: 0.10
+  extension_20ma_strong: 0.05
+  extension_50ma_moderate: 0.15
+  extension_20ma_moderate: 0.10
+  strong_breakout_min: 6
+  breakout_watch_min: 4
 
 files:
   universe: data/stocks/stock_universe.csv
   benchmark_cache: data/stocks/benchmark_history.csv
   full_history: data/stocks/stock_scores_history.csv
   candidate_history: data/stocks/stock_candidates_history.csv
+  breakout_candidate_history: data/stocks/stock_breakout_candidates_history.csv
   run_log: data/stocks/stock_system_run_log.csv
 
 pull:
   history_period: 18mo
   batch_size: 50
-
