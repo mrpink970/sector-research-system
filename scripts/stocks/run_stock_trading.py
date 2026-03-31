@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
 import pandas as pd
+import yfinance as yf
 import yaml
 
 
@@ -27,6 +28,42 @@ class Position:
 def load_yaml(path: Path) -> dict:
     with path.open("r", encoding="utf-8") as f:
         return yaml.safe_load(f)
+
+
+def fetch_price_data(ticker: str, date: str) -> Optional[dict]:
+    """
+    Fetch a single day's OHLCV for a ticker.
+    Returns dict with open, high, low, close or None if not available.
+    """
+    try:
+        # Fetch 5 days of data to ensure we get the requested date
+        df = yf.download(ticker, start=date, end=date, progress=False, auto_adjust=False)
+        
+        if df.empty:
+            return None
+        
+        # Handle multi-index columns if present
+        if hasattr(df.columns, "nlevels") and df.columns.nlevels > 1:
+            df.columns = df.columns.get_level_values(0)
+        
+        df = df.reset_index()
+        
+        # Format date for comparison
+        df["Date"] = pd.to_datetime(df["Date"]).dt.strftime("%Y-%m-%d")
+        df = df[df["Date"] == date]
+        
+        if df.empty:
+            return None
+        
+        return {
+            "open": float(df["Open"].iloc[0]),
+            "high": float(df["High"].iloc[0]),
+            "low": float(df["Low"].iloc[0]),
+            "close": float(df["Close"].iloc[0]),
+        }
+    except Exception as e:
+        print(f"Error fetching {ticker} for {date}: {e}")
+        return None
 
 
 def load_trend_candidates(date: str, scores_df: pd.DataFrame, min_score: int = 6) -> List[dict]:
@@ -194,38 +231,18 @@ def update_performance(balance: float, trade_log: pd.DataFrame, system_name: str
     }])
 
 
-def load_price_data(market_data: pd.DataFrame) -> Dict[Tuple[str, str], dict]:
-    """Build price lookup dictionary"""
-    price_map = {}
-    for _, row in market_data.iterrows():
-        key = (row["date"], row["ticker"])
-        price_map[key] = {
-            "open": float(row["open"]),
-            "high": float(row["high"]),
-            "low": float(row["low"]),
-            "close": float(row["close"]),
-        }
-    return price_map
-
-
 def main():
     root = Path(".")
     data_dir = root / "data" / "stocks"
     
-    # Load data
+    # Load scores
     scores = pd.read_csv(data_dir / "stock_scores_history.csv")
-    market = pd.read_csv(data_dir / "market_data.csv")
-    
-    # Normalize dates
     scores["date"] = pd.to_datetime(scores["date"]).dt.strftime("%Y-%m-%d")
-    market["date"] = pd.to_datetime(market["date"]).dt.strftime("%Y-%m-%d")
     
-    # Get unique dates that exist in both datasets
-    all_dates = sorted(set(market["date"]).intersection(set(scores["date"])))
+    # Get unique dates from scores
+    all_dates = sorted(scores["date"].unique())
     if len(all_dates) < 2:
-        raise SystemExit("Need at least 2 aligned dates")
-    
-    price_map = load_price_data(market)
+        raise SystemExit("Need at least 2 dates in stock_scores_history.csv")
     
     # Configuration
     trend_confirmation_days = 2
@@ -253,6 +270,8 @@ def main():
         signal_date = all_dates[i - 1]
         trade_date = all_dates[i]
         
+        print(f"\nProcessing {trade_date} (signal from {signal_date})")
+        
         # Load candidates for this signal date
         trend_candidates = load_trend_candidates(signal_date, scores, trend_min_score)
         breakout_candidates = load_breakout_candidates(signal_date, scores, breakout_min_score)
@@ -262,8 +281,10 @@ def main():
         # =========================================================
         survivors = []
         for pos in trend_positions:
-            bar = price_map.get((trade_date, pos.ticker))
+            # Fetch current day's price data for this ticker
+            bar = fetch_price_data(pos.ticker, trade_date)
             if not bar:
+                print(f"  [TREND] Could not fetch price for {pos.ticker} on {trade_date}, holding")
                 survivors.append(pos)
                 continue
             
@@ -278,6 +299,7 @@ def main():
                 closed = close_position(pos, trade_date, bar["open"], "trailing_stop")
                 trend_trades.append(closed)
                 trend_balance += closed["gross_pnl"]
+                print(f"  [TREND] EXIT {pos.ticker} @ ${bar['open']:.2f} PnL: ${closed['gross_pnl']:.2f} ({closed['return_pct']}%)")
                 continue
             
             # Update position
@@ -294,7 +316,7 @@ def main():
             
             # Check 2-day confirmation
             if requires_confirmation("trend", scores, best["ticker"], signal_date, trend_confirmation_days):
-                bar = price_map.get((trade_date, best["ticker"]))
+                bar = fetch_price_data(best["ticker"], trade_date)
                 if bar:
                     shares = int(trend_balance / bar["open"])
                     if shares > 0:
@@ -311,15 +333,17 @@ def main():
                             entry_score=best["score"],
                             entry_signal=best["signal"],
                         ))
-                        print(f"[TREND] ENTRY {trade_date} {best['ticker']} @ ${bar['open']:.2f} shares:{shares}")
+                        print(f"  [TREND] ENTRY {best['ticker']} @ ${bar['open']:.2f} shares:{shares}")
         
         # =========================================================
         # BREAKOUT SYSTEM - Exits first, then entries
         # =========================================================
         survivors = []
         for pos in breakout_positions:
-            bar = price_map.get((trade_date, pos.ticker))
+            # Fetch current day's price data for this ticker
+            bar = fetch_price_data(pos.ticker, trade_date)
             if not bar:
+                print(f"  [BREAKOUT] Could not fetch price for {pos.ticker} on {trade_date}, holding")
                 survivors.append(pos)
                 continue
             
@@ -334,6 +358,7 @@ def main():
                 closed = close_position(pos, trade_date, bar["open"], "trailing_stop")
                 breakout_trades.append(closed)
                 breakout_balance += closed["gross_pnl"]
+                print(f"  [BREAKOUT] EXIT {pos.ticker} @ ${bar['open']:.2f} PnL: ${closed['gross_pnl']:.2f} ({closed['return_pct']}%)")
                 continue
             
             # Update position
@@ -350,7 +375,7 @@ def main():
             
             # Check 1-day confirmation (or as configured)
             if requires_confirmation("breakout", scores, best["ticker"], signal_date, breakout_confirmation_days):
-                bar = price_map.get((trade_date, best["ticker"]))
+                bar = fetch_price_data(best["ticker"], trade_date)
                 if bar:
                     shares = int(breakout_balance / bar["open"])
                     if shares > 0:
@@ -367,7 +392,7 @@ def main():
                             entry_score=best["score"],
                             entry_signal=best["signal"],
                         ))
-                        print(f"[BREAKOUT] ENTRY {trade_date} {best['ticker']} @ ${bar['open']:.2f} shares:{shares}")
+                        print(f"  [BREAKOUT] ENTRY {best['ticker']} @ ${bar['open']:.2f} shares:{shares}")
     
     # =========================================================
     # Save outputs
@@ -418,11 +443,12 @@ def main():
     combined_perf.to_csv(data_dir / "stock_performance.csv", index=False)
     
     # Summary
-    print("-" * 60)
+    print("\n" + "=" * 60)
     print("FINAL SUMMARY")
-    print(f"Trend System:  ${trend_balance:.2f}  | Trades: {len(trend_trades)}  | Win Rate: {trend_perf['win_rate'].iloc[0]}%")
+    print("=" * 60)
+    print(f"Trend System:    ${trend_balance:.2f}  | Trades: {len(trend_trades)}  | Win Rate: {trend_perf['win_rate'].iloc[0]}%")
     print(f"Breakout System: ${breakout_balance:.2f}  | Trades: {len(breakout_trades)}  | Win Rate: {breakout_perf['win_rate'].iloc[0]}%")
-    print("-" * 60)
+    print("=" * 60)
     print(f"Outputs saved to {data_dir}/")
     print(f"  - trend_trade_log.csv")
     print(f"  - breakout_trade_log.csv")
