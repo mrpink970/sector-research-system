@@ -20,7 +20,7 @@ jobs:
       
       - name: Install dependencies
         run: |
-          pip install pandas yfinance
+          pip install pandas yfinance requests lxml
       
       - name: Run weekly candidate scraper
         run: |
