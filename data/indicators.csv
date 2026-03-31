@@ -7013,3 +7013,17 @@ date,sector,signal_etf,trend_score,trend_ignition_score,momentum_score,relative_
 2026-03-30,Semiconductors,SMH,-2,-1,-2,-1,0,0,0
 2026-03-30,Technology,XLK,-2,-1,-2,-1,0,0,0
 2026-03-30,Utilities,XLU,2,-1,0,1,0,0,0
+2026-03-31,Biotechnology,XBI,2,-1,2,1,0,0,0
+2026-03-31,Communication Services,XLC,-2,-1,0,0,0,0,0
+2026-03-31,Consumer Discretionary,XLY,-2,-1,0,0,0,0,0
+2026-03-31,Consumer Staples,XLP,-2,-1,0,0,0,0,0
+2026-03-31,Energy,XLE,2,1,0,1,1,-1,0
+2026-03-31,Financials,XLF,-2,-1,0,1,1,0,0
+2026-03-31,Healthcare,XLV,-2,-1,0,0,0,0,0
+2026-03-31,Industrials,XLI,-2,-1,0,0,0,0,0
+2026-03-31,Materials,XLB,-2,-1,0,1,1,0,0
+2026-03-31,Nasdaq Growth,QQQ,-2,-1,0,0,0,0,0
+2026-03-31,Real Estate,XLRE,-2,-1,0,0,0,0,0
+2026-03-31,Semiconductors,SMH,-2,-1,0,0,0,0,0
+2026-03-31,Technology,XLK,-2,-1,0,0,0,0,0
+2026-03-31,Utilities,XLU,2,-1,0,0,0,0,0
