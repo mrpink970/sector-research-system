@@ -1,0 +1,225 @@
+ticker,description,coupon,par_value,maturity,redemption_date,exchange,status
+ABXL,Abacus Life Inc. 9.875% Fixed Rate Senior Notes,9.875,25,2027-02-15,2027-02-15,NYSE,active
+ADAMH,Adamas Trust Inc 9.875% Senior Notes due 10/01/2030,9.875,25,2030-10-01,2027-10-01,NGS,active
+ADAMG,Adamas Trust Inc 9.125% Senior Notes due 04/01/2030,9.125,25,2030-04-01,2027-04-01,NGS,active
+ADAMI,Adamas Trust Inc. 9.125% Senior Notes due 07/01/2029,9.125,25,2029-07-01,2026-07-01,NGS,active
+ADAMO,Adamas Trust Inc. 9.250% Senior Notes due 2031,9.250,25,2031-04-01,2028-04-01,NGS,active
+AEFC,AEGON Funding Company LLC. 5.10% Subordinated Notes due 12/15/2049,5.10,25,2049-12-15,2024-12-15,NYSE,active
+MGR,Affiliated Managers Group 5.875% Junior Subordinated Notes due 3/30/2059,5.875,25,2059-03-30,2024-03-30,NYSE,active
+MGRD,Affiliated Managers Group Inc. 4.20% Junior Subordinated Notes due 9/30/2061,4.20,25,2061-09-30,2026-09-30,NYSE,active
+MGRB,Affiliated Managers Group Inc. 4.75% Junior Subordinated Notes due 9/30/2060,4.75,25,2060-09-30,2025-09-30,NYSE,active
+MGRE,Affiliated Managers Group Inc. 6.750% Junior Subordinated Notes due 3/30/2064,6.75,25,2064-03-30,2029-03-30,NYSE,active
+MITN,AG Mortgage Investment Trust 9.500% Senior Notes due 2/15/2029,9.50,25,2029-02-15,2026-02-15,NYSE,active
+MITP,AG Mortgage Investment Trust Inc 9.500% Senior Notes due 5/15/2029,9.50,25,2029-05-15,2026-05-15,NYSE,active
+AQNB,Algonquin Power & Utilities Corp. 6.20% Fix/Float Sub Notes 2019A Due 7/1/2079,6.20,25,2079-07-01,2024-07-01,NYSE,active
+ALL-B,Allstate Corp. 5.10% Fixed-To-Floating Rate Sub Debentures due 1/15/2053,5.10,25,2053-01-15,2023-01-15,NYSE,active
+AFGC,American Financial Group 5.125% Subordinated Debentures due 12/15/2059,5.125,25,2059-12-15,2024-12-15,NYSE,active
+AFGB,American Financial Group 5.875% Subordinated Debentures due 3/30/2059,5.875,25,2059-03-30,2024-03-30,NYSE,active
+AFGE,American Financial Group Inc. 4.50% Subordinated Debentures due 9/15/2060,4.50,25,2060-09-15,2025-09-15,NYSE,active
+AFGD,American Financial Group Inc. 5.625% Subordinated Debentures due 6/1/2060,5.625,25,2060-06-01,2025-06-01,NYSE,active
+AAR,AMR Corp. 7.875% Public Income NotES PINES due 7/13/2039,7.875,25,2039-07-13,2004-07-13,NYSE,delisted
+AFFS,AmTrust Financial Services 7.25% Subordinated Notes due 6/15/2055,7.25,25,2055-06-15,2020-06-18,OTOTC,active
+AFFI,AmTrust Financial Services 7.50% Subordinated Notes due 9/15/2055,7.50,25,2055-09-15,2020-09-16,OTOTC,active
+AOMN,Angel Oak Mortgage REIT Inc. 9.50% Senior Notes due 07/30/2029,9.50,25,2029-07-30,2026-07-30,NYSE,active
+AOMD,Angel Oak Mortgage REIT Inc. 9.75% Senior Notes due 6/1/2030,9.75,25,2030-06-01,2027-06-01,NYSE,active
+APOS,Apollo Global Management Reset Rate Junior Subordinated Notes due 9/15/2053,7.00,25,2053-09-15,2028-12-15,NYSE,active
+ARBKL,Argo Blockchain pl 8.75% Senior Notes Due 11/30/2026,8.75,25,2026-11-30,2023-11-30,NGS,active
+ARGD,Argo Group US 6.50% Senior Notes due 9/15/2042,6.50,25,2042-09-15,2017-09-15,NYSE,active
+UZE,Array Digital Infrastructure Inc. 5.50% Senior Notes due 3/1/2070,5.50,25,2070-03-01,2026-03-01,NGS,active
+UZD,Array Digital Infrastructure Inc. 6.25% Senior Notes due 9/1/2069,6.25,25,2069-09-01,2025-09-01,NGS,active
+ASBA,Associated Banc-Corp Reset Rate Subordinated Notes due 03/01/2033,7.00,25,2033-03-01,2028-03-01,NYSE,active
+AIZN,Assurant Inc. 5.25% Subordinated Notes due 1/15/2061,5.25,25,2061-01-15,2026-01-15,NYSE,active
+T,AT&T Inc. 5.35% Global Notes due 11/1/2066,5.35,25,2066-11-01,2022-11-01,NYSE,active
+ATHS,Athene Holding Ltd. Rate Reset Junior Subordinated Debentures due 3/30/2064,7.00,25,2064-03-30,2029-03-30,NYSE,active
+ATLCL,Atlanticus Holdings Corp 6.125% Senior Notes Due 11/30/2026,6.125,25,2026-11-30,2023-11-30,NGM,active
+ATLCZ,Atlanticus Holdings Corp 9.25% Senior Notes Due 01/31/2029,9.25,25,2029-01-31,2026-01-31,NGS,active
+BWSN,Babcock & Wilcox Enterprises Inc. 8.125% Senior Notes Due 2/28/2026,8.125,25,2026-02-28,2025-02-28,NYSE,active
+BWNB,Babcock & Wilcox Enterprises Inc. 6.50% Senior Notes Due 12/31/2026,6.50,25,2026-12-31,2024-12-31,NYSE,active
+MER-K,Bank of America Corp 6.45% Income Capital Obligation Notes ICONS due 12/15/2066,6.45,25,2066-12-15,2011-12-15,NYSE,active
+BIP,BIP Bermuda Holdings I Limited 5.125% Perpetual Subordinated Notes,5.125,25,2099-12-31,2027-01-21,NYSE,active
+RILYG,BRC Group Holdings Inc 5.00% Senior Notes Due 12/31/2026,5.00,25,2026-12-31,2023-12-31,NGM,active
+RILYK,BRC Group Holdings Inc 5.50% Senior Notes Due 3/31/2026,5.50,25,2026-03-31,2022-03-31,NGM,active
+RILYT,BRC Group Holdings Inc 6.00% Senior Notes Due 1/31/2028,6.00,25,2028-01-31,2022-01-31,NGM,active
+RILYN,BRC Group Holdings Inc 6.50% Senior Notes Due 9/30/2026,6.50,25,2026-09-30,2024-09-30,NGM,active
+RILYZ,BRC Group Holdings Inc. 5.25% Senior Notes Due 08/31/2028,5.25,25,2028-08-31,2023-08-31,NGM,active
+BHFAL,Brighthouse Financial 6.25% Junior Subordinated Debentures due 9/15/2058,6.25,25,2058-09-15,2023-09-15,NGS,active
+BHFAN,Brighthouse Financial Inc. 5.375% DEP PFD C,5.375,25,2058-12-31,2024-12-31,NGS,active
+BHFAO,Brighthouse Financial Inc. 6.75% DP SHS PF B,6.75,25,2058-12-31,2024-12-31,NGS,active
+BTSGU,BrightSpring Health Services 6.75% Tangible Equity Units,6.75,25,2029-12-31,2024-11-04,NGS,active
+BEPH,Brookfield BRP Holdings (Canada) Inc. 4.625% Perpetual Subordinated Notes,4.625,25,2099-12-31,2026-04-30,NYSE,active
+BEPI,Brookfield BRP Holdings (Canada) Inc. 4.875% Perpetual Subordinated Notes,4.875,25,2099-12-31,2026-12-09,NYSE,active
+BEPJ,Brookfield BRP Holdings (Canada) Inc. 7.250% Perpetual Subordinated Notes,7.25,25,2099-12-31,2029-03-25,NYSE,active
+BNJ,Brookfield Finance Inc. 4.50% Perpetual Subordinated Notes,4.50,25,2099-12-31,2025-11-24,NYSE,active
+BNH,Brookfield Finance Inc. 4.625% Subordinated Notes due 10/16/2080,4.625,25,2080-10-16,2025-10-16,NYSE,active
+BIPH,Brookfield Infrastructure Finance ULC 5.0% Subordinated Notes due 5/24/2081,5.00,25,2081-05-24,2026-05-24,NYSE,active
+BIPJ,Brookfield Infrastructure Finance ULC 7.25% Subordinated Notes due 5/31/2084,7.25,25,2084-05-31,2029-05-31,NYSE,active
+BC-C,Brunswick Corp. 6.375% Senior Notes due 4/15/2049,6.375,25,2049-04-15,2024-04-15,NYSE,active
+BC-A,Brunswick Corp. 6.50% Senior Notes due 10/15/2048,6.50,25,2048-10-15,2023-10-15,NYSE,active
+CSWC,Capital Southwest Corp. 7.75% notes due 8/1/2028,7.75,25,2028-08-01,2025-08-01,NGS,active
+CGABL,Carlyle Finance LLC 4.625% Subordinated Notes due 05/15/2061,4.625,25,2061-05-15,2026-05-15,NGS,active
+CGBDL,Carlyle Secured Lending Inc. 8.20% Notes due 12/1/2028,8.20,25,2028-12-01,2025-12-01,NGS,active
+CHRB,Charah Solutions Inc. 8.50% Senior Notes Due 8/31/2026,8.50,25,2026-08-31,2023-08-31,OTOTC,active
+CSSNQ,Chicken Soup for the Soul Entertainment Inc. 9.50% Notes Due 07/31/2025,9.50,25,2025-07-31,2022-07-31,OTOTC,active
+CIMP,Chimera Investment Corp 8.875% Senior Notes due 8/15/2030,8.875,25,2030-08-15,2027-08-15,NYSE,active
+CIMN,Chimera Investment Corp 9.000% Senior Notes due 5/15/2029,9.00,25,2029-05-15,2026-05-15,NYSE,active
+CIMO,Chimera Investment Corp 9.250% Senior Notes due 08/15/2029,9.25,25,2029-08-15,2026-08-15,NYSE,active
+CICB,CION Investment Corp 7.50% Notes Due 2029,7.50,25,2029-12-31,2026-12-30,NYSE,active
+CMSA,CMS Energy Corp. 5.625% Junior Subordinated Notes due 3/15/2078,5.625,25,2078-03-15,2023-03-15,NYSE,active
+CMSC,CMS Energy Corp. 5.875% Junior Subordinated Notes due 10/15/2078,5.875,25,2078-10-15,2023-10-15,NYSE,active
+CMSD,CMS Energy Corp. 5.875% Junior Subordinated Notes due 3/1/2079,5.875,25,2079-03-01,2024-03-01,NYSE,active
+CO-A,CNO Financial Group Inc 5.125% Subordinated Debentures Due 11/25/2060,5.125,25,2060-11-25,2025-11-25,NYSE,active
+CRBD,Corebridge Financial Inc. 6.375% Junior Subordinated Notes due 12/15/2064,6.375,25,2064-12-15,2029-12-15,NYSE,active
+FCRX,Crescent Capital BDC Inc. 5.00% Notes due 05/25/2026,5.00,25,2026-05-25,2023-05-25,NYSE,active
+CUBB,Customers Bancorp 5.375% Subordinated Notes Due 12/30/2034,5.375,25,2034-12-30,2029-12-30,NYSE,active
+DCOMG,Dime Community Bancshares Fixed/Float Subordinated Notes due 07/15/2034,7.00,25,2034-07-15,2029-07-15,NGM,active
+DHCNI,Diversified Healthcare Trust 5.625% Senior Notes due 8/1/2042,5.625,25,2042-08-01,2017-08-01,NGS,active
+DHCNL,Diversified Healthcare Trust 6.25% Senior Notes Due 2/1/2046,6.25,25,2046-02-01,2021-02-18,NGS,active
+DTB,DTE Energy Co 2020 Series G 4.375% Junior Subordinated Debentures due 10/15/2080,4.375,25,2080-10-15,2025-10-15,NYSE,active
+DTK,DTE Energy Co 2025 Series H 6.25% Junior Subordinated Debentures due 10/01/2085,6.25,25,2085-10-01,2030-10-01,NYSE,active
+DTG,DTE Energy Co Series E 4.375% Junior Subordinated Debentures due 12/01/2081,4.375,25,2081-12-01,2026-12-01,NYSE,active
+DTW,DTE Energy Co. Series E 5.25% Junior Subordinated Debentures due 12/1/2077,5.25,25,2077-12-01,2022-12-01,NYSE,active
+DUKB,Duke Energy Corp. 5.625% Junior Subordinated Debentures due 9/15/2078,5.625,25,2078-09-15,2023-09-15,NYSE,active
+ECCV,Eagle Point Credit Co. 5.375% Notes due 01/31/2029,5.375,25,2029-01-31,2025-01-31,NYSE,active
+ECCX,Eagle Point Credit Co. 6.6875% Notes due 4/30/2028,6.6875,25,2028-04-30,2021-04-30,NYSE,active
+ECCW,Eagle Point Credit Company Inc. 6.75% Notes Due 03/31/2031,6.75,25,2031-03-31,2024-03-29,NYSE,active
+ECCU,Eagle Point Credit Company Inc. 7.75% Notes due 6/30/2030,7.75,25,2030-06-30,2027-06-30,NYSE,active
+ELLA,Ellington Credit Co 8.50% Notes Due 03/30/2031,8.50,25,2031-03-30,2028-03-30,NYSE,active
+AAIN,Ellington Financial Inc. 6.00% Senior Notes due 8/01/2026,6.00,25,2026-08-01,2023-08-01,NYSE,delisted
+EAI,Entergy Arkansas 4.875% Series First Mortgage Bonds due 9/1/2066,4.875,25,2066-09-01,2021-09-01,NYSE,active
+ELC,Entergy Louisiana 4.875% Collateral Trust Mortgage Bonds Series due 9/1/2066,4.875,25,2066-09-01,2021-09-01,NYSE,active
+EMP,Entergy Mississippi 4.90% Series First Mortgage Bonds due 10/1/2066,4.90,25,2066-10-01,2021-10-01,NYSE,active
+ENJ,Entergy New Orleans 5.00% Series First Mortgage Bonds due 12/1/2052,5.00,25,2052-12-01,2017-12-01,NYSE,active
+ENO,Entergy New Orleans 5.50% Series First Mortgage Bonds due 4/1/2066,5.50,25,2066-04-01,2021-04-01,NYSE,active
+FGN,F&G Annuities & Life Inc. 7.950% Senior Notes due 12/15/2053,7.95,25,2053-12-15,2028-12-15,NYSE,active
+FGSN,F&G Annuities & Life Inc. 7.30% Junior Subordinated Notes due 1/15/2065,7.30,25,2065-01-15,2030-01-15,NYSE,active
+INBKZ,First Internet Bancorp 6.00% Fixed-to-Floating Rate Sub Notes due 6/30/2029,6.00,25,2029-06-30,2024-06-30,NGS,active
+F-C,Ford Motor Co. 6.00% Notes due 12/1/2059,6.00,25,2059-12-01,2024-12-01,NYSE,active
+F-B,Ford Motor Co. 6.20% Notes due 6/1/2059,6.20,25,2059-06-01,2024-06-01,NYSE,active
+F-D,Ford Motor Co. 6.50% Notes due 08/15/2062,6.50,25,2062-08-15,2027-08-15,NYSE,active
+FOSLL,Fossil Group Inc 7.00% Senior Notes Due 11/30/2026,7.00,25,2026-11-30,2025-11-30,NGS,active
+TEMP18,Frontier Communications Corp 7.05% Debentures Due 10/01/2046,7.05,25,2046-10-01,2021-10-01,NYSE,active
+GLADZ,Gladstone Capital Corp 7.75% Notes due 9/1/2028,7.75,25,2028-09-01,2025-09-01,NGS,active
+GAING,Gladstone Investment Corp 7.125% Notes due 05/01/2031,7.125,25,2031-05-01,2028-05-01,NGS,active
+GAINZ,Gladstone Investment Corp 4.875% Notes Due 11/01/2028,4.875,25,2028-11-01,2024-11-01,NGS,active
+GAINN,Gladstone Investment Corp. 5.00% Notes Due 5/1/2026,5.00,25,2026-05-01,2023-05-01,NGS,active
+GAINL,Gladstone Investment Corp. 8.00% Notes Due 8/1/2028,8.00,25,2028-08-01,2025-08-01,NGS,active
+GL-D,Globe Life Inc. 4.250% Junior Subordinated Debentures Due 6/15/2061,4.25,25,2061-06-15,2026-06-15,NYSE,active
+GECCI,Great Elm Capital Corp 8.50% Notes due 04/30/2029,8.50,25,2029-04-30,2026-04-30,NGM,active
+GECCG,Great Elm Capital Corp 7.75% Notes due 12/31/2030,7.75,25,2030-12-31,2027-12-31,NGM,active
+GECCZ,Great Elm Capital Corp 8.75% Notes Due 09/30/2028,8.75,25,2028-09-30,2025-09-30,NGM,active
+GECCH,Great Elm Capital Corp. 8.125% Notes Due 12/31/2029,8.125,25,2029-12-31,2026-12-31,NGM,active
+GECCO,Great Elm Capital Corp. 5.875% Notes due 6/30/2026,5.875,25,2026-06-30,2023-06-30,NGM,active
+GEGGL,Great Elm Group Inc. 7.25% Notes due 06/30/2027,7.25,25,2027-06-30,2024-06-30,NGM,active
+GREEL,Greenidge Generation Holdings Inc. 8.50% Senior Notes due 10/31/2026,8.50,25,2026-10-31,2024-10-31,NGS,active
+HWCPZ,Hancock Whitney Corp. 6.25% Subordinated Notes due 6/15/2060,6.25,25,2060-06-15,2025-06-15,NGS,active
+HROWM,Harrow Health Inc. 11.875% Senior Notes due 12/31/2027,11.875,25,2027-12-31,2024-12-31,NGM,active
+HNNAZ,Hennessy Advisors Inc. 4.875% Notes Due 12/31/2026,4.875,25,2026-12-31,2023-12-31,NGM,active
+HCXY,Hercules Capital 6.25% Notes due 10/30/2033,6.25,25,2033-10-30,2023-10-30,NYSE,active
+HTFB,Horizon Technology Finance Corp. 4.875% Notes due 03/30/2026,4.875,25,2026-03-30,2023-03-30,NYSE,active
+HTFC,Horizon Technology Finance Corp. 6.25% Notes due 06/15/2027,6.25,25,2027-06-15,2024-06-15,NYSE,active
+TEMP60,HSBC Holdings plc 6.547% Fixed/Floating Rate Subordinated Notes due 06/30/2034,6.547,25,2034-06-30,2033-06-20,NYSE,active
+IEH,Integrys Energy Group 6.00% Junior Subordinated Notes due 8/1/2073,6.00,25,2073-08-01,2023-08-01,NYSE,delisted
+KMPB,Kemper Corp 5.875% Fixed-Rate Reset Junior Sub Debentures due 03/15/2062,5.875,25,2062-03-15,2027-03-15,NYSE,active
+KKRI,KKR & Co. Inc. 6.875% Subordinated Notes due 6/1/2065,6.875,25,2065-06-01,2030-06-01,NYSE,active
+KKRS,KKR Group Finance Co. IX LLC 4.625% Subordinated Notes due 4/1/2061,4.625,25,2061-04-01,2026-04-01,NYSE,active
+MHLA,Maiden Holdings Ltd 6.625% Notes due 6/14/2046,6.625,25,2046-06-14,2021-06-14,NYSE,active
+MHNC,Maiden Holdings North America Ltd 7.75% Notes due 12/1/2043,7.75,25,2043-12-01,2018-12-01,NYSE,active
+MFAN,MFA Financial Inc. 8.875% Senior Notes due 02/15/2029,8.875,25,2029-02-15,2026-02-15,NYSE,active
+MFAO,MFA Financial Inc. 9.00% Senior Notes due 08/15/2029,9.00,25,2029-08-15,2026-08-15,NYSE,active
+MFICL,MidCap Financial Investment Corp 8.00% Unsecured Notes Due 12/15/2028,8.00,25,2028-12-15,2025-12-15,NGS,active
+MLCIL,Mount Logan Capital Inc. 8.00% Senior Notes due 01/31/2031,8.00,25,2031-01-31,2028-01-31,NCM,active
+NRUC,National Rural Utilities Coop Finance Corp. 5.50% Subordinated Notes due 5/15/2064,5.50,25,2064-05-15,2024-05-15,NYSE,active
+JSM,Navient Corp. 6.00% Senior Notes due 12/15/2043,6.00,25,2043-12-15,2008-12-15,NGS,active
+NMFCZ,New Mountain Finance Corp 8.250% Notes Due 11/15/2028,8.25,25,2028-11-15,2025-11-15,NGS,active
+NEWTH,NewtekOne Inc 8.625% Fixed Rate Senior Notes due 10/15/2029,8.625,25,2029-10-15,2026-10-15,NGM,active
+NEWTI,NewtekOne Inc 8.00% Notes Due 09/1/2028,8.00,25,2028-09-01,2025-09-01,NGM,active
+NEWTZ,NewtekOne Inc. 5.50% Notes due 2/1/2026,5.50,25,2026-02-01,2022-02-01,NGM,active
+NEWTO,NewtekOne Inc. 8.50% Fixed Rate Senior Notes due 02/01/2031,8.50,25,2031-02-01,2028-02-01,NGM,active
+NEWTG,NewtekOne Inc. 8.50% Fixed Rate Senior Notes due 6/1/2029,8.50,25,2029-06-01,2027-06-01,NGM,active
+NEE-U,NextEra Energy Capital Holdings Inc Ser U Junior Sub Debentures due 06/01/2085,6.50,25,2085-06-01,2030-06-01,NYSE,active
+NEE-N,NextEra Energy Capital Holdings 5.65% Series N Jr Sub Debentures due 3/1/2079,5.65,25,2079-03-01,2024-06-15,NYSE,active
+TEMP86,NextEra Energy Capital Holdings Inc. Se Z Junior Sub Debentures due 4/15/2086,6.50,25,2086-04-15,2031-04-15,NYSE,active
+NEE-T,NextEra Energy Inc. 7.234% Equity Units Due 11/1/2029,7.234,25,2029-11-01,2026-11-01,NYSE,active
+NOVTU,Novanta Inc. 6.50% Tangible Equity Units,6.50,25,2028-12-31,2025-12-31,NGS,active
+OPIRQ,Office Properties Income Trust 6.375% Senior Notes due 6/23/2050,6.375,25,2050-06-23,2025-06-23,OTOTC,active
+OFS,OFS Capital Corp. 7.50% Notes due 07/31/2028,7.50,25,2028-07-31,2026-07-31,NGS,active
+OFSSH,OFS Capital Corp. 4.95% Notes due 10/31/2028,4.95,25,2028-10-31,2023-10-31,NGS,active
+LTSK,Osaic Financial Services 7.25% Senior Notes due 9/30/2028,7.25,25,2028-09-30,2021-09-30,OTOTC,active
+LTSL,Osaic Financial Services 6.50% Senior Notes due 11/30/2027,6.50,25,2027-11-30,2020-11-30,OTOTC,active
+LTSE,Osaic Financial Services 7.00% Senior Notes due 5/31/2028,7.00,25,2028-05-31,2021-05-31,OTOTC,active
+LTSH,Osaic Financial Services 7.75% Senior Notes due 6/30/2029,7.75,25,2029-06-30,2022-06-30,OTOTC,active
+OXLCL,Oxford Lane Capital Corp. 6.75% Notes due 03/31/2031,6.75,25,2031-03-31,2024-03-16,NGS,active
+OXLCZ,Oxford Lane Capital Corp. 5.00% Notes due 01/31/2027,5.00,25,2027-01-31,2024-01-31,NGS,active
+OXLCG,Oxford Lane Capital Corp. 7.95% Notes due 2032,7.95,25,2032-12-31,2030-02-28,NGS,active
+OXLCI,Oxford Lane Capital Corp. 8.75% Notes due 06/30/2030,8.75,25,2030-06-30,2028-06-30,NGS,active
+OXSQH,Oxford Square Capital Corp 7.75% Notes due 2030,7.75,25,2030-12-31,2027-07-31,NGS,active
+OXSQG,Oxford Square Capital Corp. 5.50% Notes due 7/31/2028,5.50,25,2028-07-31,2024-05-31,NGS,active
+PMTU,PennyMac Mortgage Investment Trust 8.50% Senior Notes due 9/30/2028,8.50,25,2028-09-30,2025-09-30,NYSE,active
+PMTV,PennyMac Mortgage Investment Trust 9.00% Senior Notes due 2/15/2030,9.00,25,2030-02-15,2027-02-15,NYSE,active
+PMTW,PennyMac Mortgage Investment Trust 9.00% Senior Notes due 6/15/2030,9.00,25,2030-06-15,2027-06-15,NYSE,active
+PFXNZ,PhenixFIN Corp 5.25% Senior Notes due 11/1/2028,5.25,25,2028-11-01,2023-11-01,NGM,active
+TEMP55,Phoenix Cos. Inc. 7.45% Quarterly Interest Bonds QUIBS due 1/15/2032,7.45,25,2032-01-15,2007-01-15,NYSE,delisted
+PB-B,Pitney Bowes Inc. 6.70% Notes due 3/7/2043,6.70,25,2043-03-07,2018-03-07,NYSE,active
+PRHIZ,Presurance Holdings Inc 9.75% Senior Unsecured Notes due 9/30/2028,9.75,25,2028-09-30,2025-09-30,NGM,active
+TEMP90,Prudential Financial 5.20% Fixed-to-Floating Junior Subor Notes due 3/15/2044,5.20,25,2044-03-15,2024-03-15,NYSE,active
+PRH,Prudential Financial Inc. 5.950% Junior Subordinated Notes due 9/1/2062,5.95,25,2062-09-01,2027-09-01,NYSE,active
+PRS,Prudential Financial Inc. 5.625% Junior Subordinated Notes due 8/15/2058,5.625,25,2058-08-15,2023-08-15,NYSE,active
+QVCC,QVC Inc. 6.25% Senior Secured Notes due 11/26/2068,6.25,25,2068-11-26,2024-11-26,NYSE,active
+QVCD,QVC Inc. 6.375% Senior Secured Notes due 9/13/2067,6.375,25,2067-09-13,2023-09-13,NYSE,active
+CTBB,Qwest Corporation 6.50% Notes due 9/1/2056,6.50,25,2056-09-01,2021-09-01,NYSE,active
+CTDD,Qwest Corporation 6.75% Notes due 6/15/2057,6.75,25,2057-06-15,2022-06-15,NYSE,active
+METCZ,Ramaco Resources Inc 8.375% Senior Notes due 11/30/2029,8.375,25,2029-11-30,2026-11-30,NGS,active
+METCI,Ramaco Resources Inc. 8.250% Senior Notes due 2030,8.25,25,2030-12-31,2027-07-31,NGS,active
+RCD,Ready Capital Corp 9.00% Senior Notes due 12/15/2029,9.00,25,2029-12-15,2026-12-15,NYSE,active
+RCC,Ready Capital Corp. 5.75% Senior Notes due 2/15/2026,5.75,25,2026-02-15,2023-02-15,NYSE,active
+RCB,Ready Capital Corp. 6.20% Senior Notes due 7/30/2026,6.20,25,2026-07-30,2022-07-30,NYSE,active
+RWTQ,Redwood Trust Inc 9.50% Senior Notes due 12/1/2030,9.50,25,2030-12-01,2027-12-01,NYSE,active
+RWTO,Redwood Trust Inc 9.00% Senior Notes Due 09/01/2029,9.00,25,2029-09-01,2026-09-01,NYSE,active
+RWTN,Redwood Trust Inc 9.125% Senior Notes due 3/1/2029,9.125,25,2029-03-01,2026-03-01,NYSE,active
+RWTP,Redwood Trust Inc 9.125% Senior Notes due 3/1/2030,9.125,25,2030-03-01,2027-03-01,NYSE,active
+RZB,Reinsurance Group of America 5.75% Fixed/Float Sub Debentures due 6/15/2056,5.75,25,2056-06-15,2026-06-15,NYSE,active
+RZC,Reinsurance Group of America Reset Rate Sub Debentures due 10/15/2052,7.00,25,2052-10-15,2027-10-15,NYSE,active
+RWAY,Runway Growth Finance Corp. 7.50% Notes Due 07/28/2027,7.50,25,2027-07-28,2024-07-28,NGS,active
+RWAYZ,Runway Growth Finance Corp. 8.00% Notes Due 12/31/2027,8.00,25,2027-12-31,2024-12-31,NGS,active
+SCCD,Sachem Capital Corp. 6.00% Notes due 12/30/2026,6.00,25,2026-12-30,2023-12-20,AMEX,active
+SCCC,Sachem Capital Corp. 7.75% Notes due 9/30/2025,7.75,25,2025-09-30,2022-09-04,AMEX,active
+SCCE,Sachem Capital Corp. 6.00% Notes due 03/30/2027,6.00,25,2027-03-30,2024-03-09,AMEX,active
+SCCB,Sachem Capital Corp. 7.125% Notes due 6/30/2024,7.125,25,2024-06-30,2021-06-30,AMEX,active
+SCCG,Sachem Capital Corp. 8.00% Notes due 09/30/2027,8.00,25,2027-09-30,2024-08-23,AMEX,active
+SAV,Saratoga Investment Corp 6.00% Notes due 4/30/2027,6.00,25,2027-04-30,2024-04-27,NYSE,active
+SAR,Saratoga Investment Corp 7.50% Notes due 2/6/2031,7.50,25,2031-02-06,2028-02-06,NYSE,active
+SAV,Saratoga Investment Corp. 8.00% Notes due 10/31/2027,8.00,25,2027-10-31,2024-10-27,NYSE,active
+SAV,Saratoga Investment Corp. 8.125% Notes due 12/31/2027,8.125,25,2027-12-31,2024-12-13,NYSE,active
+SAV,Saratoga Investment Corp. 8.50% Notes due 04/15/2028,8.50,25,2028-04-15,2025-04-14,NYSE,active
+SBCKP,Sears Roebuck Acceptance Corp. 7.00% Notes due 7/15/2042,7.00,25,2042-07-15,2007-07-15,NYSE,delisted
+SBCKO,Sears Roebuck Acceptance Corp. 7.40% Notes due 2/1/2043,7.40,25,2043-02-01,2008-05-01,NYSE,delisted
+SREA,Sempra Energy 5.75% Junior Subordinated Notes due 7/01/2079,5.75,25,2079-07-01,2024-10-01,NYSE,active
+SJIJ,South Jersey Industries Inc. 5.625% Junior Subordinated Notes due 9/16/2079,5.625,25,2079-09-16,2024-09-16,NYSE,delisted
+SOJD,Southern Co. Series 2020A 4.95% Junior Subordinated Notes due 1/30/2080,4.95,25,2080-01-30,2025-01-30,NYSE,active
+SOJE,Southern Co. Series 2020C 4.20% Junior Subordinated Notes due 10/15/2060,4.20,25,2060-10-15,2025-10-15,NYSE,active
+SOJF,Southern Co. Series 2025A 6.50% Junior Subordinated Notes due 3/15/2085,6.50,25,2085-03-15,2030-03-15,NYSE,active
+SOJC,Southern Co. 5.25% Series 2017B Junior Subordinated Notes due 12/1/2077,5.25,25,2077-12-01,2022-12-01,NYSE,active
+SRJN,Spire Inc. 6.375% Junior Subordinated Notes due 2086,6.375,25,2086-12-31,2030-12-31,NYSE,active
+SF,Stifel Financial Corp. 5.20% Senior Notes due 10/15/2047,5.20,25,2047-10-15,2022-10-15,NYSE,active
+SSSSL,Sutter Rock Capital Corp 6.00% Notes due 12/30/2026,6.00,25,2026-12-30,2024-12-30,NCM,active
+SWKHL,SWK Holdings Corp 9.00% Senior Notes due 01/31/2027,9.00,25,2027-01-31,2024-01-31,NGM,active
+TVE,Tennessee Valley Authority Reset Rate Series A PARRS Power Bonds due 5/1/2029,7.00,25,2029-05-01,2024-05-01,NYSE,active
+TVC,Tennessee Valley Authority Reset Rate Series D PARRS Power Bonds due 6/1/2028,7.00,25,2028-06-01,2023-06-01,NYSE,active
+TFSA,Terra Income Fund 6 Inc. 7.00% Notes Due 3/31/2026,7.00,25,2026-03-31,2023-02-10,NYSE,active
+IPTA,Terra Property Trust Inc. 6.00% Notes due 6/30/2026,6.00,25,2026-06-30,2023-06-30,NYSE,active
+TMUSI,T-Mobile US 5.50% Senior Notes due 9/1/2070,5.50,25,2070-09-01,2025-09-01,NGS,active
+TMUSZ,T-Mobile US Inc. 5.50% Senior Notes due 3/1/2070,5.50,25,2070-03-01,2025-03-01,NGS,active
+TMUSL,T-Mobile US Inc. 6.25% Senior Notes due 9/1/2069,6.25,25,2069-09-01,2024-09-01,NGS,active
+TPGXL,TPG Operating Group II L.P. 6.95% Junior Subordinated Notes due 3/15/2064,6.95,25,2064-03-15,2029-03-15,NGS,active
+ICPA,TransCanada PipeLines Ltd 6.250% Junior Subordinated Notes due 11/01/2085,6.25,25,2085-11-01,2030-11-01,NYSE,active
+TRINZ,Trinity Capital Inc. 7.875% Notes Due 03/30/2029,7.875,25,2029-03-30,2026-03-30,NGS,active
+TRINI,Trinity Capital Inc. 7.875% Notes Due 9/30/2029,7.875,25,2029-09-30,2026-09-30,NGS,active
+TWOD,Two Harbors Investment Corp 9.375% Senior Notes due 8/15/2030,9.375,25,2030-08-15,2027-05-15,NYSE,active
+UNMA,Unum Group 6.25% Junior Subordinated Notes due 6/15/2058,6.25,25,2058-06-15,2023-06-15,NYSE,active
+WRB-H,W.R. Berkley Corp. 4.125% Subordinated Debentures due 3/30/2061,4.125,25,2061-03-30,2026-03-30,NYSE,active
+WRB-G,W.R. Berkley Corp. 4.25% Subordinated Debentures due 9/30/2060,4.25,25,2060-09-30,2025-09-30,NYSE,active
+WRB-F,W.R. Berkley Corp. 5.10% Subordinated Debentures due 12/30/2059,5.10,25,2059-12-30,2024-12-30,NYSE,active
+WRB-E,W.R. Berkley Corp. 5.70% Subordinated Debentures due 3/30/2058,5.70,25,2058-03-30,2023-03-30,NYSE,active
+WHLRL,Wheeler Real Estate Investment Trust Senior Sub Convertible Notes Due 2031,7.00,25,2031-12-31,2024-01-01,NCM,active
+WHFCL,WhiteHorse Finance Inc. 7.875% Notes Due 09/15/2028,7.875,25,2028-09-15,2025-09-15,NGS,active
+WLMCP,Williams Cos. Inc. 5.5% Junior Subor Convertible Debentures due 6/1/2033,5.50,25,2033-06-01,2010-06-01,OTOTC,active
