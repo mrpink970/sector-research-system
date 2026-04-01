@@ -26,8 +26,10 @@ jobs:
         run: |
           python scripts/analyze_exit_efficiency.py
 
-      - name: Upload results as artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: exit-analysis-results
-          path: data/
+      - name: Commit results
+        run: |
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
+          git add data/exit_efficiency_audit.csv data/top_givebacks.csv data/exit_efficiency_summary.csv
+          git commit -m "Exit efficiency analysis $(date '+%Y-%m-%d')" || echo "No changes to commit"
+          git push
