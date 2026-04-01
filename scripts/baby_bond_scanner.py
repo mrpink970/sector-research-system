@@ -2,20 +2,33 @@
 """
 Quick Baby Bond Data Fetcher
 Fetches basic data from Yahoo Finance for a list of baby bond/preferred tickers.
-Run this to see what data is available.
 """
 
 import yfinance as yf
 import pandas as pd
 from datetime import datetime
 
-# Your baby bond tickers from Schwab
+# Corrected tickers for Yahoo Finance
 TICKERS = [
-    "QVCD", "QVCC", "BHFAL", "BHFAN", "BHFAO",
-    "HOVNP", "HPP/PRC", "JSM", "JXN/PRA", "LNC/PRD",
-    "PBI/PRB", "PSEC/PRA", "SLMBP", "CTBB", "CTDD",
-    "DHCNI", "DHCNL", "FGSN", "FITBI", "TDS/PRU",
-    "TDS/PRV", "VNO/PRL", "VNO/PRM", "VNO/PRN"
+    "QVCD", "QVCC", 
+    "BHFAL", "BHFAN", "BHFAO",
+    "HOVNP", 
+    "HPP-PRC",      # HPP/PRC → HPP-PRC
+    "JSM", 
+    "JXN-PRA",      # JXN/PRA → JXN-PRA
+    "LNC-PRD",      # LNC/PRD → LNC-PRD
+    "PBI-PRB",      # PBI/PRB → PBI-PRB
+    "PSEC-PRA",     # PSEC/PRA → PSEC-PRA
+    "SLMBP", 
+    "CTBB", "CTDD",
+    "DHCNI", "DHCNL", 
+    "FGSN", 
+    "FITBI", 
+    "TDS-PRU",      # TDS/PRU → TDS-PRU
+    "TDS-PRV",      # TDS/PRV → TDS-PRV
+    "VNO-PRL",      # VNO/PRL → VNO-PRL
+    "VNO-PRM",      # VNO/PRM → VNO-PRM
+    "VNO-PRN"       # VNO/PRN → VNO-PRN
 ]
 
 def fetch_baby_bond_data(ticker):
@@ -38,9 +51,9 @@ def fetch_baby_bond_data(ticker):
         # Extract data
         data = {
             'ticker': ticker,
-            'current_price': current_price,
-            '52_week_high': year_high,
-            '52_week_low': year_low,
+            'current_price': current_price if isinstance(current_price, (int, float)) else 'N/A',
+            '52_week_high': year_high if isinstance(year_high, (int, float)) else 'N/A',
+            '52_week_low': year_low if isinstance(year_low, (int, float)) else 'N/A',
             'dividend_rate': info.get('dividendRate', 'N/A'),
             'dividend_yield': info.get('dividendYield', 'N/A'),
             'market_cap': info.get('marketCap', 'N/A'),
@@ -56,16 +69,16 @@ def fetch_baby_bond_data(ticker):
         else:
             data['range_width_pct'] = 'N/A'
         
-        # Calculate position in range (0 = at low, 100 = at high)
+        # Calculate position in range
         if isinstance(current_price, (int, float)) and isinstance(year_low, (int, float)) and isinstance(year_high, (int, float)) and (year_high - year_low) > 0:
             position = ((current_price - year_low) / (year_high - year_low)) * 100
             data['position_in_range_pct'] = round(position, 1)
         else:
             data['position_in_range_pct'] = 'N/A'
         
-        # Convert dividend yield to percentage if it's a decimal
+        # Convert dividend yield to percentage
         if isinstance(data['dividend_yield'], (int, float)) and data['dividend_yield'] != 'N/A':
-            if data['dividend_yield'] < 1:  # Likely decimal (0.15 = 15%)
+            if data['dividend_yield'] < 1:
                 data['dividend_yield'] = round(data['dividend_yield'] * 100, 2)
         
         return data
@@ -88,22 +101,31 @@ def main():
         data = fetch_baby_bond_data(ticker)
         if data:
             results.append(data)
-            print(f"OK - ${data['current_price']:.2f} | Range: {data['range_width_pct']}% | Yield: {data['dividend_yield']}%")
+            price = data['current_price']
+            if isinstance(price, (int, float)):
+                print(f"OK - ${price:.2f} | Range: {data['range_width_pct']}% | Yield: {data['dividend_yield']}%")
+            else:
+                print(f"OK - No price data")
         else:
             failed.append(ticker)
             print("FAILED")
     
-    # Create DataFrame
     if results:
         df = pd.DataFrame(results)
         
-        # Sort by yield (highest first)
-        df = df.sort_values('dividend_yield', ascending=False)
+        # Filter numeric columns for sorting
+        df_sorted = df.copy()
+        df_sorted['dividend_yield_num'] = pd.to_numeric(df_sorted['dividend_yield'], errors='coerce')
+        df_sorted = df_sorted.sort_values('dividend_yield_num', ascending=False)
         
         print("\n" + "=" * 80)
         print("SUMMARY - Sorted by Dividend Yield")
         print("=" * 80)
-        print(df[['ticker', 'current_price', '52_week_low', '52_week_high', 'range_width_pct', 'position_in_range_pct', 'dividend_yield']].to_string(index=False))
+        
+        # Display key columns
+        display_df = df_sorted[['ticker', 'current_price', '52_week_low', '52_week_high', 
+                                 'range_width_pct', 'position_in_range_pct', 'dividend_yield']]
+        print(display_df.to_string(index=False))
         
         print("\n" + "=" * 80)
         print("STATISTICS")
@@ -115,10 +137,15 @@ def main():
             print(f"Failed tickers: {', '.join(failed)}")
         
         # Filter for good candidates
-        good_candidates = df[
-            (df['current_price'] < 20) & 
-            (df['dividend_yield'] > 8) & 
-            (df['range_width_pct'] > 30)
+        df_numeric = df.copy()
+        df_numeric['current_price'] = pd.to_numeric(df_numeric['current_price'], errors='coerce')
+        df_numeric['dividend_yield'] = pd.to_numeric(df_numeric['dividend_yield'], errors='coerce')
+        df_numeric['range_width_pct'] = pd.to_numeric(df_numeric['range_width_pct'], errors='coerce')
+        
+        good_candidates = df_numeric[
+            (df_numeric['current_price'] < 20) & 
+            (df_numeric['dividend_yield'] > 8) & 
+            (df_numeric['range_width_pct'] > 30)
         ]
         
         print(f"\n✅ Good candidates (price < $20, yield > 8%, range > 30%): {len(good_candidates)}")
