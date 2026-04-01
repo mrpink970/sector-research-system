@@ -186,15 +186,35 @@ def generate_html(perf: Dict, positions: Dict, trades: pd.DataFrame, candidates:
             """)
         return "".join(rows)
     
-    # Build candidates table (fixed header alignment)
-    def build_candidates_table(df: pd.DataFrame, system_name: str) -> str:
+    # Build candidates table for trend (uses total_score)
+    def build_trend_candidates_table(df: pd.DataFrame) -> str:
         if df.empty:
-            return f'<tr><td colspan="3" style="text-align: center;">No candidates today</td></tr>'
+            return '<tr><td colspan="3" style="text-align: center;">No candidates today</td></tr>'
         
         rows = []
         for _, row in df.iterrows():
             ticker = row.get("ticker", "")
-            score = int(row.get("total_score", row.get("breakout_total_score", 0)))
+            score = int(row.get("total_score", 0))
+            close = float(row.get("close", 0))
+            
+            rows.append(f"""
+            <tr>
+                <td><strong>{ticker}</strong></td>
+                <td>{score}</td>
+                <td>${close:.2f}</td>
+            </tr>
+            """)
+        return "".join(rows)
+    
+    # Build candidates table for breakout (uses breakout_total_score)
+    def build_breakout_candidates_table(df: pd.DataFrame) -> str:
+        if df.empty:
+            return '<tr><td colspan="3" style="text-align: center;">No candidates today</td></tr>'
+        
+        rows = []
+        for _, row in df.iterrows():
+            ticker = row.get("ticker", "")
+            score = int(row.get("breakout_total_score", 0))
             close = float(row.get("close", 0))
             
             rows.append(f"""
@@ -423,20 +443,20 @@ def generate_html(perf: Dict, positions: Dict, trades: pd.DataFrame, candidates:
         <div class="section-title">🎯 Today's Top Candidates</div>
         <div class="two-col">
             <div class="col">
-                <h4>Trend System (Score ≥ 6)</h4>
+                <h4>Trend System (Score ≥ 6) Range: 0–8</h4>
                 <table style="width: 100%;">
                     <thead><tr><th>Ticker</th><th>Score</th><th>Price</th></tr></thead>
                     <tbody>
-                        {build_candidates_table(candidates.get("trend", pd.DataFrame()), "Trend")}
+                        {build_trend_candidates_table(candidates.get("trend", pd.DataFrame()))}
                     </tbody>
                 </table>
             </div>
             <div class="col">
-                <h4>Breakout System (Score ≥ 6)</h4>
+                <h4>Breakout System (Score ≥ 6) Range: 0–11</h4>
                 <table style="width: 100%;">
                     <thead><tr><th>Ticker</th><th>Score</th><th>Price</th></tr></thead>
                     <tbody>
-                        {build_candidates_table(candidates.get("breakout", pd.DataFrame()), "Breakout")}
+                        {build_breakout_candidates_table(candidates.get("breakout", pd.DataFrame()))}
                     </tbody>
                 </table>
             </div>
