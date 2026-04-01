@@ -34,41 +34,57 @@ def load_performance(data_dir: Path) -> Dict:
 
 
 def load_open_positions(data_dir: Path) -> Dict[str, pd.DataFrame]:
-    """Load open positions for both systems"""
+    """Load open positions for both systems with empty file handling"""
     trend_file = data_dir / "trend_open_positions.csv"
     breakout_file = data_dir / "breakout_open_positions.csv"
     
-    result = {}
-    if trend_file.exists():
-        result["trend"] = pd.read_csv(trend_file)
-    else:
-        result["trend"] = pd.DataFrame()
+    result = {"trend": pd.DataFrame(), "breakout": pd.DataFrame()}
     
-    if breakout_file.exists():
-        result["breakout"] = pd.read_csv(breakout_file)
-    else:
-        result["breakout"] = pd.DataFrame()
+    # Load trend positions
+    if trend_file.exists() and trend_file.stat().st_size > 0:
+        try:
+            df = pd.read_csv(trend_file)
+            if not df.empty and 'ticker' in df.columns:
+                result["trend"] = df
+        except:
+            pass
+    
+    # Load breakout positions
+    if breakout_file.exists() and breakout_file.stat().st_size > 0:
+        try:
+            df = pd.read_csv(breakout_file)
+            if not df.empty and 'ticker' in df.columns:
+                result["breakout"] = df
+        except:
+            pass
     
     return result
 
 
 def load_recent_trades(data_dir: Path, limit: int = 10) -> pd.DataFrame:
-    """Load recent trades from both systems and combine"""
+    """Load recent trades from both systems and combine with empty file handling"""
     trend_file = data_dir / "trend_trade_log.csv"
     breakout_file = data_dir / "breakout_trade_log.csv"
     
     trades = []
-    if trend_file.exists():
-        trend_df = pd.read_csv(trend_file)
-        if not trend_df.empty:
-            trend_df["system_display"] = "Trend"
-            trades.append(trend_df)
     
-    if breakout_file.exists():
-        breakout_df = pd.read_csv(breakout_file)
-        if not breakout_df.empty:
-            breakout_df["system_display"] = "Breakout"
-            trades.append(breakout_df)
+    if trend_file.exists() and trend_file.stat().st_size > 0:
+        try:
+            trend_df = pd.read_csv(trend_file)
+            if not trend_df.empty:
+                trend_df["system_display"] = "Trend"
+                trades.append(trend_df)
+        except:
+            pass
+    
+    if breakout_file.exists() and breakout_file.stat().st_size > 0:
+        try:
+            breakout_df = pd.read_csv(breakout_file)
+            if not breakout_df.empty:
+                breakout_df["system_display"] = "Breakout"
+                trades.append(breakout_df)
+        except:
+            pass
     
     if not trades:
         return pd.DataFrame()
@@ -85,18 +101,23 @@ def load_candidates(data_dir: Path) -> Dict[str, pd.DataFrame]:
     
     result = {"trend": pd.DataFrame(), "breakout": pd.DataFrame()}
     
-    if trend_file.exists():
-        df = pd.read_csv(trend_file)
-        if not df.empty:
-            # Get latest date
-            latest_date = df["date"].max()
-            result["trend"] = df[df["date"] == latest_date].head(5)
+    if trend_file.exists() and trend_file.stat().st_size > 0:
+        try:
+            df = pd.read_csv(trend_file)
+            if not df.empty:
+                latest_date = df["date"].max()
+                result["trend"] = df[df["date"] == latest_date].head(5)
+        except:
+            pass
     
-    if breakout_file.exists():
-        df = pd.read_csv(breakout_file)
-        if not df.empty:
-            latest_date = df["date"].max()
-            result["breakout"] = df[df["date"] == latest_date].head(5)
+    if breakout_file.exists() and breakout_file.stat().st_size > 0:
+        try:
+            df = pd.read_csv(breakout_file)
+            if not df.empty:
+                latest_date = df["date"].max()
+                result["breakout"] = df[df["date"] == latest_date].head(5)
+        except:
+            pass
     
     return result
 
@@ -107,17 +128,20 @@ def load_run_log(data_dir: Path) -> Dict:
     if not log_file.exists():
         return {"date": "N/A", "stocks_scored": 0, "candidates_found": 0, "breakout_candidates_found": 0}
     
-    df = pd.read_csv(log_file)
-    if df.empty:
+    try:
+        df = pd.read_csv(log_file)
+        if df.empty:
+            return {"date": "N/A", "stocks_scored": 0, "candidates_found": 0, "breakout_candidates_found": 0}
+        
+        latest = df.iloc[-1]
+        return {
+            "date": str(latest.get("date", "N/A")),
+            "stocks_scored": int(latest.get("stocks_scored", 0)),
+            "candidates_found": int(latest.get("candidates_found", 0)),
+            "breakout_candidates_found": int(latest.get("breakout_candidates_found", 0)),
+        }
+    except:
         return {"date": "N/A", "stocks_scored": 0, "candidates_found": 0, "breakout_candidates_found": 0}
-    
-    latest = df.iloc[-1]
-    return {
-        "date": str(latest.get("date", "N/A")),
-        "stocks_scored": int(latest.get("stocks_scored", 0)),
-        "candidates_found": int(latest.get("candidates_found", 0)),
-        "breakout_candidates_found": int(latest.get("breakout_candidates_found", 0)),
-    }
 
 
 def generate_html(perf: Dict, positions: Dict, trades: pd.DataFrame, candidates: Dict, run_log: Dict) -> str:
