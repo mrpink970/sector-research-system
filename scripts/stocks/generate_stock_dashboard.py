@@ -40,7 +40,6 @@ def load_open_positions(data_dir: Path) -> Dict[str, pd.DataFrame]:
     
     result = {"trend": pd.DataFrame(), "breakout": pd.DataFrame()}
     
-    # Load trend positions
     if trend_file.exists() and trend_file.stat().st_size > 0:
         try:
             df = pd.read_csv(trend_file)
@@ -49,7 +48,6 @@ def load_open_positions(data_dir: Path) -> Dict[str, pd.DataFrame]:
         except:
             pass
     
-    # Load breakout positions
     if breakout_file.exists() and breakout_file.stat().st_size > 0:
         try:
             df = pd.read_csv(breakout_file)
@@ -164,7 +162,7 @@ def generate_html(perf: Dict, positions: Dict, trades: pd.DataFrame, candidates:
     # Build open positions HTML
     def build_positions_table(df: pd.DataFrame, system_name: str) -> str:
         if df.empty:
-            return f'<tr><td colspan="6" style="text-align: center;">No open positions</td></tr>'
+            return f'<tr><td colspan="7" style="text-align: center;">No open positions</td></tr>'
         
         rows = []
         for _, row in df.iterrows():
@@ -188,10 +186,10 @@ def generate_html(perf: Dict, positions: Dict, trades: pd.DataFrame, candidates:
             """)
         return "".join(rows)
     
-    # Build candidates table
+    # Build candidates table (fixed header alignment)
     def build_candidates_table(df: pd.DataFrame, system_name: str) -> str:
         if df.empty:
-            return f'<tr><td colspan="4" style="text-align: center;">No candidates today</td></tr>'
+            return f'<tr><td colspan="3" style="text-align: center;">No candidates today</td></tr>'
         
         rows = []
         for _, row in df.iterrows():
@@ -201,7 +199,6 @@ def generate_html(perf: Dict, positions: Dict, trades: pd.DataFrame, candidates:
             
             rows.append(f"""
             <tr>
-                <td>{system_name}</td>
                 <td><strong>{ticker}</strong></td>
                 <td>{score}</td>
                 <td>${close:.2f}</td>
@@ -212,7 +209,7 @@ def generate_html(perf: Dict, positions: Dict, trades: pd.DataFrame, candidates:
     # Build trades table
     def build_trades_table(df: pd.DataFrame) -> str:
         if df.empty:
-            return '<tr><td colspan="7" style="text-align: center;">No closed trades yet</td></tr>'
+            return '<tr><td colspan="8" style="text-align: center;">No closed trades yet</td></tr>'
         
         rows = []
         for _, row in df.iterrows():
