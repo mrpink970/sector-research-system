@@ -1,23 +1,35 @@
 name: Baby Bond Scanner
 
 on:
+  schedule:
+    - cron: '0 12 * * 6'   # Saturday at 12:00 PM ET
   workflow_dispatch:
 
 jobs:
   run-scanner:
     runs-on: ubuntu-latest
+    
     steps:
-      - uses: actions/checkout@v4
-      - name: Setup Python
+      - name: Checkout repo
+        uses: actions/checkout@v4
+      
+      - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
+      
       - name: Install dependencies
-        run: pip install yfinance pandas
-      - name: Run scanner
-        run: python scripts/baby_bond_scanner.py
-      - name: Upload results
-        uses: actions/upload-artifact@v4
-        with:
-          name: baby-bond-data
-          path: baby_bond_data_*.csv
+        run: |
+          pip install yfinance pandas
+      
+      - name: Run baby bond scanner
+        run: |
+          python scripts/bonds/baby_bond_scanner.py
+      
+      - name: Commit outputs
+        run: |
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
+          git add data/bonds/*.csv
+          git commit -m "Baby bond scan $(date '+%Y-%m-%d')" || echo "No changes to commit"
+          git push
