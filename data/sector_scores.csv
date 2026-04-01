@@ -7027,3 +7027,17 @@ date,sector,signal_etf,selected_etf,direction,total_score,signal_state,score_cha
 2026-03-31,Real Estate,XLRE,DRV,short,-3,Bear,0,4
 2026-03-31,Semiconductors,SMH,SOXS,short,-3,Bear,3,4
 2026-03-31,Technology,XLK,TECS,short,-3,Bear,3,4
+2026-04-01,Biotechnology,XBI,LABU,long,4,Bull,0,1
+2026-04-01,Energy,XLE,,none,2,Neutral,-2,2
+2026-04-01,Utilities,XLU,,none,1,Neutral,0,3
+2026-04-01,Materials,XLB,,none,-1,Neutral,0,4
+2026-04-01,Communication Services,XLC,,short,-3,Bear,0,5
+2026-04-01,Consumer Discretionary,XLY,SCC,short,-3,Bear,0,5
+2026-04-01,Consumer Staples,XLP,SZK,short,-3,Bear,0,5
+2026-04-01,Financials,XLF,FAZ,short,-3,Bear,-2,5
+2026-04-01,Healthcare,XLV,RXD,short,-3,Bear,0,5
+2026-04-01,Industrials,XLI,SIJ,short,-3,Bear,0,5
+2026-04-01,Nasdaq Growth,QQQ,SQQQ,short,-3,Bear,0,5
+2026-04-01,Real Estate,XLRE,DRV,short,-3,Bear,0,5
+2026-04-01,Semiconductors,SMH,SOXS,short,-3,Bear,0,5
+2026-04-01,Technology,XLK,TECS,short,-3,Bear,0,5
