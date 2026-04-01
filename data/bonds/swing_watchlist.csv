@@ -1,0 +1,17 @@
+ticker,type,description,coupon,current_price,low_52w,high_52w,range_width_pct,position_pct,num_swings,avg_swing_pct,current_yield_pct,avg_volume,is_swing_candidate
+GREEL,baby_bond,Greenidge Generation Holdings Inc. 8.50% Senior Notes due 10/31/2026,8.5,20.02,6.33,22.06,248.4,87.1,29,22.1,10.6,6047,True
+OPIRQ,baby_bond,Office Properties Income Trust 6.375% Senior Notes due 6/23/2050,6.375,0.26,0.01,9.15,83081.8,2.7,27,662.2,613.0,26603,True
+RILYZ,baby_bond,BRC Group Holdings Inc. 5.25% Senior Notes Due 08/31/2028,5.25,16.73,4.86,17.79,266.0,91.8,25,15.0,7.8,47621,True
+RILYG,baby_bond,BRC Group Holdings Inc 5.00% Senior Notes Due 12/31/2026,5.0,23.09,6.12,23.65,286.4,96.8,22,17.2,5.4,29054,True
+RILYT,baby_bond,BRC Group Holdings Inc 6.00% Senior Notes Due 1/31/2028,6.0,17.7,5.05,19.69,289.9,86.4,21,21.2,8.5,26277,True
+PRHIZ,baby_bond,Presurance Holdings Inc 9.75% Senior Unsecured Notes due 9/30/2028,9.75,17.05,16.99,25.3,48.9,0.7,14,15.2,14.3,2536,True
+RWAY,bdc,Runway Growth Finance Corp. 7.50% Notes Due 07/28/2027,7.5,6.8,6.58,11.4,73.3,4.6,20,8.1,1993.0,356257,False
+OFS,bdc,OFS Capital Corp. 7.50% Notes due 07/31/2028,7.5,3.4,2.72,9.49,248.9,10.0,22,11.1,1915.0,75359,False
+SAR,bdc,Saratoga Investment Corp 7.50% Notes due 2/6/2031,7.5,21.38,20.78,25.64,23.4,12.3,23,5.3,1372.0,118292,False
+CSWC,bdc,Capital Southwest Corp. 7.75% notes due 8/1/2028,7.75,21.93,17.46,23.84,36.5,70.1,25,4.9,1158.0,605952,False
+MHNC,preferred,Maiden Holdings North America Ltd 7.75% Notes due 12/1/2043,7.75,12.25,11.14,18.54,66.4,15.0,28,3.9,15.8,8951,False
+QVCD,baby_bond,QVC Inc. 6.375% Senior Secured Notes due 9/13/2067,6.375,10.37,6.01,11.71,94.8,76.5,25,9.8,15.4,36330,False
+QVCC,baby_bond,QVC Inc. 6.25% Senior Secured Notes due 11/26/2068,6.25,10.28,6.0,11.5,91.7,77.8,25,11.5,15.2,84012,False
+MHLA,preferred,Maiden Holdings Ltd 6.625% Notes due 6/14/2046,6.625,10.98,9.93,15.7,58.1,18.2,25,2.4,15.1,5889,False
+RCD,baby_bond,Ready Capital Corp 9.00% Senior Notes due 12/15/2029,9.0,19.35,18.55,24.45,31.8,13.6,25,3.2,11.6,17747,False
+TFSA,baby_bond,Terra Income Fund 6 Inc. 7.00% Notes Due 3/31/2026,7.0,15.25,9.25,27.04,192.3,33.7,34,4.1,11.5,1548,False
