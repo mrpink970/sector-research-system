@@ -354,13 +354,26 @@ def main():
 
     out = pd.DataFrame(rows)
     out = out.sort_values(["date", "total_score", "ticker"], ascending=[True, False, True])
-    out.to_csv(scores_path, index=False)
+    
+    # ============================================================
+    # FIX: Append to history instead of overwriting
+    # ============================================================
+    if scores_path.exists():
+        existing = pd.read_csv(scores_path)
+        today_str = out["date"].iloc[0] if not out.empty else None
+        if today_str:
+            existing = existing[existing["date"] != today_str]
+        combined = pd.concat([existing, out], ignore_index=True)
+        combined = combined.sort_values(["date", "total_score", "ticker"], ascending=[True, False, True])
+        combined.to_csv(scores_path, index=False)
+    else:
+        out.to_csv(scores_path, index=False)
 
-    # Trend candidates (existing)
+    # Trend candidates (overwrite each day — only keep most recent)
     trend_candidates = out[out["signal"] == "Strong Bullish"].copy()
     trend_candidates.to_csv(candidates_path, index=False)
 
-    # Breakout candidates (separate file for clarity)
+    # Breakout candidates (overwrite each day)
     breakout_candidates = out[out["breakout_signal"] == "Strong Breakout Candidate"].copy()
     breakout_candidates_path = root / "data" / "stocks" / "stock_breakout_candidates_history.csv"
     breakout_candidates.to_csv(breakout_candidates_path, index=False)
