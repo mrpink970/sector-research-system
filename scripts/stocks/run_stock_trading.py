@@ -83,12 +83,13 @@ def load_trend_candidates(date: str, scores_df: pd.DataFrame, min_score: int = 6
             "close": float(row["close"]),
         })
     
-    results.sort(key=lambda x: x["score"], reverse=True)
+    # Sort by score descending, then ticker alphabetically
+    results.sort(key=lambda x: (-x["score"], x["ticker"]))
     return results
 
 
 def load_breakout_candidates(date: str, scores_df: pd.DataFrame, min_score: int = 6) -> List[dict]:
-    """Load breakout candidates (breakout_signal = Strong Breakout Candidate, breakout_total_score >= min_score)"""
+    """Load breakout candidates with tiebreaker: score → rs_acceleration → volume → proximity → ticker"""
     day_df = scores_df[scores_df["date"] == date].copy()
     candidates = day_df[
         (day_df["breakout_signal"] == "Strong Breakout Candidate") &
@@ -102,9 +103,19 @@ def load_breakout_candidates(date: str, scores_df: pd.DataFrame, min_score: int 
             "score": int(row["breakout_total_score"]),
             "signal": row["breakout_signal"],
             "close": float(row["close"]),
+            "rs_acceleration_score": int(row.get("breakout_rs_acceleration_score", 0)),
+            "volume_score": int(row.get("breakout_volume_score", 0)),
+            "proximity_score": int(row.get("breakout_proximity_score", 0)),
         })
     
-    results.sort(key=lambda x: x["score"], reverse=True)
+    # Sort by: score desc, then rs_acceleration desc, then volume desc, then proximity desc, then ticker asc
+    results.sort(key=lambda x: (
+        -x["score"],
+        -x["rs_acceleration_score"],
+        -x["volume_score"],
+        -x["proximity_score"],
+        x["ticker"]
+    ))
     return results
 
 
@@ -241,8 +252,41 @@ def main():
     
     # Get unique dates from scores
     all_dates = sorted(scores["date"].unique())
+    
+    # Handle first day with only one date
     if len(all_dates) < 2:
-        raise SystemExit("Need at least 2 dates in stock_scores_history.csv")
+        print("Only one day of history available. Skipping trading until tomorrow.")
+        
+        # Create empty output files so workflow doesn't fail
+        pd.DataFrame().to_csv(data_dir / "trend_trade_log.csv", index=False)
+        pd.DataFrame().to_csv(data_dir / "breakout_trade_log.csv", index=False)
+        pd.DataFrame().to_csv(data_dir / "trend_open_positions.csv", index=False)
+        pd.DataFrame().to_csv(data_dir / "breakout_open_positions.csv", index=False)
+        
+        perf = pd.DataFrame([{
+            "system": "trend",
+            "balance": 1000.0,
+            "total_trades": 0,
+            "win_rate": 0.0,
+            "total_return_pct": 0.0,
+            "max_drawdown_pct": 0.0,
+            "avg_win_pct": 0.0,
+            "avg_loss_pct": 0.0,
+            "profit_factor": 0.0,
+        }, {
+            "system": "breakout",
+            "balance": 1000.0,
+            "total_trades": 0,
+            "win_rate": 0.0,
+            "total_return_pct": 0.0,
+            "max_drawdown_pct": 0.0,
+            "avg_win_pct": 0.0,
+            "avg_loss_pct": 0.0,
+            "profit_factor": 0.0,
+        }])
+        perf.to_csv(data_dir / "stock_performance.csv", index=False)
+        print("Empty files created. Exiting gracefully.")
+        return
     
     # Configuration
     trend_confirmation_days = 2
