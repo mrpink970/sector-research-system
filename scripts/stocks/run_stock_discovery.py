@@ -356,7 +356,7 @@ def main():
     out = out.sort_values(["date", "total_score", "ticker"], ascending=[True, False, True])
     
     # ============================================================
-    # FIX: Append to history instead of overwriting
+    # Append to history (keep all historical data)
     # ============================================================
     if scores_path.exists():
         existing = pd.read_csv(scores_path)
@@ -369,12 +369,25 @@ def main():
     else:
         out.to_csv(scores_path, index=False)
 
-    # Trend candidates (overwrite each day — only keep most recent)
+    # ============================================================
+    # Trend candidates (sorted by trend score)
+    # ============================================================
     trend_candidates = out[out["signal"] == "Strong Bullish"].copy()
+    trend_candidates = trend_candidates.sort_values(
+        ["date", "total_score", "ticker"], 
+        ascending=[True, False, True]
+    )
     trend_candidates.to_csv(candidates_path, index=False)
 
-    # Breakout candidates (overwrite each day)
+    # ============================================================
+    # Breakout candidates (sorted by breakout score)
+    # FIX: Sort by breakout_total_score so dashboard matches trading engine
+    # ============================================================
     breakout_candidates = out[out["breakout_signal"] == "Strong Breakout Candidate"].copy()
+    breakout_candidates = breakout_candidates.sort_values(
+        ["date", "breakout_total_score", "ticker"], 
+        ascending=[True, False, True]
+    )
     breakout_candidates_path = root / "data" / "stocks" / "stock_breakout_candidates_history.csv"
     breakout_candidates.to_csv(breakout_candidates_path, index=False)
 
