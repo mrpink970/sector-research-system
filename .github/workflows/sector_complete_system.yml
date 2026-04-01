@@ -1,0 +1,86 @@
+name: Sector Complete System
+
+on:
+  schedule:
+    - cron: '0 23 * * 1-5'   # 7:00 PM ET (DST)
+    - cron: '0 0 * * 2-6'    # 7:00 PM ET (Standard)
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  run-sector-system:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install yfinance pyyaml pandas
+
+      # Step 1: Update market data
+      - name: Collect market data
+        run: python scripts/collect_market_data.py
+        
+      # Step 2: Calculate indicators
+      - name: Calculate indicators
+        run: python scripts/calculate_indicators.py
+        
+      # Step 3: Score sectors
+      - name: Score sectors
+        run: python scripts/score_sectors.py
+        
+      # Step 4: Rank sectors
+      - name: Rank sectors
+        run: python scripts/rank_sectors.py
+        
+      # Step 5: Log events
+      - name: Log events
+        run: python scripts/log_events.py
+        
+      # Step 6: Paper trading
+      - name: Run paper trading
+        run: python scripts/run_paper_trading.py
+        
+      # Step 7: Generate dashboard
+      - name: Generate dashboard
+        run: python scripts/generate_dashboard.py
+        
+      # Step 8: Commit all outputs
+      - name: Commit outputs
+        run: |
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
+          git add data/*.csv
+          git add dashboard.html
+          git commit -m "Sector system update $(date '+%Y-%m-%d %H:%M')" || echo "No changes to commit"
+          git push
+      
+      # Step 9: Send email with dashboard link
+      - name: Send email with dashboard link
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: smtp.gmail.com
+          server_port: 587
+          username: ${{ secrets.EMAIL_FROM }}
+          password: ${{ secrets.EMAIL_PASSWORD }}
+          to: ${{ secrets.EMAIL_TO }}
+          from: Sector Dashboard <${{ secrets.EMAIL_FROM }}>
+          subject: "📊 Sector Dashboard Update - $(date '+%Y-%m-%d')"
+          body: |
+            Sector Research & Trading Dashboard has been updated.
+            
+            View Dashboard:
+            https://mrpink970.github.io/sector-research-system/dashboard.html
+            
+            ---
+            Automated message from GitHub Actions.
