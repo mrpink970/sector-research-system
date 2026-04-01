@@ -35,7 +35,6 @@ ATLCZ,baby_bond,Atlanticus Holdings Corp 9.25% Senior Notes Due 01/31/2029,9.25,
 BWSN,baby_bond,Babcock & Wilcox Enterprises Inc. 8.125% Senior Notes Due 2/28/2026,8.125,25,2026-02-28,2025-02-28,NYSE,active
 BWNB,baby_bond,Babcock & Wilcox Enterprises Inc. 6.50% Senior Notes Due 12/31/2026,6.50,25,2026-12-31,2024-12-31,NYSE,active
 MER-K,preferred,Bank of America Corp 6.45% Income Capital Obligation Notes ICONS due 12/15/2066,6.45,25,2066-12-15,2011-12-15,NYSE,active
-BIP,perpetual,BIP Bermuda Holdings I Limited 5.125% Perpetual Subordinated Notes,5.125,25,2099-12-31,2027-01-21,NYSE,active
 RILYG,baby_bond,BRC Group Holdings Inc 5.00% Senior Notes Due 12/31/2026,5.00,25,2026-12-31,2023-12-31,NGM,active
 RILYK,baby_bond,BRC Group Holdings Inc 5.50% Senior Notes Due 3/31/2026,5.50,25,2026-03-31,2022-03-31,NGM,active
 RILYT,baby_bond,BRC Group Holdings Inc 6.00% Senior Notes Due 1/31/2028,6.00,25,2028-01-31,2022-01-31,NGM,active
@@ -45,13 +44,7 @@ BHFAL,preferred,Brighthouse Financial 6.25% Junior Subordinated Debentures due 9
 BHFAN,preferred,Brighthouse Financial Inc. 5.375% DEP PFD C,5.375,25,2058-12-31,2024-12-31,NGS,active
 BHFAO,preferred,Brighthouse Financial Inc. 6.75% DP SHS PF B,6.75,25,2058-12-31,2024-12-31,NGS,active
 BTSGU,other,BrightSpring Health Services 6.75% Tangible Equity Units,6.75,25,2029-12-31,2024-11-04,NGS,active
-BEPH,perpetual,Brookfield BRP Holdings (Canada) Inc. 4.625% Perpetual Subordinated Notes,4.625,25,2099-12-31,2026-04-30,NYSE,active
-BEPI,perpetual,Brookfield BRP Holdings (Canada) Inc. 4.875% Perpetual Subordinated Notes,4.875,25,2099-12-31,2026-12-09,NYSE,active
 BEPJ,perpetual,Brookfield BRP Holdings (Canada) Inc. 7.250% Perpetual Subordinated Notes,7.25,25,2099-12-31,2029-03-25,NYSE,active
-BNJ,perpetual,Brookfield Finance Inc. 4.50% Perpetual Subordinated Notes,4.50,25,2099-12-31,2025-11-24,NYSE,active
-BNH,perpetual,Brookfield Finance Inc. 4.625% Subordinated Notes due 10/16/2080,4.625,25,2080-10-16,2025-10-16,NYSE,active
-BIPH,perpetual,Brookfield Infrastructure Finance ULC 5.0% Subordinated Notes due 5/24/2081,5.00,25,2081-05-24,2026-05-24,NYSE,active
-BIPJ,perpetual,Brookfield Infrastructure Finance ULC 7.25% Subordinated Notes due 5/31/2084,7.25,25,2084-05-31,2029-05-31,NYSE,active
 BC-C,corporate,Brunswick Corp. 6.375% Senior Notes due 4/15/2049,6.375,25,2049-04-15,2024-04-15,NYSE,active
 BC-A,corporate,Brunswick Corp. 6.50% Senior Notes due 10/15/2048,6.50,25,2048-10-15,2023-10-15,NYSE,active
 CSWC,bdc,Capital Southwest Corp. 7.75% notes due 8/1/2028,7.75,25,2028-08-01,2025-08-01,NGS,active
@@ -83,7 +76,6 @@ ECCX,baby_bond,Eagle Point Credit Co. 6.6875% Notes due 4/30/2028,6.6875,25,2028
 ECCW,baby_bond,Eagle Point Credit Company Inc. 6.75% Notes Due 03/31/2031,6.75,25,2031-03-31,2024-03-29,NYSE,active
 ECCU,baby_bond,Eagle Point Credit Company Inc. 7.75% Notes due 6/30/2030,7.75,25,2030-06-30,2027-06-30,NYSE,active
 ELLA,baby_bond,Ellington Credit Co 8.50% Notes Due 03/30/2031,8.50,25,2031-03-30,2028-03-30,NYSE,active
-AAIN,baby_bond,Ellington Financial Inc. 6.00% Senior Notes due 8/01/2026,6.00,25,2026-08-01,2023-08-01,NYSE,delisted
 EAI,corporate,Entergy Arkansas 4.875% Series First Mortgage Bonds due 9/1/2066,4.875,25,2066-09-01,2021-09-01,NYSE,active
 ELC,corporate,Entergy Louisiana 4.875% Collateral Trust Mortgage Bonds Series due 9/1/2066,4.875,25,2066-09-01,2021-09-01,NYSE,active
 EMP,corporate,Entergy Mississippi 4.90% Series First Mortgage Bonds due 10/1/2066,4.90,25,2066-10-01,2021-10-01,NYSE,active
