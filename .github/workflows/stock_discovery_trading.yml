@@ -35,6 +35,23 @@ jobs:
         run: |
           python scripts/stocks/generate_stock_dashboard.py
       
+      - name: Read performance data for email
+        id: performance
+        run: |
+          # Extract latest performance data
+          if [ -f "data/stocks/stock_performance.csv" ]; then
+            TREND_BALANCE=$(python -c "import pandas as pd; df=pd.read_csv('data/stocks/stock_performance.csv'); print(df[df['system']=='trend']['balance'].iloc[0] if not df[df['system']=='trend'].empty else '1000')")
+            BREAKOUT_BALANCE=$(python -c "import pandas as pd; df=pd.read_csv('data/stocks/stock_performance.csv'); print(df[df['system']=='breakout']['balance'].iloc[0] if not df[df['system']=='breakout'].empty else '1000')")
+            TOTAL_TRADES=$(python -c "import pandas as pd; df=pd.read_csv('data/stocks/stock_performance.csv'); print(df['total_trades'].sum() if not df.empty else '0')")
+          else
+            TREND_BALANCE="1000"
+            BREAKOUT_BALANCE="1000"
+            TOTAL_TRADES="0"
+          fi
+          echo "trend_balance=${TREND_BALANCE}" >> $GITHUB_OUTPUT
+          echo "breakout_balance=${BREAKOUT_BALANCE}" >> $GITHUB_OUTPUT
+          echo "total_trades=${TOTAL_TRADES}" >> $GITHUB_OUTPUT
+      
       - name: Commit outputs
         run: |
           git config user.name "github-actions"
@@ -43,3 +60,30 @@ jobs:
           git add stock_dashboard.html
           git commit -m "Stock system update $(date '+%Y-%m-%d %H:%M')" || echo "No changes to commit"
           git push
+      
+      - name: Send email with dashboard link
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: smtp.gmail.com
+          server_port: 587
+          username: ${{ secrets.EMAIL_FROM }}
+          password: ${{ secrets.EMAIL_PASSWORD }}
+          to: ${{ secrets.EMAIL_TO }}
+          from: Stock Dashboard <${{ secrets.EMAIL_FROM }}>
+          subject: "📊 Stock Dashboard Update - $(date '+%Y-%m-%d')"
+          body: |
+            Stock Discovery & Trading Dashboard has been updated.
+            
+            View Dashboard:
+            https://mrpink970.github.io/sector-research-system/stock_dashboard.html
+            
+            Summary:
+            - Trend Balance: ${{ steps.performance.outputs.trend_balance }}
+            - Breakout Balance: ${{ steps.performance.outputs.breakout_balance }}
+            - Total Trades: ${{ steps.performance.outputs.total_trades }}
+            
+            Last Run:
+            - Check the dashboard for full details
+            
+            ---
+            Automated message from GitHub Actions.
