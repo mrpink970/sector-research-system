@@ -121,7 +121,7 @@ def load_candidates(data_dir: Path) -> Dict[str, pd.DataFrame]:
 
 
 def load_run_log(data_dir: Path) -> Dict:
-    """Load latest run log entry"""
+    """Load latest run log entry - handles both 5-column and 6-column formats"""
     log_file = data_dir / "stock_system_run_log.csv"
     if not log_file.exists():
         return {"date": "N/A", "stocks_scored": 0, "candidates_found": 0, "breakout_candidates_found": 0}
@@ -131,14 +131,22 @@ def load_run_log(data_dir: Path) -> Dict:
         if df.empty:
             return {"date": "N/A", "stocks_scored": 0, "candidates_found": 0, "breakout_candidates_found": 0}
         
+        # Get the last row (most recent run)
         latest = df.iloc[-1]
+        
+        # Handle both 5-column and 6-column formats
+        stocks_scored = int(latest.get("stocks_scored", 0))
+        candidates_found = int(latest.get("candidates_found", 0))
+        breakout_candidates_found = int(latest.get("breakout_candidates_found", 0)) if "breakout_candidates_found" in df.columns else 0
+        
         return {
             "date": str(latest.get("date", "N/A")),
-            "stocks_scored": int(latest.get("stocks_scored", 0)),
-            "candidates_found": int(latest.get("candidates_found", 0)),
-            "breakout_candidates_found": int(latest.get("breakout_candidates_found", 0)),
+            "stocks_scored": stocks_scored,
+            "candidates_found": candidates_found,
+            "breakout_candidates_found": breakout_candidates_found,
         }
-    except:
+    except Exception as e:
+        print(f"Error reading run log: {e}")
         return {"date": "N/A", "stocks_scored": 0, "candidates_found": 0, "breakout_candidates_found": 0}
 
 
