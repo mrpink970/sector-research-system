@@ -67,6 +67,9 @@ def calc_atr(df: pd.DataFrame, window: int = 14) -> pd.Series:
 def latest_metrics(df: pd.DataFrame, bench_ret_63: float) -> Dict[str, float]:
     close = df["Close"]
     volume = df["Volume"]
+    open_price = df["Open"].iloc[-1]
+    high_price = df["High"].iloc[-1]
+    low_price = df["Low"].iloc[-1]
 
     ret_21 = close.iloc[-1] / close.shift(21).iloc[-1] - 1 if len(df) > 21 else np.nan
     ret_63 = close.iloc[-1] / close.shift(63).iloc[-1] - 1 if len(df) > 63 else np.nan
@@ -109,6 +112,9 @@ def latest_metrics(df: pd.DataFrame, bench_ret_63: float) -> Dict[str, float]:
     )
 
     return {
+        "open": float(open_price),
+        "high": float(high_price),
+        "low": float(low_price),
         "close": float(close.iloc[-1]),
         "ret_21": float(ret_21) if pd.notna(ret_21) else np.nan,
         "ret_63": float(ret_63) if pd.notna(ret_63) else np.nan,
@@ -322,7 +328,11 @@ def main():
                 {
                     "date": today,
                     "ticker": ticker,
-                    **metrics,
+                    "open": metrics["open"],
+                    "high": metrics["high"],
+                    "low": metrics["low"],
+                    "close": metrics["close"],
+                    **{k: v for k, v in metrics.items() if k not in ["open", "high", "low", "close"]},
                     **trend_scored,
                     **breakout_scored,
                     "tag": tag,
@@ -381,7 +391,6 @@ def main():
 
     # ============================================================
     # Breakout candidates (sorted by breakout score)
-    # FIX: Sort by breakout_total_score so dashboard matches trading engine
     # ============================================================
     breakout_candidates = out[out["breakout_signal"] == "Strong Breakout Candidate"].copy()
     breakout_candidates = breakout_candidates.sort_values(
