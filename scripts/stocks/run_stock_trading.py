@@ -88,8 +88,7 @@ def load_trend_candidates(date: str, scores_df: pd.DataFrame, min_score: int = 6
             "proximity_20": float(row.get("proximity_20", -999)),
         })
     
-    # Sort by priority: score desc, rs_acceleration desc, trend_score desc,
-    # volume_score desc, relative_strength_score desc, proximity_20 desc, ticker asc
+    # Sort by priority
     results.sort(key=lambda x: (
         -x["score"],
         -x["rs_acceleration"],
@@ -323,6 +322,7 @@ def main():
     breakout_confirmation_days = 1
     trend_min_score = 6
     breakout_min_score = 6
+    min_hold_days = 3  # Both systems use 3-day minimum hold before signal-based exits
     
     # Initialize systems
     trend_balance = 1000.0
@@ -337,6 +337,7 @@ def main():
     print(f"Starting parallel paper trading")
     print(f"Trend system: ${trend_balance:.2f} | Breakout system: ${breakout_balance:.2f}")
     print(f"Dates range: {all_dates[0]} to {all_dates[-1]}")
+    print(f"Minimum hold days: {min_hold_days} (signal-based exits blocked until then)")
     print("-" * 60)
     
     # Process each trading day (use yesterday's signal for today's entry)
@@ -345,6 +346,9 @@ def main():
         trade_date = all_dates[i]
         
         print(f"\nProcessing {trade_date} (signal from {signal_date})")
+        
+        # Get today's scores for signal loss checks
+        today_scores = scores[scores["date"] == trade_date] if trade_date in scores["date"].values else pd.DataFrame()
         
         # Load candidates for this signal date
         trend_candidates = load_trend_candidates(signal_date, scores, trend_min_score)
@@ -371,13 +375,32 @@ def main():
             new_stop_pct = get_stop_levels_trend(current_gain)
             new_trailing_stop = current_high * (1 - new_stop_pct)
             
-            # Check if stop hit
+            # Check if stop hit (always allowed)
             if bar["low"] <= new_trailing_stop:
                 closed = close_position(pos, trade_date, bar["open"], "trailing_stop")
                 trend_trades.append(closed)
                 trend_balance += closed["gross_pnl"]
                 print(f"  [TREND] EXIT {pos.ticker} @ ${bar['open']:.2f} PnL: ${closed['gross_pnl']:.2f} ({closed['return_pct']}%)")
                 continue
+            
+            # Check signal loss (only allowed after min_hold_days)
+            days_held = (pd.to_datetime(trade_date) - pd.to_datetime(pos.entry_date)).days
+            signal_loss = False
+            if not today_scores.empty:
+                ticker_scores = today_scores[today_scores["ticker"] == pos.ticker]
+                if not ticker_scores.empty:
+                    current_score = int(ticker_scores["total_score"].iloc[0])
+                    if current_score < 6:
+                        signal_loss = True
+            
+            if signal_loss and days_held >= min_hold_days:
+                closed = close_position(pos, trade_date, bar["open"], "signal_loss")
+                trend_trades.append(closed)
+                trend_balance += closed["gross_pnl"]
+                print(f"  [TREND] EXIT {pos.ticker} @ ${bar['open']:.2f} (signal loss, held {days_held} days) PnL: ${closed['gross_pnl']:.2f} ({closed['return_pct']}%)")
+                continue
+            elif signal_loss and days_held < min_hold_days:
+                print(f"  [TREND] {pos.ticker} signal loss detected but min hold ({min_hold_days} days) not met. Held {days_held} days. Trailing stop still active.")
             
             # Update position
             pos.highest_price = current_high
@@ -443,13 +466,32 @@ def main():
             new_stop_pct = get_stop_levels_breakout(current_gain)
             new_trailing_stop = current_high * (1 - new_stop_pct)
             
-            # Check if stop hit
+            # Check if stop hit (always allowed)
             if bar["low"] <= new_trailing_stop:
                 closed = close_position(pos, trade_date, bar["open"], "trailing_stop")
                 breakout_trades.append(closed)
                 breakout_balance += closed["gross_pnl"]
                 print(f"  [BREAKOUT] EXIT {pos.ticker} @ ${bar['open']:.2f} PnL: ${closed['gross_pnl']:.2f} ({closed['return_pct']}%)")
                 continue
+            
+            # Check signal loss (only allowed after min_hold_days)
+            days_held = (pd.to_datetime(trade_date) - pd.to_datetime(pos.entry_date)).days
+            signal_loss = False
+            if not today_scores.empty:
+                ticker_scores = today_scores[today_scores["ticker"] == pos.ticker]
+                if not ticker_scores.empty:
+                    current_score = int(ticker_scores["breakout_total_score"].iloc[0])
+                    if current_score < 6:
+                        signal_loss = True
+            
+            if signal_loss and days_held >= min_hold_days:
+                closed = close_position(pos, trade_date, bar["open"], "signal_loss")
+                breakout_trades.append(closed)
+                breakout_balance += closed["gross_pnl"]
+                print(f"  [BREAKOUT] EXIT {pos.ticker} @ ${bar['open']:.2f} (signal loss, held {days_held} days) PnL: ${closed['gross_pnl']:.2f} ({closed['return_pct']}%)")
+                continue
+            elif signal_loss and days_held < min_hold_days:
+                print(f"  [BREAKOUT] {pos.ticker} signal loss detected but min hold ({min_hold_days} days) not met. Held {days_held} days. Trailing stop still active.")
             
             # Update position
             pos.highest_price = current_high
