@@ -58,7 +58,16 @@ def load_price_data(scores_df: pd.DataFrame) -> Dict[Tuple[str, str], dict]:
 
 
 def load_trend_candidates(date: str, scores_df: pd.DataFrame, min_score: int = 6) -> List[dict]:
-    """Load trend candidates (signal = Strong Bullish, total_score >= min_score)"""
+    """
+    Load trend candidates with priority sorting:
+    1. total_score (higher is better)
+    2. rs_acceleration (higher is better)
+    3. trend_score (2 > 1 > 0)
+    4. volume_score (higher is better)
+    5. relative_strength_score (higher is better)
+    6. proximity_20 (higher is better)
+    7. ticker (alphabetical - last resort)
+    """
     day_df = scores_df[scores_df["date"] == date].copy()
     candidates = day_df[
         (day_df["signal"] == "Strong Bullish") &
@@ -72,15 +81,38 @@ def load_trend_candidates(date: str, scores_df: pd.DataFrame, min_score: int = 6
             "score": int(row["total_score"]),
             "signal": row["signal"],
             "close": float(row["close"]),
+            "rs_acceleration": float(row.get("rs_acceleration", -999)),
+            "trend_score": int(row.get("trend_score", 0)),
+            "volume_score": int(row.get("volume_score", 0)),
+            "relative_strength_score": int(row.get("relative_strength_score", 0)),
+            "proximity_20": float(row.get("proximity_20", -999)),
         })
     
-    # Sort by score descending, then ticker alphabetically
-    results.sort(key=lambda x: (-x["score"], x["ticker"]))
+    # Sort by priority: score desc, rs_acceleration desc, trend_score desc,
+    # volume_score desc, relative_strength_score desc, proximity_20 desc, ticker asc
+    results.sort(key=lambda x: (
+        -x["score"],
+        -x["rs_acceleration"],
+        -x["trend_score"],
+        -x["volume_score"],
+        -x["relative_strength_score"],
+        -x["proximity_20"],
+        x["ticker"]
+    ))
     return results
 
 
 def load_breakout_candidates(date: str, scores_df: pd.DataFrame, min_score: int = 6) -> List[dict]:
-    """Load breakout candidates with tiebreaker: score → rs_acceleration → volume → proximity → ticker"""
+    """
+    Load breakout candidates with priority sorting:
+    1. breakout_total_score (higher is better)
+    2. breakout_compression_score (higher is better)
+    3. breakout_rs_acceleration_score (higher is better)
+    4. breakout_proximity_score (higher is better)
+    5. breakout_volume_score (higher is better)
+    6. breakout_extension_score (higher is better)
+    7. ticker (alphabetical - last resort)
+    """
     day_df = scores_df[scores_df["date"] == date].copy()
     candidates = day_df[
         (day_df["breakout_signal"] == "Strong Breakout Candidate") &
@@ -94,17 +126,21 @@ def load_breakout_candidates(date: str, scores_df: pd.DataFrame, min_score: int 
             "score": int(row["breakout_total_score"]),
             "signal": row["breakout_signal"],
             "close": float(row["close"]),
+            "compression_score": int(row.get("breakout_compression_score", 0)),
             "rs_acceleration_score": int(row.get("breakout_rs_acceleration_score", 0)),
-            "volume_score": int(row.get("breakout_volume_score", 0)),
             "proximity_score": int(row.get("breakout_proximity_score", 0)),
+            "volume_score": int(row.get("breakout_volume_score", 0)),
+            "extension_score": int(row.get("breakout_extension_score", 0)),
         })
     
-    # Sort by: score desc, then rs_acceleration desc, then volume desc, then proximity desc, then ticker asc
+    # Sort by priority
     results.sort(key=lambda x: (
         -x["score"],
+        -x["compression_score"],
         -x["rs_acceleration_score"],
-        -x["volume_score"],
         -x["proximity_score"],
+        -x["volume_score"],
+        -x["extension_score"],
         x["ticker"]
     ))
     return results
