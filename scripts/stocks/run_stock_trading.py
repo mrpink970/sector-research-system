@@ -320,6 +320,9 @@ def main():
         trend_candidates = load_trend_candidates(signal_date, scores, trend_min_score)
         breakout_candidates = load_breakout_candidates(signal_date, scores, breakout_min_score)
         
+        print(f"  Trend candidates ({len(trend_candidates)}): {[c['ticker'] for c in trend_candidates]}")
+        print(f"  Breakout candidates ({len(breakout_candidates)}): {[c['ticker'] for c in breakout_candidates]}")
+        
         # =========================================================
         # TREND SYSTEM - Exits first, then entries
         # =========================================================
@@ -357,9 +360,13 @@ def main():
         # Trend system entries
         if len(trend_positions) == 0 and trend_candidates:
             best = trend_candidates[0]
+            print(f"  [TREND] Best candidate: {best['ticker']} (score {best['score']})")
             
             # Check 2-day confirmation
-            if requires_confirmation("trend", scores, best["ticker"], signal_date, trend_confirmation_days):
+            confirmed = requires_confirmation("trend", scores, best["ticker"], signal_date, trend_confirmation_days)
+            print(f"  [TREND] Confirmation for {best['ticker']}: {confirmed}")
+            
+            if confirmed:
                 bar = fetch_price_data(best["ticker"], trade_date)
                 if bar:
                     shares = int(trend_balance / bar["open"])
@@ -378,6 +385,15 @@ def main():
                             entry_signal=best["signal"],
                         ))
                         print(f"  [TREND] ENTRY {best['ticker']} @ ${bar['open']:.2f} shares:{shares}")
+                else:
+                    print(f"  [TREND] Could not fetch price for {best['ticker']} on {trade_date}")
+            else:
+                print(f"  [TREND] {best['ticker']} failed confirmation")
+        else:
+            if len(trend_positions) > 0:
+                print(f"  [TREND] Position exists, skipping entry")
+            elif not trend_candidates:
+                print(f"  [TREND] No candidates")
         
         # =========================================================
         # BREAKOUT SYSTEM - Exits first, then entries
@@ -416,9 +432,13 @@ def main():
         # Breakout system entries
         if len(breakout_positions) == 0 and breakout_candidates:
             best = breakout_candidates[0]
+            print(f"  [BREAKOUT] Best candidate: {best['ticker']} (score {best['score']})")
             
-            # Check 1-day confirmation (or as configured)
-            if requires_confirmation("breakout", scores, best["ticker"], signal_date, breakout_confirmation_days):
+            # Check 1-day confirmation
+            confirmed = requires_confirmation("breakout", scores, best["ticker"], signal_date, breakout_confirmation_days)
+            print(f"  [BREAKOUT] Confirmation for {best['ticker']}: {confirmed}")
+            
+            if confirmed:
                 bar = fetch_price_data(best["ticker"], trade_date)
                 if bar:
                     shares = int(breakout_balance / bar["open"])
@@ -437,6 +457,15 @@ def main():
                             entry_signal=best["signal"],
                         ))
                         print(f"  [BREAKOUT] ENTRY {best['ticker']} @ ${bar['open']:.2f} shares:{shares}")
+                else:
+                    print(f"  [BREAKOUT] Could not fetch price for {best['ticker']} on {trade_date}")
+            else:
+                print(f"  [BREAKOUT] {best['ticker']} failed confirmation")
+        else:
+            if len(breakout_positions) > 0:
+                print(f"  [BREAKOUT] Position exists, skipping entry")
+            elif not breakout_candidates:
+                print(f"  [BREAKOUT] No candidates")
     
     # =========================================================
     # Save outputs
