@@ -7,7 +7,6 @@ from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
 import pandas as pd
-import yfinance as yf
 import yaml
 
 
@@ -30,40 +29,22 @@ def load_yaml(path: Path) -> dict:
         return yaml.safe_load(f)
 
 
-def fetch_price_data(ticker: str, date: str) -> Optional[dict]:
+def load_price_data(scores_df: pd.DataFrame) -> Dict[Tuple[str, str], dict]:
     """
-    Fetch a single day's OHLCV for a ticker.
-    Returns dict with open, high, low, close or None if not available.
+    Build a price lookup dictionary from the scores CSV.
+    Keys: (date, ticker)
+    Values: {open, high, low, close}
     """
-    try:
-        # Fetch 5 days of data to ensure we get the requested date
-        df = yf.download(ticker, start=date, end=date, progress=False, auto_adjust=False)
-        
-        if df.empty:
-            return None
-        
-        # Handle multi-index columns if present
-        if hasattr(df.columns, "nlevels") and df.columns.nlevels > 1:
-            df.columns = df.columns.get_level_values(0)
-        
-        df = df.reset_index()
-        
-        # Format date for comparison
-        df["Date"] = pd.to_datetime(df["Date"]).dt.strftime("%Y-%m-%d")
-        df = df[df["Date"] == date]
-        
-        if df.empty:
-            return None
-        
-        return {
-            "open": float(df["Open"].iloc[0]),
-            "high": float(df["High"].iloc[0]),
-            "low": float(df["Low"].iloc[0]),
-            "close": float(df["Close"].iloc[0]),
+    price_map = {}
+    for _, row in scores_df.iterrows():
+        key = (row["date"], row["ticker"])
+        price_map[key] = {
+            "open": float(row["open"]),
+            "high": float(row["high"]),
+            "low": float(row["low"]),
+            "close": float(row["close"]),
         }
-    except Exception as e:
-        print(f"Error fetching {ticker} for {date}: {e}")
-        return None
+    return price_map
 
 
 def load_trend_candidates(date: str, scores_df: pd.DataFrame, min_score: int = 6) -> List[dict]:
@@ -246,9 +227,12 @@ def main():
     root = Path(".")
     data_dir = root / "data" / "stocks"
     
-    # Load scores
+    # Load scores (now includes open, high, low, close)
     scores = pd.read_csv(data_dir / "stock_scores_history.csv")
     scores["date"] = pd.to_datetime(scores["date"]).dt.strftime("%Y-%m-%d")
+    
+    # Build price lookup from the CSV
+    price_map = load_price_data(scores)
     
     # Get unique dates from scores
     all_dates = sorted(scores["date"].unique())
@@ -328,10 +312,10 @@ def main():
         # =========================================================
         survivors = []
         for pos in trend_positions:
-            # Fetch current day's price data for this ticker
-            bar = fetch_price_data(pos.ticker, trade_date)
+            # Get price from CSV instead of yfinance
+            bar = price_map.get((trade_date, pos.ticker))
             if not bar:
-                print(f"  [TREND] Could not fetch price for {pos.ticker} on {trade_date}, holding")
+                print(f"  [TREND] No price data for {pos.ticker} on {trade_date}, holding")
                 survivors.append(pos)
                 continue
             
@@ -367,7 +351,7 @@ def main():
             print(f"  [TREND] Confirmation for {best['ticker']}: {confirmed}")
             
             if confirmed:
-                bar = fetch_price_data(best["ticker"], trade_date)
+                bar = price_map.get((trade_date, best["ticker"]))
                 if bar:
                     shares = int(trend_balance / bar["open"])
                     if shares > 0:
@@ -386,7 +370,7 @@ def main():
                         ))
                         print(f"  [TREND] ENTRY {best['ticker']} @ ${bar['open']:.2f} shares:{shares}")
                 else:
-                    print(f"  [TREND] Could not fetch price for {best['ticker']} on {trade_date}")
+                    print(f"  [TREND] No price data for {best['ticker']} on {trade_date}")
             else:
                 print(f"  [TREND] {best['ticker']} failed confirmation")
         else:
@@ -400,10 +384,10 @@ def main():
         # =========================================================
         survivors = []
         for pos in breakout_positions:
-            # Fetch current day's price data for this ticker
-            bar = fetch_price_data(pos.ticker, trade_date)
+            # Get price from CSV instead of yfinance
+            bar = price_map.get((trade_date, pos.ticker))
             if not bar:
-                print(f"  [BREAKOUT] Could not fetch price for {pos.ticker} on {trade_date}, holding")
+                print(f"  [BREAKOUT] No price data for {pos.ticker} on {trade_date}, holding")
                 survivors.append(pos)
                 continue
             
@@ -439,7 +423,7 @@ def main():
             print(f"  [BREAKOUT] Confirmation for {best['ticker']}: {confirmed}")
             
             if confirmed:
-                bar = fetch_price_data(best["ticker"], trade_date)
+                bar = price_map.get((trade_date, best["ticker"]))
                 if bar:
                     shares = int(breakout_balance / bar["open"])
                     if shares > 0:
@@ -458,7 +442,7 @@ def main():
                         ))
                         print(f"  [BREAKOUT] ENTRY {best['ticker']} @ ${bar['open']:.2f} shares:{shares}")
                 else:
-                    print(f"  [BREAKOUT] Could not fetch price for {best['ticker']} on {trade_date}")
+                    print(f"  [BREAKOUT] No price data for {best['ticker']} on {trade_date}")
             else:
                 print(f"  [BREAKOUT] {best['ticker']} failed confirmation")
         else:
