@@ -1,0 +1,23 @@
+name: Validate Stock Universe
+
+on:
+  workflow_dispatch:
+
+jobs:
+  run-validator:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install dependencies
+        run: pip install yfinance pandas
+      - name: Run validator
+        run: python scripts/stocks/validate_universe.py
+      - name: Upload results
+        uses: actions/upload-artifact@v4
+        with:
+          name: validation-results
+          path: data/stocks/universe_validation_*.csv
