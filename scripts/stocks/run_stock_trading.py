@@ -38,11 +38,21 @@ def load_price_data(scores_df: pd.DataFrame) -> Dict[Tuple[str, str], dict]:
     price_map = {}
     for _, row in scores_df.iterrows():
         key = (row["date"], row["ticker"])
+        # Check if open exists and is not NaN
+        open_val = row.get("open")
+        high_val = row.get("high")
+        low_val = row.get("low")
+        close_val = row.get("close")
+        
+        # Skip if any required price data is missing
+        if pd.isna(open_val) or pd.isna(high_val) or pd.isna(low_val) or pd.isna(close_val):
+            continue
+            
         price_map[key] = {
-            "open": float(row["open"]),
-            "high": float(row["high"]),
-            "low": float(row["low"]),
-            "close": float(row["close"]),
+            "open": float(open_val),
+            "high": float(high_val),
+            "low": float(low_val),
+            "close": float(close_val),
         }
     return price_map
 
@@ -231,7 +241,7 @@ def main():
     scores = pd.read_csv(data_dir / "stock_scores_history.csv")
     scores["date"] = pd.to_datetime(scores["date"]).dt.strftime("%Y-%m-%d")
     
-    # Build price lookup from the CSV
+    # Build price lookup from the CSV (skips rows with missing OHLCV)
     price_map = load_price_data(scores)
     
     # Get unique dates from scores
@@ -312,7 +322,7 @@ def main():
         # =========================================================
         survivors = []
         for pos in trend_positions:
-            # Get price from CSV instead of yfinance
+            # Get price from CSV
             bar = price_map.get((trade_date, pos.ticker))
             if not bar:
                 print(f"  [TREND] No price data for {pos.ticker} on {trade_date}, holding")
@@ -384,7 +394,7 @@ def main():
         # =========================================================
         survivors = []
         for pos in breakout_positions:
-            # Get price from CSV instead of yfinance
+            # Get price from CSV
             bar = price_map.get((trade_date, pos.ticker))
             if not bar:
                 print(f"  [BREAKOUT] No price data for {pos.ticker} on {trade_date}, holding")
