@@ -1,18 +1,4 @@
 date,sector,signal_etf,selected_etf,direction,total_score,signal_state,score_change,rank
-2024-04-02,Biotechnology,XBI,,none,0,Neutral,0,1
-2024-04-02,Communication Services,XLC,,none,0,Neutral,0,1
-2024-04-02,Consumer Discretionary,XLY,,none,0,Neutral,0,1
-2024-04-02,Consumer Staples,XLP,,none,0,Neutral,0,1
-2024-04-02,Energy,XLE,,none,0,Neutral,0,1
-2024-04-02,Financials,XLF,,none,0,Neutral,0,1
-2024-04-02,Healthcare,XLV,,none,0,Neutral,0,1
-2024-04-02,Industrials,XLI,,none,0,Neutral,0,1
-2024-04-02,Materials,XLB,,none,0,Neutral,0,1
-2024-04-02,Nasdaq Growth,QQQ,,none,0,Neutral,0,1
-2024-04-02,Real Estate,XLRE,,none,0,Neutral,0,1
-2024-04-02,Semiconductors,SMH,,none,0,Neutral,0,1
-2024-04-02,Technology,XLK,,none,0,Neutral,0,1
-2024-04-02,Utilities,XLU,,none,0,Neutral,0,1
 2024-04-03,Biotechnology,XBI,,none,0,Neutral,0,1
 2024-04-03,Communication Services,XLC,,none,0,Neutral,0,1
 2024-04-03,Consumer Discretionary,XLY,,none,0,Neutral,0,1
@@ -147,25 +133,25 @@ date,sector,signal_etf,selected_etf,direction,total_score,signal_state,score_cha
 2024-04-16,Nasdaq Growth,QQQ,,none,0,Neutral,0,1
 2024-04-16,Semiconductors,SMH,,none,0,Neutral,0,1
 2024-04-16,Technology,XLK,,none,0,Neutral,0,1
+2024-04-16,Biotechnology,XBI,,none,-2,Neutral,0,2
 2024-04-16,Consumer Discretionary,XLY,,none,-2,Neutral,-2,2
+2024-04-16,Financials,XLF,,none,-2,Neutral,0,2
 2024-04-16,Materials,XLB,,none,-2,Neutral,-2,2
+2024-04-16,Real Estate,XLRE,,none,-2,Neutral,0,2
 2024-04-16,Utilities,XLU,,none,-2,Neutral,-2,2
-2024-04-16,Biotechnology,XBI,LABD,short,-3,Bear,-1,3
-2024-04-16,Financials,XLF,FAZ,short,-3,Bear,-1,3
-2024-04-16,Real Estate,XLRE,DRV,short,-3,Bear,-1,3
 2024-04-17,Consumer Staples,XLP,,none,1,Neutral,1,1
 2024-04-17,Utilities,XLU,,none,1,Neutral,3,1
 2024-04-17,Communication Services,XLC,,none,0,Neutral,0,2
 2024-04-17,Consumer Discretionary,XLY,,none,0,Neutral,2,2
 2024-04-17,Energy,XLE,,none,0,Neutral,0,2
-2024-04-17,Financials,XLF,,none,0,Neutral,3,2
+2024-04-17,Financials,XLF,,none,0,Neutral,2,2
 2024-04-17,Healthcare,XLV,,none,0,Neutral,0,2
 2024-04-17,Industrials,XLI,,none,0,Neutral,0,2
 2024-04-17,Materials,XLB,,none,0,Neutral,2,2
 2024-04-17,Nasdaq Growth,QQQ,,none,0,Neutral,0,2
 2024-04-17,Technology,XLK,,none,0,Neutral,0,2
-2024-04-17,Biotechnology,XBI,LABD,short,-3,Bear,0,3
-2024-04-17,Real Estate,XLRE,DRV,short,-3,Bear,0,3
+2024-04-17,Biotechnology,XBI,LABD,short,-3,Bear,-1,3
+2024-04-17,Real Estate,XLRE,DRV,short,-3,Bear,-1,3
 2024-04-17,Semiconductors,SMH,SOXS,short,-3,Bear,-3,3
 2024-04-18,Communication Services,XLC,,none,0,Neutral,0,1
 2024-04-18,Consumer Staples,XLP,,none,0,Neutral,-1,1
@@ -178,9 +164,9 @@ date,sector,signal_etf,selected_etf,direction,total_score,signal_state,score_cha
 2024-04-18,Consumer Discretionary,XLY,,none,-2,Neutral,-2,2
 2024-04-18,Nasdaq Growth,QQQ,,none,-2,Neutral,-2,2
 2024-04-18,Technology,XLK,,none,-2,Neutral,-2,2
+2024-04-18,Biotechnology,XBI,LABD,short,-3,Bear,0,3
+2024-04-18,Real Estate,XLRE,DRV,short,-3,Bear,0,3
 2024-04-18,Semiconductors,SMH,SOXS,short,-3,Bear,0,3
-2024-04-18,Biotechnology,XBI,LABD,short,-4,Bear,-1,4
-2024-04-18,Real Estate,XLRE,DRV,short,-4,Bear,-1,4
 2024-04-19,Consumer Staples,XLP,,none,1,Neutral,1,1
 2024-04-19,Utilities,XLU,,none,1,Neutral,1,1
 2024-04-19,Communication Services,XLC,,none,0,Neutral,0,2
@@ -191,9 +177,9 @@ date,sector,signal_etf,selected_etf,direction,total_score,signal_state,score_cha
 2024-04-19,Materials,XLB,,none,0,Neutral,0,2
 2024-04-19,Consumer Discretionary,XLY,,none,-2,Neutral,0,3
 2024-04-19,Nasdaq Growth,QQQ,,none,-2,Neutral,0,3
-2024-04-19,Real Estate,XLRE,,none,-2,Neutral,2,3
+2024-04-19,Real Estate,XLRE,,none,-2,Neutral,1,3
 2024-04-19,Technology,XLK,TECS,short,-3,Bear,-1,4
-2024-04-19,Biotechnology,XBI,LABD,short,-4,Bear,0,5
+2024-04-19,Biotechnology,XBI,LABD,short,-4,Bear,-1,5
 2024-04-19,Semiconductors,SMH,SOXS,short,-4,Bear,-1,5
 2024-04-22,Consumer Staples,XLP,,none,1,Neutral,0,1
 2024-04-22,Utilities,XLU,,none,1,Neutral,0,1
@@ -335,34 +321,34 @@ date,sector,signal_etf,selected_etf,direction,total_score,signal_state,score_cha
 2024-05-03,Financials,XLF,,none,-1,Neutral,-1,3
 2024-05-03,Materials,XLB,,none,-1,Neutral,-1,3
 2024-05-03,Energy,XLE,,none,-2,Neutral,1,4
-2024-05-06,Biotechnology,XBI,,none,2,Neutral,-2,1
-2024-05-06,Utilities,XLU,,none,1,Neutral,1,2
-2024-05-06,Consumer Discretionary,XLY,,none,0,Neutral,0,3
-2024-05-06,Consumer Staples,XLP,,none,0,Neutral,0,3
-2024-05-06,Semiconductors,SMH,,none,0,Neutral,0,3
-2024-05-06,Technology,XLK,,none,0,Neutral,0,3
-2024-05-06,Communication Services,XLC,,none,-1,Neutral,0,4
-2024-05-06,Industrials,XLI,,none,-1,Neutral,-1,4
-2024-05-06,Nasdaq Growth,QQQ,,none,-1,Neutral,-1,4
-2024-05-06,Real Estate,XLRE,,none,-1,Neutral,-1,4
-2024-05-06,Financials,XLF,,none,-2,Neutral,-1,5
-2024-05-06,Healthcare,XLV,,none,-2,Neutral,-2,5
-2024-05-06,Materials,XLB,,none,-2,Neutral,-1,5
-2024-05-06,Energy,XLE,ERY,short,-3,Bear,-1,6
-2024-05-07,Utilities,XLU,UTSL,long,4,Bull,3,1
-2024-05-07,Biotechnology,XBI,,none,2,Neutral,0,2
-2024-05-07,Communication Services,XLC,,none,1,Neutral,2,3
-2024-05-07,Consumer Staples,XLP,,none,1,Neutral,1,3
-2024-05-07,Semiconductors,SMH,,none,1,Neutral,1,3
-2024-05-07,Technology,XLK,,none,1,Neutral,1,3
-2024-05-07,Consumer Discretionary,XLY,,none,-1,Neutral,-1,4
-2024-05-07,Healthcare,XLV,,none,-1,Neutral,1,4
-2024-05-07,Industrials,XLI,,none,-1,Neutral,0,4
-2024-05-07,Materials,XLB,,none,-1,Neutral,1,4
-2024-05-07,Nasdaq Growth,QQQ,,none,-1,Neutral,0,4
-2024-05-07,Real Estate,XLRE,,none,-1,Neutral,0,4
-2024-05-07,Energy,XLE,ERY,short,-3,Bear,0,5
-2024-05-07,Financials,XLF,FAZ,short,-3,Bear,-1,5
+2024-05-06,Biotechnology,XBI,LABU,long,3,Bull,-1,1
+2024-05-06,Consumer Discretionary,XLY,,none,1,Neutral,1,2
+2024-05-06,Semiconductors,SMH,,none,1,Neutral,1,2
+2024-05-06,Technology,XLK,,none,1,Neutral,1,2
+2024-05-06,Communication Services,XLC,,none,0,Neutral,1,3
+2024-05-06,Industrials,XLI,,none,0,Neutral,0,3
+2024-05-06,Nasdaq Growth,QQQ,,none,0,Neutral,0,3
+2024-05-06,Real Estate,XLRE,,none,0,Neutral,0,3
+2024-05-06,Utilities,XLU,,none,0,Neutral,0,3
+2024-05-06,Consumer Staples,XLP,,none,-1,Neutral,-1,4
+2024-05-06,Financials,XLF,,none,-1,Neutral,0,4
+2024-05-06,Healthcare,XLV,,none,-1,Neutral,-1,4
+2024-05-06,Materials,XLB,,none,-1,Neutral,0,4
+2024-05-06,Energy,XLE,,none,-2,Neutral,0,5
+2024-05-07,Utilities,XLU,UTSL,long,4,Bull,4,1
+2024-05-07,Biotechnology,XBI,,none,2,Neutral,-1,2
+2024-05-07,Communication Services,XLC,,none,1,Neutral,1,3
+2024-05-07,Consumer Staples,XLP,,none,1,Neutral,2,3
+2024-05-07,Semiconductors,SMH,,none,1,Neutral,0,3
+2024-05-07,Technology,XLK,,none,1,Neutral,0,3
+2024-05-07,Consumer Discretionary,XLY,,none,-1,Neutral,-2,4
+2024-05-07,Healthcare,XLV,,none,-1,Neutral,0,4
+2024-05-07,Industrials,XLI,,none,-1,Neutral,-1,4
+2024-05-07,Materials,XLB,,none,-1,Neutral,0,4
+2024-05-07,Nasdaq Growth,QQQ,,none,-1,Neutral,-1,4
+2024-05-07,Real Estate,XLRE,,none,-1,Neutral,-1,4
+2024-05-07,Energy,XLE,ERY,short,-3,Bear,-1,5
+2024-05-07,Financials,XLF,FAZ,short,-3,Bear,-2,5
 2024-05-08,Utilities,XLU,UTSL,long,4,Bull,0,1
 2024-05-08,Semiconductors,SMH,,none,2,Neutral,1,2
 2024-05-08,Consumer Staples,XLP,,none,1,Neutral,0,3
@@ -685,34 +671,34 @@ date,sector,signal_etf,selected_etf,direction,total_score,signal_state,score_cha
 2024-06-10,Utilities,XLU,,none,-1,Neutral,0,3
 2024-06-10,Materials,XLB,,none,-2,Neutral,0,4
 2024-06-10,Industrials,XLI,SIJ,short,-3,Bear,0,5
-2024-06-11,Semiconductors,SMH,SOXL,long,5,Bull,1,1
-2024-06-11,Technology,XLK,TECL,long,5,Bull,4,1
-2024-06-11,Biotechnology,XBI,LABU,long,3,Bull,2,2
-2024-06-11,Communication Services,XLC,LTL,long,3,Bull,2,2
-2024-06-11,Consumer Staples,XLP,UGE,long,3,Bull,2,2
-2024-06-11,Healthcare,XLV,CURE,long,3,Bull,2,2
-2024-06-11,Nasdaq Growth,QQQ,TQQQ,long,3,Bull,2,2
-2024-06-11,Real Estate,XLRE,DRN,long,3,Bull,2,2
-2024-06-11,Consumer Discretionary,XLY,,none,1,Neutral,2,3
-2024-06-11,Utilities,XLU,,none,-1,Neutral,0,4
-2024-06-11,Energy,XLE,ERY,short,-4,Bear,-3,5
-2024-06-11,Financials,XLF,FAZ,short,-4,Bear,-3,5
-2024-06-11,Industrials,XLI,SIJ,short,-5,Bear,-2,6
-2024-06-11,Materials,XLB,SMN,short,-5,Bear,-3,6
-2024-06-12,Technology,XLK,TECL,long,5,Bull,0,1
-2024-06-12,Biotechnology,XBI,LABU,long,4,Bull,1,2
-2024-06-12,Semiconductors,SMH,SOXL,long,4,Bull,-1,2
-2024-06-12,Communication Services,XLC,LTL,long,3,Bull,0,3
-2024-06-12,Consumer Discretionary,XLY,WANT,long,3,Bull,2,3
-2024-06-12,Consumer Staples,XLP,UGE,long,3,Bull,0,3
-2024-06-12,Healthcare,XLV,CURE,long,3,Bull,0,3
-2024-06-12,Nasdaq Growth,QQQ,TQQQ,long,3,Bull,0,3
-2024-06-12,Real Estate,XLRE,DRN,long,3,Bull,0,3
-2024-06-12,Utilities,XLU,,none,-1,Neutral,0,4
-2024-06-12,Industrials,XLI,SIJ,short,-3,Bear,2,5
-2024-06-12,Energy,XLE,ERY,short,-4,Bear,0,6
-2024-06-12,Financials,XLF,FAZ,short,-4,Bear,0,6
-2024-06-12,Materials,XLB,SMN,short,-5,Bear,0,7
+2024-06-11,Semiconductors,SMH,SOXL,long,3,Bull,-1,1
+2024-06-11,Technology,XLK,TECL,long,3,Bull,2,1
+2024-06-11,Biotechnology,XBI,,none,1,Neutral,0,2
+2024-06-11,Communication Services,XLC,,none,1,Neutral,0,2
+2024-06-11,Consumer Staples,XLP,,none,1,Neutral,0,2
+2024-06-11,Healthcare,XLV,,none,1,Neutral,0,2
+2024-06-11,Nasdaq Growth,QQQ,,none,1,Neutral,0,2
+2024-06-11,Real Estate,XLRE,,none,1,Neutral,0,2
+2024-06-11,Consumer Discretionary,XLY,,none,-1,Neutral,0,3
+2024-06-11,Energy,XLE,,none,-2,Neutral,-1,4
+2024-06-11,Financials,XLF,,none,-2,Neutral,-1,4
+2024-06-11,Industrials,XLI,SIJ,short,-3,Bear,0,5
+2024-06-11,Materials,XLB,SMN,short,-3,Bear,-1,5
+2024-06-11,Utilities,XLU,SDP,short,-3,Bear,-2,5
+2024-06-12,Technology,XLK,TECL,long,5,Bull,2,1
+2024-06-12,Biotechnology,XBI,LABU,long,4,Bull,3,2
+2024-06-12,Semiconductors,SMH,SOXL,long,4,Bull,1,2
+2024-06-12,Communication Services,XLC,LTL,long,3,Bull,2,3
+2024-06-12,Consumer Discretionary,XLY,WANT,long,3,Bull,4,3
+2024-06-12,Consumer Staples,XLP,UGE,long,3,Bull,2,3
+2024-06-12,Healthcare,XLV,CURE,long,3,Bull,2,3
+2024-06-12,Nasdaq Growth,QQQ,TQQQ,long,3,Bull,2,3
+2024-06-12,Real Estate,XLRE,DRN,long,3,Bull,2,3
+2024-06-12,Utilities,XLU,,none,-1,Neutral,2,4
+2024-06-12,Industrials,XLI,SIJ,short,-3,Bear,0,5
+2024-06-12,Energy,XLE,ERY,short,-4,Bear,-2,6
+2024-06-12,Financials,XLF,FAZ,short,-4,Bear,-2,6
+2024-06-12,Materials,XLB,SMN,short,-5,Bear,-2,7
 2024-06-13,Technology,XLK,TECL,long,6,Strong Bull,1,1
 2024-06-13,Semiconductors,SMH,SOXL,long,5,Bull,1,2
 2024-06-13,Biotechnology,XBI,LABU,long,3,Bull,-1,3
@@ -7027,3 +7013,17 @@ date,sector,signal_etf,selected_etf,direction,total_score,signal_state,score_cha
 2026-04-01,Real Estate,XLRE,DRV,short,-3,Bear,0,4
 2026-04-01,Semiconductors,SMH,SOXS,short,-3,Bear,0,4
 2026-04-01,Technology,XLK,TECS,short,-3,Bear,0,4
+2026-04-02,Biotechnology,XBI,LABU,long,5,Bull,3,1
+2026-04-02,Energy,XLE,,none,2,Neutral,0,2
+2026-04-02,Utilities,XLU,,none,1,Neutral,0,3
+2026-04-02,Materials,XLB,,none,-1,Neutral,0,4
+2026-04-02,Communication Services,XLC,,short,-3,Bear,0,5
+2026-04-02,Consumer Discretionary,XLY,SCC,short,-3,Bear,0,5
+2026-04-02,Consumer Staples,XLP,SZK,short,-3,Bear,0,5
+2026-04-02,Financials,XLF,FAZ,short,-3,Bear,0,5
+2026-04-02,Healthcare,XLV,RXD,short,-3,Bear,0,5
+2026-04-02,Industrials,XLI,SIJ,short,-3,Bear,0,5
+2026-04-02,Nasdaq Growth,QQQ,SQQQ,short,-3,Bear,0,5
+2026-04-02,Real Estate,XLRE,DRV,short,-3,Bear,0,5
+2026-04-02,Semiconductors,SMH,SOXS,short,-3,Bear,0,5
+2026-04-02,Technology,XLK,TECS,short,-3,Bear,0,5
