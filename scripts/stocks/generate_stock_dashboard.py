@@ -207,6 +207,18 @@ def generate_html(perf: Dict, positions: Dict, trades: pd.DataFrame, trend_candi
     breakout_return_pct = (breakout_return / 1000.0) * 100
     breakout_color = "positive" if breakout_return >= 0 else "negative"
     
+    # Get values safely
+    trend_win_rate = perf.get("trend", {}).get("win_rate", 0)
+    breakout_win_rate = perf.get("breakout", {}).get("win_rate", 0)
+    trend_trades = perf.get("trend", {}).get("total_trades", 0)
+    breakout_trades = perf.get("breakout", {}).get("total_trades", 0)
+    trend_profit_factor = perf.get("trend", {}).get("profit_factor", 0)
+    breakout_profit_factor = perf.get("breakout", {}).get("profit_factor", 0)
+    trend_avg_win = perf.get("trend", {}).get("avg_win_pct", 0)
+    trend_avg_loss = perf.get("trend", {}).get("avg_loss_pct", 0)
+    breakout_avg_win = perf.get("breakout", {}).get("avg_win_pct", 0)
+    breakout_avg_loss = perf.get("breakout", {}).get("avg_loss_pct", 0)
+    
     # Build open positions HTML
     def build_positions_table(df: pd.DataFrame, system_name: str) -> str:
         if df.empty:
@@ -452,17 +464,17 @@ def generate_html(perf: Dict, positions: Dict, trades: pd.DataFrame, trend_candi
             <div class="stat-card">
                 <div class="stat-label">Trend System</div>
                 <div class="stat-value {trend_color}">${trend_balance:.2f}</div>
-                <div class="stat-sub">{trend_return:+.2f} ({trend_return_pct:+.1f}%) | {perf.get('trend', {{}}).get('win_rate', 0):.1f}% win rate</div>
+                <div class="stat-sub">{trend_return:+.2f} ({trend_return_pct:+.1f}%) | {trend_win_rate:.1f}% win rate</div>
             </div>
             <div class="stat-card">
                 <div class="stat-label">Breakout System</div>
                 <div class="stat-value {breakout_color}">${breakout_balance:.2f}</div>
-                <div class="stat-sub">{breakout_return:+.2f} ({breakout_return_pct:+.1f}%) | {perf.get('breakout', {{}}).get('win_rate', 0):.1f}% win rate</div>
+                <div class="stat-sub">{breakout_return:+.2f} ({breakout_return_pct:+.1f}%) | {breakout_win_rate:.1f}% win rate</div>
             </div>
             <div class="stat-card">
                 <div class="stat-label">Total Trades</div>
-                <div class="stat-value">{perf.get('trend', {{}}).get('total_trades', 0) + perf.get('breakout', {{}}).get('total_trades', 0)}</div>
-                <div class="stat-sub">Trend: {perf.get('trend', {{}}).get('total_trades', 0)} | Breakout: {perf.get('breakout', {{}}).get('total_trades', 0)}</div>
+                <div class="stat-value">{trend_trades + breakout_trades}</div>
+                <div class="stat-sub">Trend: {trend_trades} | Breakout: {breakout_trades}</div>
             </div>
             <div class="stat-card">
                 <div class="stat-label">Last Run</div>
@@ -530,23 +542,23 @@ def generate_html(perf: Dict, positions: Dict, trades: pd.DataFrame, trend_candi
         <div class="stats-grid">
             <div class="stat-card">
                 <div class="stat-label">Trend Win Rate</div>
-                <div class="stat-value {('positive' if perf.get('trend', {{}}).get('win_rate', 0) > 50 else 'negative')}">{perf.get('trend', {{}}).get('win_rate', 0):.1f}%</div>
-                <div class="stat-sub">Profit Factor: {perf.get('trend', {{}}).get('profit_factor', 0):.2f}</div>
+                <div class="stat-value {('positive' if trend_win_rate > 50 else 'negative')}">{trend_win_rate:.1f}%</div>
+                <div class="stat-sub">Profit Factor: {trend_profit_factor:.2f}</div>
             </div>
             <div class="stat-card">
                 <div class="stat-label">Breakout Win Rate</div>
-                <div class="stat-value {('positive' if perf.get('breakout', {{}}).get('win_rate', 0) > 50 else 'negative')}">{perf.get('breakout', {{}}).get('win_rate', 0):.1f}%</div>
-                <div class="stat-sub">Profit Factor: {perf.get('breakout', {{}}).get('profit_factor', 0):.2f}</div>
+                <div class="stat-value {('positive' if breakout_win_rate > 50 else 'negative')}">{breakout_win_rate:.1f}%</div>
+                <div class="stat-sub">Profit Factor: {breakout_profit_factor:.2f}</div>
             </div>
             <div class="stat-card">
                 <div class="stat-label">Trend Avg Win/Loss</div>
-                <div class="stat-value positive">+{perf.get('trend', {{}}).get('avg_win_pct', 0):.1f}%</div>
-                <div class="stat-sub negative">-{perf.get('trend', {{}}).get('avg_loss_pct', 0):.1f}% loss</div>
+                <div class="stat-value positive">+{trend_avg_win:.1f}%</div>
+                <div class="stat-sub negative">-{trend_avg_loss:.1f}% loss</div>
             </div>
             <div class="stat-card">
                 <div class="stat-label">Breakout Avg Win/Loss</div>
-                <div class="stat-value positive">+{perf.get('breakout', {{}}).get('avg_win_pct', 0):.1f}%</div>
-                <div class="stat-sub negative">-{perf.get('breakout', {{}}).get('avg_loss_pct', 0):.1f}% loss</div>
+                <div class="stat-value positive">+{breakout_avg_win:.1f}%</div>
+                <div class="stat-sub negative">-{breakout_avg_loss:.1f}% loss</div>
             </div>
         </div>
     </div>
