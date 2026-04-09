@@ -59,6 +59,26 @@ def load_open_positions(data_dir: Path) -> Dict[str, pd.DataFrame]:
     return result
 
 
+def load_pending_entries(data_dir: Path) -> pd.DataFrame:
+    """Load pending entries scheduled for today"""
+    pending_file = data_dir / "pending_entries.csv"
+    if not pending_file.exists() or pending_file.stat().st_size == 0:
+        return pd.DataFrame()
+    
+    try:
+        df = pd.read_csv(pending_file)
+        if df.empty:
+            return df
+        
+        # Filter to entries scheduled for today
+        today = datetime.now().strftime("%Y-%m-%d")
+        today_pending = df[df["scheduled_date"] == today]
+        return today_pending
+    except Exception as e:
+        print(f"Error loading pending entries: {e}")
+        return pd.DataFrame()
+
+
 def load_recent_trades(data_dir: Path, limit: int = 10) -> pd.DataFrame:
     """Load recent trades from both systems and combine with empty file handling"""
     trend_file = data_dir / "trend_trade_log.csv"
@@ -112,7 +132,6 @@ def load_trend_candidates_with_priority(scores_df: pd.DataFrame, date: str, min_
     if candidates.empty:
         return pd.DataFrame()
     
-    # Create a copy with sort keys
     candidates = candidates.copy()
     candidates["sort_key_rs_acc"] = candidates.get("rs_acceleration", -999).fillna(-999)
     candidates["sort_key_trend"] = candidates.get("trend_score", 0).fillna(0)
@@ -120,7 +139,6 @@ def load_trend_candidates_with_priority(scores_df: pd.DataFrame, date: str, min_
     candidates["sort_key_rs"] = candidates.get("relative_strength_score", 0).fillna(0)
     candidates["sort_key_proximity"] = candidates.get("proximity_20", -999).fillna(-999)
     
-    # Sort by priority
     candidates = candidates.sort_values(
         by=["total_score", "sort_key_rs_acc", "sort_key_trend", 
             "sort_key_volume", "sort_key_rs", "sort_key_proximity", "ticker"],
@@ -150,7 +168,6 @@ def load_breakout_candidates_with_priority(scores_df: pd.DataFrame, date: str, m
     if candidates.empty:
         return pd.DataFrame()
     
-    # Create a copy with sort keys
     candidates = candidates.copy()
     candidates["sort_key_compression"] = candidates.get("breakout_compression_score", 0).fillna(0)
     candidates["sort_key_rs_acc"] = candidates.get("breakout_rs_acceleration_score", 0).fillna(0)
@@ -158,7 +175,6 @@ def load_breakout_candidates_with_priority(scores_df: pd.DataFrame, date: str, m
     candidates["sort_key_volume"] = candidates.get("breakout_volume_score", 0).fillna(0)
     candidates["sort_key_extension"] = candidates.get("breakout_extension_score", 0).fillna(0)
     
-    # Sort by priority
     candidates = candidates.sort_values(
         by=["breakout_total_score", "sort_key_compression", "sort_key_rs_acc",
             "sort_key_proximity", "sort_key_volume", "sort_key_extension", "ticker"],
@@ -190,7 +206,9 @@ def load_run_log(data_dir: Path) -> Dict:
         return {"date": "N/A", "stocks_scored": 0, "candidates_found": 0, "breakout_candidates_found": 0}
 
 
-def generate_html(perf: Dict, positions: Dict, trades: pd.DataFrame, trend_candidates: pd.DataFrame, breakout_candidates: pd.DataFrame, run_log: Dict) -> str:
+def generate_html(perf: Dict, positions: Dict, trades: pd.DataFrame, 
+                  trend_candidates: pd.DataFrame, breakout_candidates: pd.DataFrame, 
+                  pending_entries: pd.DataFrame, run_log: Dict) -> str:
     """Generate the HTML dashboard"""
     
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S ET")
@@ -246,6 +264,30 @@ def generate_html(perf: Dict, positions: Dict, trades: pd.DataFrame, trend_candi
             """)
         return "".join(rows)
     
+    # Build pending entries table
+    def build_pending_entries_table(df: pd.DataFrame) -> str:
+        if df.empty:
+            return '<tr><td colspan="5" style="text-align: center;">No pending entries</td></tr>'
+        
+        rows = []
+        for _, row in df.iterrows():
+            system = row.get("system", "").upper()
+            ticker = row.get("ticker", "")
+            score = int(row.get("score", 0))
+            estimated_price = float(row.get("estimated_price", 0))
+            scheduled_date = row.get("scheduled_date", "")
+            
+            rows.append(f"""
+            <tr>
+                <td><strong>{system}</strong></td>
+                <td><strong>{ticker}</strong></td>
+                <td>{score}</td>
+                <td>${estimated_price:.2f}</td>
+                <td>{scheduled_date}</td>
+            </tr>
+            """)
+        return "".join(rows)
+    
     # Build trend candidates table
     def build_trend_candidates_table(df: pd.DataFrame) -> str:
         if df.empty:
@@ -286,7 +328,7 @@ def generate_html(perf: Dict, positions: Dict, trades: pd.DataFrame, trend_candi
             """)
         return "".join(rows)
     
-    # Build trades table with EXIT REASON column added
+    # Build trades table with exit reason
     def build_trades_table(df: pd.DataFrame) -> str:
         if df.empty:
             return '<tr><td colspan="9" style="text-align: center;">No closed trades yet</td></tr>'
@@ -392,6 +434,19 @@ def generate_html(perf: Dict, positions: Dict, trades: pd.DataFrame, trend_candi
             color: #6c757d;
             margin-top: 4px;
         }}
+        .pending-card {{
+            background: #fef3c7;
+            border: 1px solid #f59e0b;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 16px;
+        }}
+        .pending-title {{
+            font-size: 14px;
+            font-weight: 700;
+            color: #92400e;
+            margin-bottom: 12px;
+        }}
         table {{
             width: 100%;
             border-collapse: collapse;
@@ -486,6 +541,22 @@ def generate_html(perf: Dict, positions: Dict, trades: pd.DataFrame, trend_candi
         </div>
     </div>
     
+    <!-- PENDING ENTRIES (TODAY'S ACTION ITEMS) -->
+    <div class="section">
+        <div class="section-title">🎯 Today's Scheduled Entries</div>
+        <div class="pending-card">
+            <div class="pending-title">📋 Execute these at market open today:</div>
+            <table style="width: 100%;">
+                <thead>
+                    <tr><th>System</th><th>Ticker</th><th>Score</th><th>Est. Price</th><th>Scheduled Date</th></tr>
+                </thead>
+                <tbody>
+                    {build_pending_entries_table(pending_entries)}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
     <!-- OPEN POSITIONS -->
     <div class="section">
         <div class="section-title">📌 Open Positions</div>
@@ -502,7 +573,7 @@ def generate_html(perf: Dict, positions: Dict, trades: pd.DataFrame, trend_candi
     
     <!-- TODAY'S CANDIDATES -->
     <div class="section">
-        <div class="section-title">🎯 Today's Top Candidates</div>
+        <div class="section-title">🎯 Today's Top Candidates (for tomorrow)</div>
         <div class="two-col">
             <div class="col">
                 <h4>Trend System (Score ≥ 6) Range: 0–8</h4>
@@ -590,7 +661,7 @@ def main():
     # Get latest date
     latest_date = scores["date"].max()
     
-    # Load candidates using priority sorting (same as trading script)
+    # Load candidates using priority sorting
     trend_candidates = load_trend_candidates_with_priority(scores, latest_date, min_score=6)
     breakout_candidates = load_breakout_candidates_with_priority(scores, latest_date, min_score=6)
     
@@ -598,10 +669,11 @@ def main():
     perf = load_performance(data_dir)
     positions = load_open_positions(data_dir)
     trades = load_recent_trades(data_dir, limit=10)
+    pending_entries = load_pending_entries(data_dir)
     run_log = load_run_log(data_dir)
     
     # Generate HTML
-    html = generate_html(perf, positions, trades, trend_candidates, breakout_candidates, run_log)
+    html = generate_html(perf, positions, trades, trend_candidates, breakout_candidates, pending_entries, run_log)
     
     # Write output
     output_path.write_text(html)
@@ -609,6 +681,7 @@ def main():
     print(f"  - Trend balance: ${perf.get('trend', {}).get('balance', 1000):.2f}")
     print(f"  - Breakout balance: ${perf.get('breakout', {}).get('balance', 1000):.2f}")
     print(f"  - Total trades: {perf.get('trend', {}).get('total_trades', 0) + perf.get('breakout', {}).get('total_trades', 0)}")
+    print(f"  - Pending entries: {len(pending_entries)}")
     print(f"  - Trend candidates: {len(trend_candidates)}")
     print(f"  - Breakout candidates: {len(breakout_candidates)}")
 
