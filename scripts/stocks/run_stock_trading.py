@@ -24,6 +24,17 @@ class Position:
     entry_signal: str
 
 
+@dataclass
+class PendingEntry:
+    system: str
+    ticker: str
+    scheduled_date: str
+    estimated_price: float
+    score: int
+    signal: str
+    shares: int
+
+
 def load_yaml(path: Path) -> dict:
     with path.open("r", encoding="utf-8") as f:
         return yaml.safe_load(f)
@@ -38,13 +49,11 @@ def load_price_data(scores_df: pd.DataFrame) -> Dict[Tuple[str, str], dict]:
     price_map = {}
     for _, row in scores_df.iterrows():
         key = (row["date"], row["ticker"])
-        # Check if open exists and is not NaN
         open_val = row.get("open")
         high_val = row.get("high")
         low_val = row.get("low")
         close_val = row.get("close")
         
-        # Skip if any required price data is missing
         if pd.isna(open_val) or pd.isna(high_val) or pd.isna(low_val) or pd.isna(close_val):
             continue
             
@@ -182,7 +191,6 @@ def requires_confirmation(system: str, scores_df: pd.DataFrame, ticker: str, sig
     if required_days <= 1:
         return True
     
-    # Get historical scores for this ticker
     ticker_df = scores_df[scores_df["ticker"] == ticker].sort_values("date")
     ticker_df = ticker_df[ticker_df["date"] <= signal_date].tail(required_days)
     
@@ -191,7 +199,7 @@ def requires_confirmation(system: str, scores_df: pd.DataFrame, ticker: str, sig
     
     if system == "trend":
         return all(ticker_df["signal"] == "Strong Bullish")
-    else:  # breakout
+    else:
         return all(ticker_df["breakout_signal"] == "Strong Breakout Candidate")
 
 
@@ -244,7 +252,6 @@ def update_performance(balance: float, trade_log: pd.DataFrame, system_name: str
     total_trades = len(trade_log)
     win_rate = len(winners) / total_trades if total_trades > 0 else 0.0
     
-    # Calculate drawdown from running balance
     trade_log = trade_log.sort_values("exit_date")
     trade_log["cumulative_return"] = trade_log["return_pct"].cumsum()
     trade_log["peak"] = trade_log["cumulative_return"].cummax()
@@ -268,53 +275,66 @@ def update_performance(balance: float, trade_log: pd.DataFrame, system_name: str
     }])
 
 
+def load_pending_entries(pending_path: Path) -> List[PendingEntry]:
+    """Load pending entries from previous run"""
+    if not pending_path.exists():
+        return []
+    
+    try:
+        df = pd.read_csv(pending_path)
+        pending = []
+        for _, row in df.iterrows():
+            pending.append(PendingEntry(
+                system=row["system"],
+                ticker=row["ticker"],
+                scheduled_date=row["scheduled_date"],
+                estimated_price=float(row["estimated_price"]),
+                score=int(row["score"]),
+                signal=row["signal"],
+                shares=int(row["shares"]),
+            ))
+        return pending
+    except Exception as e:
+        print(f"Error loading pending entries: {e}")
+        return []
+
+
+def save_pending_entries(pending: List[PendingEntry], pending_path: Path) -> None:
+    """Save pending entries for next run"""
+    if not pending:
+        if pending_path.exists():
+            pending_path.unlink()
+        return
+    
+    df = pd.DataFrame([{
+        "system": p.system,
+        "ticker": p.ticker,
+        "scheduled_date": p.scheduled_date,
+        "estimated_price": p.estimated_price,
+        "score": p.score,
+        "signal": p.signal,
+        "shares": p.shares,
+    } for p in pending])
+    df.to_csv(pending_path, index=False)
+
+
 def main():
     root = Path(".")
     data_dir = root / "data" / "stocks"
+    pending_path = data_dir / "pending_entries.csv"
     
-    # Load scores (now includes open, high, low, close)
+    # Load scores
     scores = pd.read_csv(data_dir / "stock_scores_history.csv")
     scores["date"] = pd.to_datetime(scores["date"]).dt.strftime("%Y-%m-%d")
     
-    # Build price lookup from the CSV (skips rows with missing OHLCV)
+    # Build price lookup
     price_map = load_price_data(scores)
     
     # Get unique dates from scores
     all_dates = sorted(scores["date"].unique())
     
-    # Handle first day with only one date
-    if len(all_dates) < 2:
-        print("Only one day of history available. Skipping trading until tomorrow.")
-        
-        # Create empty output files so workflow doesn't fail
-        pd.DataFrame().to_csv(data_dir / "trend_trade_log.csv", index=False)
-        pd.DataFrame().to_csv(data_dir / "breakout_trade_log.csv", index=False)
-        pd.DataFrame().to_csv(data_dir / "trend_open_positions.csv", index=False)
-        pd.DataFrame().to_csv(data_dir / "breakout_open_positions.csv", index=False)
-        
-        perf = pd.DataFrame([{
-            "system": "trend",
-            "balance": 1000.0,
-            "total_trades": 0,
-            "win_rate": 0.0,
-            "total_return_pct": 0.0,
-            "max_drawdown_pct": 0.0,
-            "avg_win_pct": 0.0,
-            "avg_loss_pct": 0.0,
-            "profit_factor": 0.0,
-        }, {
-            "system": "breakout",
-            "balance": 1000.0,
-            "total_trades": 0,
-            "win_rate": 0.0,
-            "total_return_pct": 0.0,
-            "max_drawdown_pct": 0.0,
-            "avg_win_pct": 0.0,
-            "avg_loss_pct": 0.0,
-            "profit_factor": 0.0,
-        }])
-        perf.to_csv(data_dir / "stock_performance.csv", index=False)
-        print("Empty files created. Exiting gracefully.")
+    if len(all_dates) < 1:
+        print("No date history available. Exiting.")
         return
     
     # Configuration
@@ -322,7 +342,7 @@ def main():
     breakout_confirmation_days = 1
     trend_min_score = 6
     breakout_min_score = 6
-    min_hold_days = 3  # Both systems use 3-day minimum hold before signal-based exits
+    min_hold_days = 3
     
     # Initialize systems
     trend_balance = 1000.0
@@ -334,73 +354,114 @@ def main():
     trend_trades: List[dict] = []
     breakout_trades: List[dict] = []
     
-    print(f"Starting parallel paper trading")
-    print(f"Trend system: ${trend_balance:.2f} | Breakout system: ${breakout_balance:.2f}")
-    print(f"Dates range: {all_dates[0]} to {all_dates[-1]}")
-    print(f"Minimum hold days: {min_hold_days} (signal-based exits blocked until then)")
-    print("-" * 60)
+    # Load pending entries from previous run
+    pending_entries = load_pending_entries(pending_path)
     
-    # Process each trading day (use yesterday's signal for today's entry)
-    for i in range(1, len(all_dates)):
-        signal_date = all_dates[i - 1]
-        trade_date = all_dates[i]
+    # Process each trading day
+    # We need at least 2 dates: one for scoring, one for entry execution
+    for i in range(len(all_dates) - 1):
+        signal_date = all_dates[i]      # Today's close data for scoring
+        trade_date = all_dates[i + 1]   # Tomorrow's open for entry
         
-        print(f"\nProcessing {trade_date} (signal from {signal_date})")
+        print(f"\nProcessing for entries on {trade_date} (using scores from {signal_date})")
         
-        # Get today's scores for signal loss checks
-        today_scores = scores[scores["date"] == trade_date] if trade_date in scores["date"].values else pd.DataFrame()
-        
-        # Load candidates for this signal date
+        # Load candidates using today's scores
         trend_candidates = load_trend_candidates(signal_date, scores, trend_min_score)
         breakout_candidates = load_breakout_candidates(signal_date, scores, breakout_min_score)
         
-        print(f"  Trend candidates ({len(trend_candidates)}): {[c['ticker'] for c in trend_candidates]}")
-        print(f"  Breakout candidates ({len(breakout_candidates)}): {[c['ticker'] for c in breakout_candidates]}")
+        print(f"  Trend candidates: {[c['ticker'] for c in trend_candidates[:5]]}")
+        print(f"  Breakout candidates: {[c['ticker'] for c in breakout_candidates[:5]]}")
         
         # =========================================================
-        # TREND SYSTEM - Exits first, then entries
+        # Execute any pending entries from previous run
+        # =========================================================
+        new_pending = []
+        for pending in pending_entries:
+            if pending.scheduled_date == trade_date:
+                # Execute this entry at today's open
+                bar = price_map.get((trade_date, pending.ticker))
+                if bar:
+                    actual_price = bar["open"]
+                    initial_stop = get_initial_stop(pending.system)
+                    
+                    if pending.system == "trend":
+                        trend_positions.append(Position(
+                            system="trend",
+                            ticker=pending.ticker,
+                            entry_date=trade_date,
+                            entry_price=actual_price,
+                            shares=pending.shares,
+                            highest_price=bar["high"],
+                            stop_pct=initial_stop,
+                            trailing_stop=bar["high"] * (1 - initial_stop),
+                            entry_score=pending.score,
+                            entry_signal=pending.signal,
+                        ))
+                        print(f"  [TREND] ENTRY {pending.ticker} @ ${actual_price:.2f} (scheduled)")
+                    else:
+                        breakout_positions.append(Position(
+                            system="breakout",
+                            ticker=pending.ticker,
+                            entry_date=trade_date,
+                            entry_price=actual_price,
+                            shares=pending.shares,
+                            highest_price=bar["high"],
+                            stop_pct=initial_stop,
+                            trailing_stop=bar["high"] * (1 - initial_stop),
+                            entry_score=pending.score,
+                            entry_signal=pending.signal,
+                        ))
+                        print(f"  [BREAKOUT] ENTRY {pending.ticker} @ ${actual_price:.2f} (scheduled)")
+                else:
+                    # No price data, keep pending for next run
+                    print(f"  No price data for {pending.ticker} on {trade_date}, keeping pending")
+                    new_pending.append(pending)
+            else:
+                # Not scheduled for this date, keep for future
+                new_pending.append(pending)
+        
+        pending_entries = new_pending
+        
+        # =========================================================
+        # TREND SYSTEM - Exits
         # =========================================================
         survivors = []
         for pos in trend_positions:
-            # Get price from CSV
             bar = price_map.get((trade_date, pos.ticker))
             if not bar:
-                print(f"  [TREND] No price data for {pos.ticker} on {trade_date}, holding")
                 survivors.append(pos)
                 continue
             
-            # Update highest price and trailing stop
             current_high = max(pos.highest_price, bar["high"])
             current_gain = (current_high - pos.entry_price) / pos.entry_price
             new_stop_pct = get_stop_levels_trend(current_gain)
             new_trailing_stop = current_high * (1 - new_stop_pct)
             
-            # Check if stop hit (always allowed)
+            # Check trailing stop
             if bar["low"] <= new_trailing_stop:
                 closed = close_position(pos, trade_date, bar["open"], "trailing_stop")
                 trend_trades.append(closed)
                 trend_balance += closed["gross_pnl"]
-                print(f"  [TREND] EXIT {pos.ticker} @ ${bar['open']:.2f} PnL: ${closed['gross_pnl']:.2f} ({closed['return_pct']}%)")
+                print(f"  [TREND] EXIT {pos.ticker} @ ${bar['open']:.2f} (trailing stop) PnL: ${closed['gross_pnl']:.2f}")
                 continue
             
-            # Check signal loss (only allowed after min_hold_days)
+            # Check signal loss (after min hold)
             days_held = (pd.to_datetime(trade_date) - pd.to_datetime(pos.entry_date)).days
+            today_scores = scores[scores["date"] == trade_date]
             signal_loss = False
             if not today_scores.empty:
                 ticker_scores = today_scores[today_scores["ticker"] == pos.ticker]
                 if not ticker_scores.empty:
                     current_score = int(ticker_scores["total_score"].iloc[0])
-                    if current_score < 6:
+                    if current_score < trend_min_score:
                         signal_loss = True
             
             if signal_loss and days_held >= min_hold_days:
                 closed = close_position(pos, trade_date, bar["open"], "signal_loss")
                 trend_trades.append(closed)
                 trend_balance += closed["gross_pnl"]
-                print(f"  [TREND] EXIT {pos.ticker} @ ${bar['open']:.2f} (signal loss, held {days_held} days) PnL: ${closed['gross_pnl']:.2f} ({closed['return_pct']}%)")
+                print(f"  [TREND] EXIT {pos.ticker} @ ${bar['open']:.2f} (signal loss, held {days_held}d) PnL: ${closed['gross_pnl']:.2f}")
                 continue
-            elif signal_loss and days_held < min_hold_days:
-                print(f"  [TREND] {pos.ticker} signal loss detected but min hold ({min_hold_days} days) not met. Held {days_held} days. Trailing stop still active.")
             
             # Update position
             pos.highest_price = current_high
@@ -410,88 +471,46 @@ def main():
         
         trend_positions = survivors
         
-        # Trend system entries
-        if len(trend_positions) == 0 and trend_candidates:
-            best = trend_candidates[0]
-            print(f"  [TREND] Best candidate: {best['ticker']} (score {best['score']})")
-            
-            # Check 2-day confirmation
-            confirmed = requires_confirmation("trend", scores, best["ticker"], signal_date, trend_confirmation_days)
-            print(f"  [TREND] Confirmation for {best['ticker']}: {confirmed}")
-            
-            if confirmed:
-                bar = price_map.get((trade_date, best["ticker"]))
-                if bar:
-                    shares = int(trend_balance / bar["open"])
-                    if shares > 0:
-                        initial_stop = get_initial_stop("trend")
-                        trend_positions.append(Position(
-                            system="trend",
-                            ticker=best["ticker"],
-                            entry_date=trade_date,
-                            entry_price=bar["open"],
-                            shares=shares,
-                            highest_price=bar["high"],
-                            stop_pct=initial_stop,
-                            trailing_stop=bar["high"] * (1 - initial_stop),
-                            entry_score=best["score"],
-                            entry_signal=best["signal"],
-                        ))
-                        print(f"  [TREND] ENTRY {best['ticker']} @ ${bar['open']:.2f} shares:{shares}")
-                else:
-                    print(f"  [TREND] No price data for {best['ticker']} on {trade_date}")
-            else:
-                print(f"  [TREND] {best['ticker']} failed confirmation")
-        else:
-            if len(trend_positions) > 0:
-                print(f"  [TREND] Position exists, skipping entry")
-            elif not trend_candidates:
-                print(f"  [TREND] No candidates")
-        
         # =========================================================
-        # BREAKOUT SYSTEM - Exits first, then entries
+        # BREAKOUT SYSTEM - Exits
         # =========================================================
         survivors = []
         for pos in breakout_positions:
-            # Get price from CSV
             bar = price_map.get((trade_date, pos.ticker))
             if not bar:
-                print(f"  [BREAKOUT] No price data for {pos.ticker} on {trade_date}, holding")
                 survivors.append(pos)
                 continue
             
-            # Update highest price and trailing stop
             current_high = max(pos.highest_price, bar["high"])
             current_gain = (current_high - pos.entry_price) / pos.entry_price
             new_stop_pct = get_stop_levels_breakout(current_gain)
             new_trailing_stop = current_high * (1 - new_stop_pct)
             
-            # Check if stop hit (always allowed)
+            # Check trailing stop
             if bar["low"] <= new_trailing_stop:
                 closed = close_position(pos, trade_date, bar["open"], "trailing_stop")
                 breakout_trades.append(closed)
                 breakout_balance += closed["gross_pnl"]
-                print(f"  [BREAKOUT] EXIT {pos.ticker} @ ${bar['open']:.2f} PnL: ${closed['gross_pnl']:.2f} ({closed['return_pct']}%)")
+                print(f"  [BREAKOUT] EXIT {pos.ticker} @ ${bar['open']:.2f} (trailing stop) PnL: ${closed['gross_pnl']:.2f}")
                 continue
             
-            # Check signal loss (only allowed after min_hold_days)
+            # Check signal loss (after min hold)
             days_held = (pd.to_datetime(trade_date) - pd.to_datetime(pos.entry_date)).days
+            today_scores = scores[scores["date"] == trade_date]
             signal_loss = False
             if not today_scores.empty:
                 ticker_scores = today_scores[today_scores["ticker"] == pos.ticker]
                 if not ticker_scores.empty:
                     current_score = int(ticker_scores["breakout_total_score"].iloc[0])
-                    if current_score < 6:
+                    if current_score < breakout_min_score:
                         signal_loss = True
             
             if signal_loss and days_held >= min_hold_days:
                 closed = close_position(pos, trade_date, bar["open"], "signal_loss")
                 breakout_trades.append(closed)
                 breakout_balance += closed["gross_pnl"]
-                print(f"  [BREAKOUT] EXIT {pos.ticker} @ ${bar['open']:.2f} (signal loss, held {days_held} days) PnL: ${closed['gross_pnl']:.2f} ({closed['return_pct']}%)")
+                print(f"  [BREAKOUT] EXIT {pos.ticker} @ ${bar['open']:.2f} (signal loss, held {days_held}d) PnL: ${closed['gross_pnl']:.2f}")
                 continue
-            elif signal_loss and days_held < min_hold_days:
-                print(f"  [BREAKOUT] {pos.ticker} signal loss detected but min hold ({min_hold_days} days) not met. Held {days_held} days. Trailing stop still active.")
             
             # Update position
             pos.highest_price = current_high
@@ -501,56 +520,60 @@ def main():
         
         breakout_positions = survivors
         
-        # Breakout system entries
-        if len(breakout_positions) == 0 and breakout_candidates:
-            best = breakout_candidates[0]
-            print(f"  [BREAKOUT] Best candidate: {best['ticker']} (score {best['score']})")
-            
-            # Check 1-day confirmation
-            confirmed = requires_confirmation("breakout", scores, best["ticker"], signal_date, breakout_confirmation_days)
-            print(f"  [BREAKOUT] Confirmation for {best['ticker']}: {confirmed}")
+        # =========================================================
+        # Schedule new entries for NEXT trading day
+        # =========================================================
+        # Only schedule if no position currently open
+        if len(trend_positions) == 0 and trend_candidates:
+            best = trend_candidates[0]
+            confirmed = requires_confirmation("trend", scores, best["ticker"], signal_date, trend_confirmation_days)
             
             if confirmed:
-                bar = price_map.get((trade_date, best["ticker"]))
-                if bar:
-                    shares = int(breakout_balance / bar["open"])
-                    if shares > 0:
-                        initial_stop = get_initial_stop("breakout")
-                        breakout_positions.append(Position(
-                            system="breakout",
-                            ticker=best["ticker"],
-                            entry_date=trade_date,
-                            entry_price=bar["open"],
-                            shares=shares,
-                            highest_price=bar["high"],
-                            stop_pct=initial_stop,
-                            trailing_stop=bar["high"] * (1 - initial_stop),
-                            entry_score=best["score"],
-                            entry_signal=best["signal"],
-                        ))
-                        print(f"  [BREAKOUT] ENTRY {best['ticker']} @ ${bar['open']:.2f} shares:{shares}")
-                else:
-                    print(f"  [BREAKOUT] No price data for {best['ticker']} on {trade_date}")
-            else:
-                print(f"  [BREAKOUT] {best['ticker']} failed confirmation")
-        else:
-            if len(breakout_positions) > 0:
-                print(f"  [BREAKOUT] Position exists, skipping entry")
-            elif not breakout_candidates:
-                print(f"  [BREAKOUT] No candidates")
+                # Calculate shares based on current balance
+                shares = int(trend_balance / best["close"])
+                if shares > 0:
+                    pending_entries.append(PendingEntry(
+                        system="trend",
+                        ticker=best["ticker"],
+                        scheduled_date=trade_date,  # Schedule for tomorrow
+                        estimated_price=best["close"],
+                        score=best["score"],
+                        signal=best["signal"],
+                        shares=shares,
+                    ))
+                    print(f"  [TREND] SCHEDULED {best['ticker']} for entry on {trade_date} @ est ${best['close']:.2f}")
+        
+        if len(breakout_positions) == 0 and breakout_candidates:
+            best = breakout_candidates[0]
+            confirmed = requires_confirmation("breakout", scores, best["ticker"], signal_date, breakout_confirmation_days)
+            
+            if confirmed:
+                shares = int(breakout_balance / best["close"])
+                if shares > 0:
+                    pending_entries.append(PendingEntry(
+                        system="breakout",
+                        ticker=best["ticker"],
+                        scheduled_date=trade_date,
+                        estimated_price=best["close"],
+                        score=best["score"],
+                        signal=best["signal"],
+                        shares=shares,
+                    ))
+                    print(f"  [BREAKOUT] SCHEDULED {best['ticker']} for entry on {trade_date} @ est ${best['close']:.2f}")
+    
+    # Save pending entries for next run
+    save_pending_entries(pending_entries, pending_path)
     
     # =========================================================
     # Save outputs
     # =========================================================
     
-    # Trade logs
     trend_trade_df = pd.DataFrame(trend_trades)
     breakout_trade_df = pd.DataFrame(breakout_trades)
     
     trend_trade_df.to_csv(data_dir / "trend_trade_log.csv", index=False)
     breakout_trade_df.to_csv(data_dir / "breakout_trade_log.csv", index=False)
     
-    # Open positions
     trend_open_df = pd.DataFrame([{
         "system": p.system,
         "ticker": p.ticker,
@@ -580,26 +603,38 @@ def main():
     trend_open_df.to_csv(data_dir / "trend_open_positions.csv", index=False)
     breakout_open_df.to_csv(data_dir / "breakout_open_positions.csv", index=False)
     
-    # Performance
     trend_perf = update_performance(trend_balance, trend_trade_df, "trend")
     breakout_perf = update_performance(breakout_balance, breakout_trade_df, "breakout")
     
     combined_perf = pd.concat([trend_perf, breakout_perf], ignore_index=True)
     combined_perf.to_csv(data_dir / "stock_performance.csv", index=False)
     
-    # Summary
+    # Create dashboard data for email
+    dashboard_data = {
+        "trend_balance": trend_balance,
+        "breakout_balance": breakout_balance,
+        "trend_trades": len(trend_trades),
+        "breakout_trades": len(breakout_trades),
+        "trend_win_rate": trend_perf["win_rate"].iloc[0] if not trend_perf.empty else 0,
+        "breakout_win_rate": breakout_perf["win_rate"].iloc[0] if not breakout_perf.empty else 0,
+        "pending_entries": [(p.ticker, p.score, p.estimated_price) for p in pending_entries],
+    }
+    
+    # Save dashboard data for email script
+    pd.DataFrame([dashboard_data]).to_csv(data_dir / "dashboard_data.csv", index=False)
+    
     print("\n" + "=" * 60)
     print("FINAL SUMMARY")
     print("=" * 60)
-    print(f"Trend System:    ${trend_balance:.2f}  | Trades: {len(trend_trades)}  | Win Rate: {trend_perf['win_rate'].iloc[0]}%")
-    print(f"Breakout System: ${breakout_balance:.2f}  | Trades: {len(breakout_trades)}  | Win Rate: {breakout_perf['win_rate'].iloc[0]}%")
+    print(f"Trend System:    ${trend_balance:.2f}  | Trades: {len(trend_trades)}  | Win Rate: {trend_perf['win_rate'].iloc[0] if not trend_perf.empty else 0}%")
+    print(f"Breakout System: ${breakout_balance:.2f}  | Trades: {len(breakout_trades)}  | Win Rate: {breakout_perf['win_rate'].iloc[0] if not breakout_perf.empty else 0}%")
+    
+    if pending_entries:
+        print("\n📋 PENDING ENTRIES FOR NEXT TRADING DAY:")
+        for p in pending_entries:
+            print(f"  {p.system.upper()}: {p.ticker} (score {p.score}) @ est ${p.estimated_price:.2f}")
+    
     print("=" * 60)
-    print(f"Outputs saved to {data_dir}/")
-    print(f"  - trend_trade_log.csv")
-    print(f"  - breakout_trade_log.csv")
-    print(f"  - trend_open_positions.csv")
-    print(f"  - breakout_open_positions.csv")
-    print(f"  - stock_performance.csv")
 
 
 if __name__ == "__main__":
