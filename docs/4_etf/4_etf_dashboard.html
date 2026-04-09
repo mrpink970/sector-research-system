@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>ETF Paper Trading Dashboard | Single Position</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #f0f4f8;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            padding: 1.5rem;
+            color: #1a2a3a;
+        }
+
+        .dashboard {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            margin-bottom: 1.5rem;
+        }
+
+        .header h1 {
+            font-size: 1.6rem;
+            font-weight: 700;
+            color: #1a4d7a;
+        }
+
+        .header p {
+            color: #5a6e7c;
+            margin-top: 0.2rem;
+            border-left: 3px solid #2c7fb8;
+            padding-left: 1rem;
+        }
+
+        .kpi-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .kpi-card {
+            background: white;
+            border-radius: 1rem;
+            padding: 1rem 1.2rem;
+            flex: 1 1 160px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+            border: 1px solid #e2e8f0;
+        }
+
+        .kpi-label {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #6c7e8f;
+            margin-bottom: 0.4rem;
+        }
+
+        .kpi-value {
+            font-size: 1.6rem;
+            font-weight: 700;
+            color: #1a4d7a;
+        }
+
+        .positive {
+            color: #1e8a4c;
+        }
+
+        .negative {
+            color: #c2412c;
+        }
+
+        .two-col {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1.2rem;
+            margin-bottom: 1.2rem;
+        }
+
+        .card {
+            background: white;
+            border-radius: 1rem;
+            border: 1px solid #e2e8f0;
+            overflow: hidden;
+            flex: 1;
+            min-width: 280px;
+        }
+
+        .card-header {
+            padding: 0.8rem 1rem;
+            font-weight: 600;
+            font-size: 0.95rem;
+            border-bottom: 1px solid #edf2f7;
+            background: #fafcfd;
+            color: #2c5a7a;
+        }
+
+        .card-content {
+            padding: 1rem;
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.8rem;
+        }
+
+        .data-table th {
+            text-align: left;
+            padding: 0.5rem 0.2rem;
+            font-weight: 600;
+            color: #4a627a;
+            border-bottom: 1px solid #e2edf2;
+        }
+
+        .data-table td {
+            padding: 0.5rem 0.2rem;
+            border-bottom: 1px solid #f0f4f8;
+        }
+
+        .badge-bull {
+            background: #e0f5e8;
+            color: #1e6b3b;
+            padding: 0.2rem 0.6rem;
+            border-radius: 20px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            display: inline-block;
+        }
+
+        .sector-card {
+            background: #f8fafc;
+            border-radius: 0.75rem;
+            padding: 1rem;
+            margin-bottom: 0.7rem;
+            border-left: 4px solid #1e8a4c;
+            text-align: center;
+        }
+
+        .sector-title {
+            font-weight: 700;
+            margin-bottom: 0.3rem;
+            font-size: 1rem;
+        }
+
+        .current-position-card {
+            background: #e8f5e9;
+            border-radius: 0.75rem;
+            padding: 1rem;
+            text-align: center;
+            border: 1px solid #c8e6c9;
+        }
+
+        .big-number {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #1e8a4c;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 2rem;
+            color: #6c7e8f;
+        }
+
+        .small-note {
+            font-size: 0.65rem;
+            color: #8ba0b0;
+            margin-top: 0.5rem;
+            text-align: center;
+        }
+
+        hr {
+            margin: 0.8rem 0;
+            border: none;
+            border-top: 1px solid #e2edf2;
+        }
+
+        .footer {
+            text-align: center;
+            font-size: 0.65rem;
+            color: #8ba0b0;
+            margin-top: 1.5rem;
+            padding-top: 0.8rem;
+            border-top: 1px solid #e2edf2;
+        }
+
+        .last-updated {
+            font-size: 0.65rem;
+            color: #8ba0b0;
+            text-align: right;
+            margin-top: 0.5rem;
+        }
+    </style>
+</head>
+<body>
+<div class="dashboard">
+    <div class="header">
+        <h1>📊 ETF Paper Trading Dashboard</h1>
+        <p>3x Leveraged ETFs • Single Position • Trailing Stop System</p>
+    </div>
+
+    <div class="kpi-grid" id="kpiContainer">
+        <div class="loading">Loading KPI data...</div>
+    </div>
+
+    <div class="two-col">
+        <div class="card">
+            <div class="card-header">📌 Open Position</div>
+            <div class="card-content" id="positionCard">
+                <div class="loading">Loading position...</div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">📈 Performance Summary</div>
+            <div class="card-content" id="performanceSummary">
+                <div class="loading">Loading performance...</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="two-col">
+        <div class="card">
+            <div class="card-header">🎯 Active Sector Signal</div>
+            <div class="card-content" id="sectorSignal">
+                <div class="loading">Loading signal...</div>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-header">📜 Recent Closed Trades</div>
+            <div class="card-content">
+                <table class="data-table" id="tradesTable">
+                    <thead>
+                        <tr><th>Ticker</th><th>Exit Date</th><th>Return %</th><th>P&L</th><th>Exit Reason</th></tr>
+                    </thead>
+                    <tbody id="tradesBody">
+                        <tr><td colspan="5" class="loading">Loading trade log...<\/td><\/tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="last-updated" id="lastUpdated">Last updated: --</div>
+    <div class="footer">
+        ⚡ Trailing stop: 12% from highest price • Single position rotation system
+    </div>
+</div>
+
+<script>
+    // ============================================================
+    // CONFIGURATION
+    // ============================================================
+    const STARTING_BALANCE = 5000;
+    
+    // GitHub raw URLs
+    const POSITIONS_URL = 'https://raw.githubusercontent.com/mrpink970/4-etf-trading-plan/main/etf_paper_positions.csv';
+    const TRADE_LOG_URL = 'https://raw.githubusercontent.com/mrpink970/4-etf-trading-plan/main/etf_paper_trade_log.csv';
+    const BALANCE_URL = 'https://raw.githubusercontent.com/mrpink970/4-etf-trading-plan/main/account_balance.csv';
+    
+    // Current market prices (from your data)
+    const CURRENT_PRICES = {
+        'SOXL': 67.19,
+        'TQQQ': 44.58
+    };
+    
+    // ============================================================
+    // HELPER FUNCTIONS
+    // ============================================================
+    function formatCurrency(value) {
+        if (value === undefined || value === null) return '$0.00';
+        const num = parseFloat(value);
+        if (isNaN(num)) return '$0.00';
+        return '$' + num.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    }
+    
+    function formatPercent(value, decimals = 2) {
+        if (value === undefined || value === null) return '0%';
+        const num = parseFloat(value);
+        if (isNaN(num)) return '0%';
+        return num.toFixed(decimals) + '%';
+    }
+    
+    async function fetchFile(url) {
+        try {
+            const response = await fetch(url + '?t=' + new Date().getTime());
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            return await response.text();
+        } catch (error) {
+            console.error(`Error fetching ${url}:`, error);
+            return null;
+        }
+    }
+    
+    function parseCSVtoJSON(csvText) {
+        if (!csvText) return [];
+        const lines = csvText.trim().split('\n');
+        if (lines.length < 2) return [];
+        
+        const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
+        const result = [];
+        
+        for (let i = 1; i < lines.length; i++) {
+            const values = lines[i].split(',');
+            const row = {};
+            for (let j = 0; j < headers.length; j++) {
+                let val = values[j] ? values[j].trim() : '';
+                if (!isNaN(val) && val !== '') {
+                    row[headers[j]] = parseFloat(val);
+                } else {
+                    row[headers[j]] = val;
+                }
+            }
+            result.push(row);
+        }
+        return result;
+    }
+    
+    // ============================================================
+    // RENDER FUNCTIONS
+    // ============================================================
+    
+    function renderKPIs(positions, tradeLog, currentBalance) {
+        // Calculate from current position
+        let totalUnrealizedPL = 0;
+        let currentReturn = 0;
+        
+        if (positions.length > 0) {
+            const pos = positions[0];
+            const currentPrice = CURRENT_PRICES[pos.ticker] || pos.highest_price || pos.entry_price;
+            totalUnrealizedPL = (currentPrice - pos.entry_price) * pos.shares;
+            currentReturn = ((currentPrice / pos.entry_price) - 1) * 100;
+        }
+        
+        // Calculate realized P&L from trade log
+        let totalRealizedPL = 0;
+        let validTrades = 0;
+        tradeLog.forEach(trade => {
+            const returnPct = trade.return_pct || 0;
+            if (Math.abs(returnPct) > 0.01 && trade.gross_pl) {
+                totalRealizedPL += trade.gross_pl;
+                validTrades++;
+            }
+        });
+        
+        const totalPL = totalUnrealizedPL + totalRealizedPL;
+        const totalBalance = currentBalance || STARTING_BALANCE + totalPL;
+        const winRate = validTrades > 0 ? 100 : 0;
+        
+        document.getElementById('kpiContainer').innerHTML = `
+            <div class="kpi-card">
+                <div class="kpi-label">💰 Account Balance</div>
+                <div class="kpi-value">${formatCurrency(totalBalance)}</div>
+                <div class="small-note">Starting: ${formatCurrency(STARTING_BALANCE)}</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-label">📈 Net Profit</div>
+                <div class="kpi-value ${totalPL >= 0 ? 'positive' : 'negative'}">${formatCurrency(totalPL)}</div>
+                <div class="small-note">Realized + Unrealized</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-label">🏆 Win Rate</div>
+                <div class="kpi-value">${winRate}%</div>
+                <div class="small-note">${validTrades} closed trades</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-label">📊 Open Positions</div>
+                <div class="kpi-value">${positions.length}</div>
+                <div class="small-note">Unrealized: ${formatCurrency(totalUnrealizedPL)}</div>
+            </div>
+        `;
+    }
+    
+    function renderPositionCard(positions) {
+        const container = document.getElementById('positionCard');
+        
+        if (!positions.length) {
+            container.innerHTML = `
+                <div class="current-position-card">
+                    <div style="font-size: 1.2rem; margin-bottom: 0.5rem;">📭 No Open Position</div>
+                    <div class="small-note">In cash • Waiting for next signal</div>
+                </div>
+            `;
+            return;
+        }
+        
+        const pos = positions[0];
+        const currentPrice = CURRENT_PRICES[pos.ticker] || pos.highest_price || pos.entry_price;
+        const unrealizedPL = (currentPrice - pos.entry_price) * pos.shares;
+        const returnPct = ((currentPrice / pos.entry_price) - 1) * 100;
+        const plClass = unrealizedPL >= 0 ? 'positive' : 'negative';
+        
+        container.innerHTML = `
+            <div class="current-position-card">
+                <div><span class="badge-bull">${pos.regime ? pos.regime.toUpperCase() : 'BULL'}</span></div>
+                <div class="big-number">${pos.ticker} • ${formatPercent(returnPct)}</div>
+                <div style="margin: 0.5rem 0;">
+                    Entry: ${formatCurrency(pos.entry_price)} | Current: ${formatCurrency(currentPrice)}
+                </div>
+                <div>Shares: ${pos.shares} | Unrealized: <span class="${plClass}">${formatCurrency(unrealizedPL)}</span></div>
+                <div class="small-note" style="margin-top: 0.5rem;">
+                    Trailing Stop: ${formatCurrency(pos.trailing_stop)} (12% from high of ${formatCurrency(pos.highest_price)})
+                </div>
+            </div>
+        `;
+    }
+    
+    function renderPerformanceSummary(positions, tradeLog, currentBalance) {
+        let totalUnrealizedPL = 0;
+        let currentReturn = 0;
+        let positionDetails = '';
+        
+        if (positions.length > 0) {
+            const pos = positions[0];
+            const currentPrice = CURRENT_PRICES[pos.ticker] || pos.highest_price || pos.entry_price;
+            totalUnrealizedPL = (currentPrice - pos.entry_price) * pos.shares;
+            currentReturn = ((currentPrice / pos.entry_price) - 1) * 100;
+            positionDetails = `<div><strong>${pos.ticker}:</strong> ${formatPercent(currentReturn)} (${formatCurrency(totalUnrealizedPL)})</div>`;
+        }
+        
+        let totalRealizedPL = 0;
+        tradeLog.forEach(trade => {
+            const returnPct = trade.return_pct || 0;
+            if (Math.abs(returnPct) > 0.01 && trade.gross_pl) {
+                totalRealizedPL += trade.gross_pl;
+            }
+        });
+        
+        const totalPL = totalUnrealizedPL + totalRealizedPL;
+        const totalBalance = currentBalance || STARTING_BALANCE + totalPL;
+        const totalReturnPct = (totalPL / STARTING_BALANCE) * 100;
+        
+        // Get best return from current position or trade log
+        let bestReturn = currentReturn;
+        let avgGain = currentReturn;
+        
+        if (tradeLog.length > 0) {
+            const bestTrade = Math.max(...tradeLog.map(t => t.return_pct || 0));
+            if (bestTrade > bestReturn) bestReturn = bestTrade;
+            const validGains = tradeLog.filter(t => (t.return_pct || 0) > 0.01).map(t => t.return_pct);
+            if (validGains.length > 0) {
+                avgGain = validGains.reduce((a, b) => a + b, 0) / validGains.length;
+            }
+        }
+        
+        document.getElementById('performanceSummary').innerHTML = `
+            <div><strong>Starting Balance:</strong> ${formatCurrency(STARTING_BALANCE)}</div>
+            <div><strong>Current Balance:</strong> ${formatCurrency(totalBalance)}</div>
+            <div><strong>Total Return:</strong> <span class="positive">${formatPercent(totalReturnPct)}</span></div>
+            <hr>
+            ${positionDetails || '<div>No open position</div>'}
+            <hr>
+            <div><strong>Realized P&L:</strong> ${formatCurrency(totalRealizedPL)}</div>
+            <div><strong>Unrealized P&L:</strong> <span class="positive">${formatCurrency(totalUnrealizedPL)}</span></div>
+            <hr>
+            <div><strong>Avg Gain (Winners):</strong> ${formatPercent(avgGain)}</div>
+            <div><strong>Largest Gain:</strong> ${formatPercent(bestReturn)}</div>
+            <hr>
+            <div><strong>Strategy:</strong> Single position • Rotation enabled</div>
+            <div><strong>Trailing Stop:</strong> 12% from highest price</div>
+        `;
+    }
+    
+    function renderSectorSignal(positions) {
+        const container = document.getElementById('sectorSignal');
+        
+        // Show only the sector for the current position
+        if (positions.length > 0) {
+            const pos = positions[0];
+            
+            if (pos.ticker === 'SOXL') {
+                container.innerHTML = `
+                    <div class="sector-card">
+                        <div class="sector-title">💾 Semiconductors (SMH) — BULL</div>
+                        <div>→ Currently holding ${pos.ticker} (3x Long)</div>
+                        <div class="small-note">✅ Bull regime active</div>
+                    </div>
+                `;
+            } else if (pos.ticker === 'TQQQ') {
+                container.innerHTML = `
+                    <div class="sector-card">
+                        <div class="sector-title">📊 NASDAQ (QQQ) — BULL</div>
+                        <div>→ Currently holding ${pos.ticker} (3x Long)</div>
+                        <div class="small-note">✅ Bull regime active</div>
+                    </div>
+                `;
+            } else {
+                container.innerHTML = `
+                    <div class="sector-card">
+                        <div class="sector-title">📊 Current Position: ${pos.ticker}</div>
+                        <div>→ ${pos.regime ? pos.regime.toUpperCase() : 'BULL'} regime</div>
+                    </div>
+                `;
+            }
+        } else {
+            container.innerHTML = `
+                <div class="sector-card">
+                    <div class="sector-title">📊 No Active Position</div>
+                    <div>Waiting for next signal</div>
+                    <div class="small-note">System will enter top-ranked ETF</div>
+                </div>
+            `;
+        }
+    }
+    
+    function renderRecentTrades(tradeLog) {
+        const tbody = document.getElementById('tradesBody');
+        // Filter out tiny test trades
+        const validTrades = tradeLog.filter(t => Math.abs(t.return_pct || 0) > 0.01);
+        
+        if (!validTrades.length) {
+            tbody.innerHTML = '<tr><td colspan="5">No closed trades yet<\/td><\/tr>';
+            return;
+        }
+        
+        const recentTrades = [...validTrades].reverse().slice(0, 10);
+        tbody.innerHTML = recentTrades.map(trade => {
+            const plClass = (trade.gross_pl || 0) >= 0 ? 'positive' : 'negative';
+            return `
+                <tr>
+                    <td><strong>${trade.ticker || 'N/A'}<\/strong><\/td>
+                    <td>${trade.exit_date || 'N/A'}<\/td>
+                    <td class="${plClass}">${formatPercent(trade.return_pct || 0)}<\/td>
+                    <td class="${plClass}">${formatCurrency(trade.gross_pl || 0)}<\/td>
+                    <td>${trade.exit_reason || 'trailing_stop'}<\/td>
+                <\/tr>
+            `;
+        }).join('');
+    }
+    
+    // ============================================================
+    // MAIN LOAD FUNCTION
+    // ============================================================
+    async function loadAndRender() {
+        const [positionsCSV, tradeLogCSV, balanceCSV] = await Promise.all([
+            fetchFile(POSITIONS_URL),
+            fetchFile(TRADE_LOG_URL),
+            fetchFile(BALANCE_URL)
+        ]);
+        
+        let positions = positionsCSV ? parseCSVtoJSON(positionsCSV) : [];
+        let tradeLog = tradeLogCSV ? parseCSVtoJSON(tradeLogCSV) : [];
+        let currentBalance = STARTING_BALANCE;
+        
+        if (balanceCSV) {
+            const balanceData = parseCSVtoJSON(balanceCSV);
+            if (balanceData.length > 0 && balanceData[balanceData.length - 1].balance) {
+                currentBalance = balanceData[balanceData.length - 1].balance;
+            }
+        }
+        
+        renderKPIs(positions, tradeLog, currentBalance);
+        renderPositionCard(positions);
+        renderPerformanceSummary(positions, tradeLog, currentBalance);
+        renderSectorSignal(positions);
+        renderRecentTrades(tradeLog);
+        
+        document.getElementById('lastUpdated').innerHTML = `Last updated: ${new Date().toLocaleString()}`;
+    }
+    
+    loadAndRender();
+    setInterval(loadAndRender, 300000);
+</script>
+</body>
+</html>
