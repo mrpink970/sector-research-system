@@ -286,10 +286,10 @@ def generate_html(perf: Dict, positions: Dict, trades: pd.DataFrame, trend_candi
             """)
         return "".join(rows)
     
-    # Build trades table
+    # Build trades table with EXIT REASON column added
     def build_trades_table(df: pd.DataFrame) -> str:
         if df.empty:
-            return '<tr><td colspan="8" style="text-align: center;">No closed trades yet</td></tr>'
+            return '<tr><td colspan="9" style="text-align: center;">No closed trades yet</td></tr>'
         
         rows = []
         for _, row in df.iterrows():
@@ -301,6 +301,7 @@ def generate_html(perf: Dict, positions: Dict, trades: pd.DataFrame, trend_candi
             exit_price = float(row.get("exit_price", 0))
             return_pct = float(row.get("return_pct", 0))
             pnl = float(row.get("gross_pnl", 0))
+            exit_reason = row.get("exit_reason", "unknown")
             pnl_class = "positive" if pnl >= 0 else "negative"
             return_class = "positive" if return_pct >= 0 else "negative"
             
@@ -314,6 +315,7 @@ def generate_html(perf: Dict, positions: Dict, trades: pd.DataFrame, trend_candi
                 <td>${exit_price:.2f}</td>
                 <td class="{return_class}">{return_pct:+.1f}%</td>
                 <td class="{pnl_class}">${pnl:+.2f}</td>
+                <td>{exit_reason}</td>
             </tr>
             """)
         return "".join(rows)
@@ -528,7 +530,7 @@ def generate_html(perf: Dict, positions: Dict, trades: pd.DataFrame, trend_candi
         <div class="section-title">📋 Recent Closed Trades</div>
         <table>
             <thead>
-                <tr><th>System</th><th>Ticker</th><th>Entry Date</th><th>Exit Date</th><th>Entry</th><th>Exit</th><th>Return</th><th>PnL</th></tr>
+                <tr><th>System</th><th>Ticker</th><th>Entry Date</th><th>Exit Date</th><th>Entry</th><th>Exit</th><th>Return</th><th>PnL</th><th>Exit Reason</th></tr>
             </thead>
             <tbody>
                 {build_trades_table(trades)}
