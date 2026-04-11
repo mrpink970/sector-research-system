@@ -1,1 +1,4 @@
-
+system,ticker,entry_date,entry_price,shares,highest_price,stop_pct,trailing_stop,entry_score,entry_signal
+trend,CVX,2026-04-08,191.4100036621093,4,196.6699981689453,0.15,167.16949844360352,8,Strong Bullish
+trend,TWO,2026-04-09,10.979999542236328,91,11.100000381469728,0.15,9.43500032424927,7,Strong Bullish
+trend,TXG,2026-04-10,23.25,43,23.6299991607666,0.15,20.08549928665161,7,Strong Bullish
