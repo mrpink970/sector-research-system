@@ -1,3 +1,3 @@
 system,balance,total_trades,win_rate,total_return_pct,max_drawdown_pct,avg_win_pct,avg_loss_pct,profit_factor
-trend,933.25,2,0.0,-7.89,-1.81,0.0,3.94,0.0
-breakout,1034.79,3,66.67,3.48,-2.53,3.0,2.53,2.49
+trend,1000.0,0,0.0,0.0,0.0,0.0,0.0,0.0
+breakout,1000.0,0,0.0,0.0,0.0,0.0,0.0,0.0
