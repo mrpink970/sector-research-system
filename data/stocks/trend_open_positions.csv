@@ -1,1 +1,4 @@
-
+system,ticker,entry_date,entry_price,shares,highest_price,stop_pct,trailing_stop,entry_score,entry_signal
+trend,TXG,2026-04-10,23.25,43,25.290000915527344,0.15,21.496500778198243,7,Strong Bullish
+trend,TXG,2026-04-13,22.91469955444336,42,25.290000915527344,0.12,22.255200805664064,7,Strong Bullish
+trend,TXG,2026-04-14,24.11000061035156,42,25.290000915527344,0.15,21.496500778198243,7,Strong Bullish
