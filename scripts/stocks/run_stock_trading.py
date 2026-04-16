@@ -187,12 +187,18 @@ def get_initial_stop(system: str) -> float:
 
 
 def requires_confirmation(system: str, scores_df: pd.DataFrame, ticker: str, signal_date: str, required_days: int) -> bool:
-    """Check if stock has been a candidate for required_days consecutive days"""
+    """
+    Check if stock has been a candidate for required_days consecutive days.
+    FIXED: Only uses historical dates BEFORE signal_date.
+    """
     if required_days <= 1:
         return True
     
-    ticker_df = scores_df[scores_df["ticker"] == ticker].sort_values("date")
-    ticker_df = ticker_df[ticker_df["date"] <= signal_date].tail(required_days)
+    # Only use dates BEFORE signal_date (historical confirmation only)
+    ticker_df = scores_df[
+        (scores_df["ticker"] == ticker) & 
+        (scores_df["date"] < signal_date)  # < NOT <=
+    ].sort_values("date").tail(required_days)
     
     if len(ticker_df) < required_days:
         return False
@@ -201,6 +207,18 @@ def requires_confirmation(system: str, scores_df: pd.DataFrame, ticker: str, sig
         return all(ticker_df["signal"] == "Strong Bullish")
     else:
         return all(ticker_df["breakout_signal"] == "Strong Breakout Candidate")
+
+
+def is_already_held_or_pending(ticker: str, positions: List[Position], pending_entries: List[PendingEntry], system: str) -> bool:
+    """
+    FIXED: Check if a ticker is already in open positions or pending entries.
+    Prevents multiple entries on the same stock.
+    """
+    if any(p.ticker == ticker for p in positions):
+        return True
+    if any(p.ticker == ticker and p.system == system for p in pending_entries):
+        return True
+    return False
 
 
 def close_position(
@@ -318,6 +336,21 @@ def save_pending_entries(pending: List[PendingEntry], pending_path: Path) -> Non
     df.to_csv(pending_path, index=False)
 
 
+def get_todays_score(ticker: str, date: str, scores_df: pd.DataFrame, system: str) -> Optional[int]:
+    """
+    Get today's score for a ticker.
+    Returns None if no data available.
+    """
+    day_data = scores_df[(scores_df["date"] == date) & (scores_df["ticker"] == ticker)]
+    if day_data.empty:
+        return None
+    
+    if system == "trend":
+        return int(day_data["total_score"].iloc[0])
+    else:
+        return int(day_data["breakout_total_score"].iloc[0])
+
+
 def main():
     root = Path(".")
     data_dir = root / "data" / "stocks"
@@ -343,6 +376,10 @@ def main():
     trend_min_score = 6
     breakout_min_score = 6
     min_hold_days = 3
+    
+    # FIXED: Position sizing limits
+    MAX_POSITION_PCT = 0.25  # Max 25% of balance per trade
+    MAX_POSITION_VALUE = 500  # Absolute max $500 per trade
     
     # Initialize systems
     trend_balance = 1000.0
@@ -435,7 +472,13 @@ def main():
             current_high = max(pos.highest_price, bar["high"])
             current_gain = (current_high - pos.entry_price) / pos.entry_price
             new_stop_pct = get_stop_levels_trend(current_gain)
-            new_trailing_stop = current_high * (1 - new_stop_pct)
+            
+            # FIXED: Don't trail stop until we have at least 1% profit
+            if current_gain < 0.01:
+                # Use initial stop instead of trailing
+                new_trailing_stop = pos.entry_price * (1 - pos.stop_pct)
+            else:
+                new_trailing_stop = current_high * (1 - new_stop_pct)
             
             # Check trailing stop
             if bar["low"] <= new_trailing_stop:
@@ -445,23 +488,19 @@ def main():
                 print(f"  [TREND] EXIT {pos.ticker} @ ${bar['open']:.2f} (trailing stop) PnL: ${closed['gross_pnl']:.2f}")
                 continue
             
-            # Check signal loss (after min hold)
+            # FIXED: Check signal loss (only after min hold days)
             days_held = (pd.to_datetime(trade_date) - pd.to_datetime(pos.entry_date)).days
-            today_scores = scores[scores["date"] == trade_date]
-            signal_loss = False
-            if not today_scores.empty:
-                ticker_scores = today_scores[today_scores["ticker"] == pos.ticker]
-                if not ticker_scores.empty:
-                    current_score = int(ticker_scores["total_score"].iloc[0])
-                    if current_score < trend_min_score:
-                        signal_loss = True
             
-            if signal_loss and days_held >= min_hold_days:
-                closed = close_position(pos, trade_date, bar["open"], "signal_loss")
-                trend_trades.append(closed)
-                trend_balance += closed["gross_pnl"]
-                print(f"  [TREND] EXIT {pos.ticker} @ ${bar['open']:.2f} (signal loss, held {days_held}d) PnL: ${closed['gross_pnl']:.2f}")
-                continue
+            # Only check signal loss if we've held for minimum days
+            if days_held >= min_hold_days:
+                # Use the most recent complete day's score (signal_date, not trade_date)
+                current_score = get_todays_score(pos.ticker, signal_date, scores, "trend")
+                if current_score is not None and current_score < trend_min_score:
+                    closed = close_position(pos, trade_date, bar["open"], "signal_loss")
+                    trend_trades.append(closed)
+                    trend_balance += closed["gross_pnl"]
+                    print(f"  [TREND] EXIT {pos.ticker} @ ${bar['open']:.2f} (signal loss, held {days_held}d) PnL: ${closed['gross_pnl']:.2f}")
+                    continue
             
             # Update position
             pos.highest_price = current_high
@@ -484,7 +523,13 @@ def main():
             current_high = max(pos.highest_price, bar["high"])
             current_gain = (current_high - pos.entry_price) / pos.entry_price
             new_stop_pct = get_stop_levels_breakout(current_gain)
-            new_trailing_stop = current_high * (1 - new_stop_pct)
+            
+            # FIXED: Don't trail stop until we have at least 1% profit
+            if current_gain < 0.01:
+                # Use initial stop instead of trailing
+                new_trailing_stop = pos.entry_price * (1 - pos.stop_pct)
+            else:
+                new_trailing_stop = current_high * (1 - new_stop_pct)
             
             # Check trailing stop
             if bar["low"] <= new_trailing_stop:
@@ -494,23 +539,19 @@ def main():
                 print(f"  [BREAKOUT] EXIT {pos.ticker} @ ${bar['open']:.2f} (trailing stop) PnL: ${closed['gross_pnl']:.2f}")
                 continue
             
-            # Check signal loss (after min hold)
+            # FIXED: Check signal loss (only after min hold days)
             days_held = (pd.to_datetime(trade_date) - pd.to_datetime(pos.entry_date)).days
-            today_scores = scores[scores["date"] == trade_date]
-            signal_loss = False
-            if not today_scores.empty:
-                ticker_scores = today_scores[today_scores["ticker"] == pos.ticker]
-                if not ticker_scores.empty:
-                    current_score = int(ticker_scores["breakout_total_score"].iloc[0])
-                    if current_score < breakout_min_score:
-                        signal_loss = True
             
-            if signal_loss and days_held >= min_hold_days:
-                closed = close_position(pos, trade_date, bar["open"], "signal_loss")
-                breakout_trades.append(closed)
-                breakout_balance += closed["gross_pnl"]
-                print(f"  [BREAKOUT] EXIT {pos.ticker} @ ${bar['open']:.2f} (signal loss, held {days_held}d) PnL: ${closed['gross_pnl']:.2f}")
-                continue
+            # Only check signal loss if we've held for minimum days
+            if days_held >= min_hold_days:
+                # Use the most recent complete day's score (signal_date, not trade_date)
+                current_score = get_todays_score(pos.ticker, signal_date, scores, "breakout")
+                if current_score is not None and current_score < breakout_min_score:
+                    closed = close_position(pos, trade_date, bar["open"], "signal_loss")
+                    breakout_trades.append(closed)
+                    breakout_balance += closed["gross_pnl"]
+                    print(f"  [BREAKOUT] EXIT {pos.ticker} @ ${bar['open']:.2f} (signal loss, held {days_held}d) PnL: ${closed['gross_pnl']:.2f}")
+                    continue
             
             # Update position
             pos.highest_price = current_high
@@ -523,43 +564,64 @@ def main():
         # =========================================================
         # Schedule new entries for NEXT trading day
         # =========================================================
-        # Only schedule if no position currently open
+        # FIXED: Only schedule if no position currently open AND ticker not already held/pending
         if len(trend_positions) == 0 and trend_candidates:
             best = trend_candidates[0]
-            confirmed = requires_confirmation("trend", scores, best["ticker"], signal_date, trend_confirmation_days)
             
-            if confirmed:
-                # Calculate shares based on current balance
-                shares = int(trend_balance / best["close"])
-                if shares > 0:
-                    pending_entries.append(PendingEntry(
-                        system="trend",
-                        ticker=best["ticker"],
-                        scheduled_date=trade_date,  # Schedule for tomorrow
-                        estimated_price=best["close"],
-                        score=best["score"],
-                        signal=best["signal"],
-                        shares=shares,
-                    ))
-                    print(f"  [TREND] SCHEDULED {best['ticker']} for entry on {trade_date} @ est ${best['close']:.2f}")
+            # Check if already held or pending
+            if not is_already_held_or_pending(best["ticker"], trend_positions, pending_entries, "trend"):
+                confirmed = requires_confirmation("trend", scores, best["ticker"], signal_date, trend_confirmation_days)
+                
+                if confirmed:
+                    # FIXED: Position sizing with limits
+                    max_trade_value = min(trend_balance * MAX_POSITION_PCT, MAX_POSITION_VALUE)
+                    shares = int(max_trade_value / best["close"])
+                    shares = max(1, shares)  # Minimum 1 share
+                    
+                    if shares > 0:
+                        pending_entries.append(PendingEntry(
+                            system="trend",
+                            ticker=best["ticker"],
+                            scheduled_date=trade_date,  # Schedule for tomorrow
+                            estimated_price=best["close"],
+                            score=best["score"],
+                            signal=best["signal"],
+                            shares=shares,
+                        ))
+                        print(f"  [TREND] SCHEDULED {best['ticker']} for entry on {trade_date} @ est ${best['close']:.2f} ({shares} shares)")
+                else:
+                    print(f"  [TREND] {best['ticker']} failed confirmation (needs {trend_confirmation_days} days)")
+            else:
+                print(f"  [TREND] {best['ticker']} skipped - already held or pending")
         
         if len(breakout_positions) == 0 and breakout_candidates:
             best = breakout_candidates[0]
-            confirmed = requires_confirmation("breakout", scores, best["ticker"], signal_date, breakout_confirmation_days)
             
-            if confirmed:
-                shares = int(breakout_balance / best["close"])
-                if shares > 0:
-                    pending_entries.append(PendingEntry(
-                        system="breakout",
-                        ticker=best["ticker"],
-                        scheduled_date=trade_date,
-                        estimated_price=best["close"],
-                        score=best["score"],
-                        signal=best["signal"],
-                        shares=shares,
-                    ))
-                    print(f"  [BREAKOUT] SCHEDULED {best['ticker']} for entry on {trade_date} @ est ${best['close']:.2f}")
+            # Check if already held or pending
+            if not is_already_held_or_pending(best["ticker"], breakout_positions, pending_entries, "breakout"):
+                confirmed = requires_confirmation("breakout", scores, best["ticker"], signal_date, breakout_confirmation_days)
+                
+                if confirmed:
+                    # FIXED: Position sizing with limits
+                    max_trade_value = min(breakout_balance * MAX_POSITION_PCT, MAX_POSITION_VALUE)
+                    shares = int(max_trade_value / best["close"])
+                    shares = max(1, shares)  # Minimum 1 share
+                    
+                    if shares > 0:
+                        pending_entries.append(PendingEntry(
+                            system="breakout",
+                            ticker=best["ticker"],
+                            scheduled_date=trade_date,
+                            estimated_price=best["close"],
+                            score=best["score"],
+                            signal=best["signal"],
+                            shares=shares,
+                        ))
+                        print(f"  [BREAKOUT] SCHEDULED {best['ticker']} for entry on {trade_date} @ est ${best['close']:.2f} ({shares} shares)")
+                else:
+                    print(f"  [BREAKOUT] {best['ticker']} failed confirmation (needs {breakout_confirmation_days} days)")
+            else:
+                print(f"  [BREAKOUT] {best['ticker']} skipped - already held or pending")
     
     # Save pending entries for next run
     save_pending_entries(pending_entries, pending_path)
@@ -632,7 +694,7 @@ def main():
     if pending_entries:
         print("\n📋 PENDING ENTRIES FOR NEXT TRADING DAY:")
         for p in pending_entries:
-            print(f"  {p.system.upper()}: {p.ticker} (score {p.score}) @ est ${p.estimated_price:.2f}")
+            print(f"  {p.system.upper()}: {p.ticker} (score {p.score}) @ est ${p.estimated_price:.2f} ({p.shares} shares)")
     
     print("=" * 60)
 
