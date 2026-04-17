@@ -1,18 +1,4 @@
 date,sector,signal_etf,trend_score,trend_ignition_score,momentum_score,relative_strength_score,rs_persistence_score,momentum_exhaustion_score,volatility_score
-2024-04-17,Biotechnology,XBI,0,0,0,0,0,0,0
-2024-04-17,Communication Services,XLC,0,0,0,0,0,0,0
-2024-04-17,Consumer Discretionary,XLY,0,0,0,0,0,0,0
-2024-04-17,Consumer Staples,XLP,0,0,0,0,0,0,0
-2024-04-17,Energy,XLE,0,0,0,0,0,0,0
-2024-04-17,Financials,XLF,0,0,0,0,0,0,0
-2024-04-17,Healthcare,XLV,0,0,0,0,0,0,0
-2024-04-17,Industrials,XLI,0,0,0,0,0,0,0
-2024-04-17,Materials,XLB,0,0,0,0,0,0,0
-2024-04-17,Nasdaq Growth,QQQ,0,0,0,0,0,0,0
-2024-04-17,Real Estate,XLRE,0,0,0,0,0,0,0
-2024-04-17,Semiconductors,SMH,0,0,0,0,0,0,0
-2024-04-17,Technology,XLK,0,0,0,0,0,0,0
-2024-04-17,Utilities,XLU,0,0,0,0,0,0,0
 2024-04-18,Biotechnology,XBI,0,0,0,0,0,0,0
 2024-04-18,Communication Services,XLC,0,0,0,0,0,0,0
 2024-04-18,Consumer Discretionary,XLY,0,0,0,0,0,0,0
@@ -82,7 +68,7 @@ date,sector,signal_etf,trend_score,trend_ignition_score,momentum_score,relative_
 2024-04-24,Real Estate,XLRE,0,0,0,0,0,0,0
 2024-04-24,Semiconductors,SMH,0,0,0,0,0,0,0
 2024-04-24,Technology,XLK,0,0,0,0,0,0,0
-2024-04-24,Utilities,XLU,0,0,2,0,0,0,0
+2024-04-24,Utilities,XLU,0,0,0,0,0,0,0
 2024-04-25,Biotechnology,XBI,0,0,0,0,0,0,0
 2024-04-25,Communication Services,XLC,0,0,0,0,0,0,0
 2024-04-25,Consumer Discretionary,XLY,0,0,0,0,0,0,0
@@ -139,20 +125,20 @@ date,sector,signal_etf,trend_score,trend_ignition_score,momentum_score,relative_
 2024-04-30,Semiconductors,SMH,0,0,0,0,0,0,0
 2024-04-30,Technology,XLK,0,0,0,0,0,0,0
 2024-04-30,Utilities,XLU,0,0,0,0,0,0,0
-2024-05-01,Biotechnology,XBI,0,0,2,1,0,0,0
+2024-05-01,Biotechnology,XBI,0,0,2,0,0,0,0
 2024-05-01,Communication Services,XLC,0,0,0,0,0,0,0
 2024-05-01,Consumer Discretionary,XLY,0,0,0,0,0,0,0
-2024-05-01,Consumer Staples,XLP,0,0,0,1,0,0,0
-2024-05-01,Energy,XLE,0,0,-2,-1,0,0,0
+2024-05-01,Consumer Staples,XLP,0,0,0,0,0,0,0
+2024-05-01,Energy,XLE,0,0,-2,0,0,0,0
 2024-05-01,Financials,XLF,0,0,0,0,0,0,0
 2024-05-01,Healthcare,XLV,0,0,0,0,0,0,0
 2024-05-01,Industrials,XLI,0,0,0,0,0,0,0
 2024-05-01,Materials,XLB,0,0,0,0,0,0,0
 2024-05-01,Nasdaq Growth,QQQ,0,0,0,0,0,0,0
 2024-05-01,Real Estate,XLRE,0,0,0,0,0,0,0
-2024-05-01,Semiconductors,SMH,0,0,0,-1,0,0,0
-2024-05-01,Technology,XLK,0,0,0,-1,0,0,0
-2024-05-01,Utilities,XLU,0,0,0,1,0,0,0
+2024-05-01,Semiconductors,SMH,0,0,0,0,0,0,0
+2024-05-01,Technology,XLK,0,0,0,0,0,0,0
+2024-05-01,Utilities,XLU,0,0,0,0,0,0,0
 2024-05-02,Biotechnology,XBI,0,0,2,1,0,0,0
 2024-05-02,Communication Services,XLC,0,0,0,-1,0,0,0
 2024-05-02,Consumer Discretionary,XLY,0,0,0,1,0,-1,0
@@ -167,11 +153,11 @@ date,sector,signal_etf,trend_score,trend_ignition_score,momentum_score,relative_
 2024-05-02,Semiconductors,SMH,0,0,0,0,0,-1,0
 2024-05-02,Technology,XLK,0,0,0,0,0,0,0
 2024-05-02,Utilities,XLU,0,0,0,1,0,-1,0
-2024-05-03,Biotechnology,XBI,0,0,2,1,1,0,0
+2024-05-03,Biotechnology,XBI,0,0,2,1,0,0,0
 2024-05-03,Communication Services,XLC,0,0,0,-1,0,0,0
 2024-05-03,Consumer Discretionary,XLY,0,0,0,0,0,0,0
 2024-05-03,Consumer Staples,XLP,0,0,0,0,0,0,0
-2024-05-03,Energy,XLE,0,0,0,-1,-1,0,0
+2024-05-03,Energy,XLE,0,0,0,-1,0,0,0
 2024-05-03,Financials,XLF,0,0,0,-1,0,0,0
 2024-05-03,Healthcare,XLV,0,0,0,0,0,0,0
 2024-05-03,Industrials,XLI,0,0,0,0,0,0,0
@@ -335,20 +321,20 @@ date,sector,signal_etf,trend_score,trend_ignition_score,momentum_score,relative_
 2024-05-20,Semiconductors,SMH,0,0,2,1,1,-1,0
 2024-05-20,Technology,XLK,0,0,0,0,0,0,0
 2024-05-20,Utilities,XLU,0,0,0,1,0,-1,0
-2024-05-21,Biotechnology,XBI,0,1,0,0,0,0,0
-2024-05-21,Communication Services,XLC,0,1,0,0,0,0,0
-2024-05-21,Consumer Discretionary,XLY,0,1,0,-1,-1,0,0
-2024-05-21,Consumer Staples,XLP,0,1,0,0,0,0,0
-2024-05-21,Energy,XLE,0,-1,0,-1,0,0,0
-2024-05-21,Financials,XLF,0,1,0,0,0,0,0
-2024-05-21,Healthcare,XLV,0,1,0,0,0,0,0
-2024-05-21,Industrials,XLI,0,1,0,-1,0,0,0
-2024-05-21,Materials,XLB,0,1,0,0,0,0,0
-2024-05-21,Nasdaq Growth,QQQ,0,1,0,0,0,0,0
-2024-05-21,Real Estate,XLRE,0,1,0,0,0,0,0
-2024-05-21,Semiconductors,SMH,0,1,0,1,1,-1,0
-2024-05-21,Technology,XLK,0,1,0,1,0,0,0
-2024-05-21,Utilities,XLU,0,1,0,1,1,0,0
+2024-05-21,Biotechnology,XBI,0,0,0,0,0,0,0
+2024-05-21,Communication Services,XLC,0,0,0,0,0,0,0
+2024-05-21,Consumer Discretionary,XLY,0,0,0,-1,-1,0,0
+2024-05-21,Consumer Staples,XLP,0,0,0,0,0,0,0
+2024-05-21,Energy,XLE,0,0,0,-1,0,0,0
+2024-05-21,Financials,XLF,0,0,0,0,0,0,0
+2024-05-21,Healthcare,XLV,0,0,0,0,0,0,0
+2024-05-21,Industrials,XLI,0,0,0,-1,0,0,0
+2024-05-21,Materials,XLB,0,0,0,0,0,0,0
+2024-05-21,Nasdaq Growth,QQQ,0,0,0,0,0,0,0
+2024-05-21,Real Estate,XLRE,0,0,0,0,0,0,0
+2024-05-21,Semiconductors,SMH,0,0,0,1,1,-1,0
+2024-05-21,Technology,XLK,0,0,0,1,0,0,0
+2024-05-21,Utilities,XLU,0,0,0,1,1,0,0
 2024-05-22,Biotechnology,XBI,0,1,0,0,0,0,0
 2024-05-22,Communication Services,XLC,0,1,0,0,0,0,0
 2024-05-22,Consumer Discretionary,XLY,0,1,0,-1,-1,0,0
@@ -685,20 +671,20 @@ date,sector,signal_etf,trend_score,trend_ignition_score,momentum_score,relative_
 2024-06-26,Semiconductors,SMH,0,1,-2,0,0,0,0
 2024-06-26,Technology,XLK,0,1,0,0,0,0,0
 2024-06-26,Utilities,XLU,0,-1,0,-1,-1,0,0
-2024-06-27,Biotechnology,XBI,2,1,0,-1,0,0,0
-2024-06-27,Communication Services,XLC,2,1,0,0,0,0,0
-2024-06-27,Consumer Discretionary,XLY,2,1,0,0,0,0,0
-2024-06-27,Consumer Staples,XLP,2,1,0,0,0,0,0
-2024-06-27,Energy,XLE,-2,-1,0,0,0,0,0
-2024-06-27,Financials,XLF,-2,-1,0,0,0,0,0
-2024-06-27,Healthcare,XLV,2,1,0,0,0,0,0
-2024-06-27,Industrials,XLI,-2,-1,0,-1,-1,0,0
-2024-06-27,Materials,XLB,-2,-1,0,-1,-1,0,0
-2024-06-27,Nasdaq Growth,QQQ,2,1,0,0,0,0,0
-2024-06-27,Real Estate,XLRE,2,1,0,0,0,0,0
-2024-06-27,Semiconductors,SMH,2,1,0,-1,0,0,0
-2024-06-27,Technology,XLK,2,1,0,0,0,0,0
-2024-06-27,Utilities,XLU,-2,-1,0,-1,-1,0,0
+2024-06-27,Biotechnology,XBI,0,1,0,-1,0,0,0
+2024-06-27,Communication Services,XLC,0,1,0,0,0,0,0
+2024-06-27,Consumer Discretionary,XLY,0,1,0,0,0,0,0
+2024-06-27,Consumer Staples,XLP,0,1,0,0,0,0,0
+2024-06-27,Energy,XLE,0,-1,0,0,0,0,0
+2024-06-27,Financials,XLF,0,-1,0,0,0,0,0
+2024-06-27,Healthcare,XLV,0,1,0,0,0,0,0
+2024-06-27,Industrials,XLI,0,-1,0,-1,-1,0,0
+2024-06-27,Materials,XLB,0,-1,0,-1,-1,0,0
+2024-06-27,Nasdaq Growth,QQQ,0,1,0,0,0,0,0
+2024-06-27,Real Estate,XLRE,0,1,0,0,0,0,0
+2024-06-27,Semiconductors,SMH,0,1,0,-1,0,0,0
+2024-06-27,Technology,XLK,0,1,0,0,0,0,0
+2024-06-27,Utilities,XLU,0,-1,0,-1,-1,0,0
 2024-06-28,Biotechnology,XBI,2,1,0,0,0,0,0
 2024-06-28,Communication Services,XLC,2,1,0,0,0,0,0
 2024-06-28,Consumer Discretionary,XLY,2,1,0,0,0,0,0
@@ -7013,3 +6999,17 @@ date,sector,signal_etf,trend_score,trend_ignition_score,momentum_score,relative_
 2026-04-16,Semiconductors,SMH,2,1,2,1,1,-1,0
 2026-04-16,Technology,XLK,2,1,2,1,1,-1,0
 2026-04-16,Utilities,XLU,2,-1,0,-1,-1,0,0
+2026-04-17,Biotechnology,XBI,2,1,2,0,0,-1,0
+2026-04-17,Communication Services,XLC,2,1,2,0,0,-1,0
+2026-04-17,Consumer Discretionary,XLY,2,1,2,1,0,-1,0
+2026-04-17,Consumer Staples,XLP,-2,-1,0,-1,-1,0,0
+2026-04-17,Energy,XLE,-2,-1,0,-1,-1,0,0
+2026-04-17,Financials,XLF,2,1,0,-1,0,-1,0
+2026-04-17,Healthcare,XLV,-2,-1,0,-1,-1,0,0
+2026-04-17,Industrials,XLI,2,1,0,-1,0,-1,0
+2026-04-17,Materials,XLB,2,1,0,-1,-1,0,0
+2026-04-17,Nasdaq Growth,QQQ,2,1,2,1,1,-1,0
+2026-04-17,Real Estate,XLRE,2,1,0,0,0,-1,0
+2026-04-17,Semiconductors,SMH,2,1,2,1,1,-1,0
+2026-04-17,Technology,XLK,2,1,2,1,1,-1,0
+2026-04-17,Utilities,XLU,2,-1,0,-1,-1,0,0
