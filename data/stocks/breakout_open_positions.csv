@@ -1,1 +1,3 @@
-
+system,ticker,entry_date,entry_price,shares,highest_price,stop_pct,trailing_stop,entry_score,entry_signal
+breakout,EA,2026-04-09,203.8999938964844,1,204.0,0.1,183.50999450683597,8,Strong Breakout Candidate
+breakout,KEY,2026-04-17,21.8700008392334,11,22.257200241088867,0.1,20.031480216979983,8,Strong Breakout Candidate
