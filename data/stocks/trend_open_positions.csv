@@ -1,1 +1,2 @@
-
+system,ticker,entry_date,entry_price,shares,highest_price,stop_pct,trailing_stop,entry_score,entry_signal
+trend,HUT,2026-04-21,80.12000274658203,3,82.49400329589844,0.15,70.11990280151367,7,Strong Bullish
