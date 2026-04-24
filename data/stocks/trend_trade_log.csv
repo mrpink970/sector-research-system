@@ -1,1 +1,5 @@
-
+system,ticker,entry_date,entry_price,exit_date,exit_price,shares,entry_score,entry_signal,exit_reason,gross_pnl,return_pct,duration_days
+trend,SRPT,2026-04-07,22.65,2026-04-10,22.24,10,7,Strong Bullish,signal_loss,-4.1,-1.81,3
+trend,CVX,2026-04-08,191.41,2026-04-13,191.45,1,8,Strong Bullish,signal_loss,0.04,0.02,5
+trend,TWO,2026-04-09,10.98,2026-04-14,11.19,22,7,Strong Bullish,signal_loss,4.62,1.91,5
+trend,TXG,2026-04-10,23.25,2026-04-21,24.24,10,7,Strong Bullish,trailing_stop,9.9,4.26,11
