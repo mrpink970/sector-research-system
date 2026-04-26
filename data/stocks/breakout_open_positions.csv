@@ -1,1 +1,5 @@
-
+system,ticker,entry_date,entry_price,shares,highest_price,stop_pct,trailing_stop,entry_score,entry_signal
+breakout,EA,2026-04-09,203.8999938964844,1,204.0,0.1,183.50999450683597,8,Strong Breakout Candidate
+breakout,KEY,2026-04-17,21.8700008392334,11,22.545000076293945,0.1,20.290500068664553,8,Strong Breakout Candidate
+breakout,STWD,2026-04-23,18.239999771118164,13,18.309999465942383,0.1,16.41599979400635,8,Strong Breakout Candidate
+breakout,ZION,2026-04-24,62.630001068115234,3,62.970001220703125,0.1,56.36700096130371,10,Strong Breakout Candidate
