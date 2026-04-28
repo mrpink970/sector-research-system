@@ -6999,3 +6999,17 @@ date,sector,signal_etf,trend_score,trend_ignition_score,momentum_score,relative_
 2026-04-27,Semiconductors,SMH,2,1,2,1,1,-1,0
 2026-04-27,Technology,XLK,2,1,0,1,1,-1,0
 2026-04-27,Utilities,XLU,-2,1,0,-1,-1,0,0
+2026-04-28,Biotechnology,XBI,2,1,0,-1,-1,0,0
+2026-04-28,Communication Services,XLC,2,1,0,-1,-1,0,0
+2026-04-28,Consumer Discretionary,XLY,2,1,0,-1,0,0,0
+2026-04-28,Consumer Staples,XLP,-2,1,0,0,0,0,0
+2026-04-28,Energy,XLE,2,-1,0,0,0,0,0
+2026-04-28,Financials,XLF,2,1,0,-1,-1,0,0
+2026-04-28,Healthcare,XLV,-2,1,0,-1,-1,0,0
+2026-04-28,Industrials,XLI,2,1,0,-1,-1,0,0
+2026-04-28,Materials,XLB,2,1,0,-1,-1,0,0
+2026-04-28,Nasdaq Growth,QQQ,2,1,0,1,1,0,0
+2026-04-28,Real Estate,XLRE,2,1,0,0,0,0,0
+2026-04-28,Semiconductors,SMH,2,1,2,1,1,-1,0
+2026-04-28,Technology,XLK,2,1,0,1,1,-1,0
+2026-04-28,Utilities,XLU,-2,1,0,-1,-1,0,0
