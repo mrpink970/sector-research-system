@@ -1,7 +1,1 @@
-system,ticker,entry_date,entry_price,exit_date,exit_price,shares,entry_score,entry_signal,exit_reason,gross_pnl,return_pct,duration_days
-breakout,ZM,2026-04-01,80.9,2026-04-09,83.27,3,8,Strong Breakout Candidate,signal_loss,7.11,2.93,8
-breakout,TWLO,2026-04-02,128.0,2026-04-09,128.5,1,9,Strong Breakout Candidate,trailing_stop,0.5,0.39,7
-breakout,REGN,2026-04-10,771.48,2026-04-13,747.74,1,8,Strong Breakout Candidate,signal_loss,-23.74,-3.08,3
-breakout,GS,2026-04-08,903.01,2026-04-14,894.42,1,8,Strong Breakout Candidate,signal_loss,-8.59,-0.95,6
-breakout,TWO,2026-04-13,10.98,2026-04-17,11.13,22,8,Strong Breakout Candidate,signal_loss,3.3,1.37,4
-breakout,PMT,2026-04-14,11.93,2026-04-17,11.98,20,8,Strong Breakout Candidate,signal_loss,1.0,0.42,3
+
