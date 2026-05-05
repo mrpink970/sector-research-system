@@ -6999,3 +6999,17 @@ date,sector,signal_etf,selected_etf,direction,total_score,signal_state,score_cha
 2026-05-04,Consumer Staples,XLP,,none,-1,Neutral,-4,6
 2026-05-04,Materials,XLB,SMN,short,-3,Bear,-4,7
 2026-05-04,Healthcare,XLV,RXD,short,-5,Bear,0,8
+2026-05-05,Technology,XLK,TECL,long,7,Strong Bull,2,1
+2026-05-05,Semiconductors,SMH,SOXL,long,6,Strong Bull,2,2
+2026-05-05,Nasdaq Growth,QQQ,TQQQ,long,5,Bull,1,3
+2026-05-05,Consumer Staples,XLP,UGE,long,3,Bull,4,4
+2026-05-05,Real Estate,XLRE,DRN,long,3,Bull,1,4
+2026-05-05,Energy,XLE,,none,2,Neutral,-2,5
+2026-05-05,Industrials,XLI,,none,2,Neutral,0,5
+2026-05-05,Utilities,XLU,,none,2,Neutral,-1,5
+2026-05-05,Biotechnology,XBI,,none,1,Neutral,0,6
+2026-05-05,Communication Services,XLC,,none,1,Neutral,0,6
+2026-05-05,Consumer Discretionary,XLY,,none,1,Neutral,-1,6
+2026-05-05,Financials,XLF,,none,1,Neutral,0,6
+2026-05-05,Materials,XLB,,none,1,Neutral,4,6
+2026-05-05,Healthcare,XLV,RXD,short,-5,Bear,0,7
