@@ -7013,3 +7013,17 @@ date,sector,signal_etf,selected_etf,direction,total_score,signal_state,score_cha
 2026-05-07,Utilities,XLU,SDP,short,-4,Bear,-3,6
 2026-05-07,Healthcare,XLV,RXD,short,-5,Bear,0,7
 2026-05-07,Energy,XLE,ERY,short,-6,Strong Bear,-2,8
+2026-05-08,Nasdaq Growth,QQQ,TQQQ,long,7,Strong Bull,0,1
+2026-05-08,Semiconductors,SMH,SOXL,long,7,Strong Bull,1,1
+2026-05-08,Technology,XLK,TECL,long,7,Strong Bull,1,1
+2026-05-08,Consumer Discretionary,XLY,WANT,long,3,Bull,0,2
+2026-05-08,Consumer Staples,XLP,UGE,long,3,Bull,1,2
+2026-05-08,Real Estate,XLRE,DRN,long,3,Bull,1,2
+2026-05-08,Industrials,XLI,,none,2,Neutral,0,3
+2026-05-08,Biotechnology,XBI,,none,1,Neutral,0,4
+2026-05-08,Communication Services,XLC,,none,1,Neutral,0,4
+2026-05-08,Financials,XLF,,none,1,Neutral,0,4
+2026-05-08,Materials,XLB,,none,1,Neutral,0,4
+2026-05-08,Utilities,XLU,SDP,short,-4,Bear,0,5
+2026-05-08,Healthcare,XLV,RXD,short,-5,Bear,0,6
+2026-05-08,Energy,XLE,ERY,short,-8,Strong Bear,-2,7

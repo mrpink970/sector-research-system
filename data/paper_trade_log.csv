@@ -2,4 +2,4 @@ sector,ticker,direction,entry_date,entry_price,exit_date,exit_price,shares,entry
 Biotechnology,LABU,long,2026-04-09,174.55,2026-04-22,206.2,17,Bull,4.0,Neutral,538.05,2.4995,535.55,18.1323,13,signal_change
 Semiconductors,SOXL,long,2026-04-09,68.12,2026-04-28,108.75,44,Strong Bull,6.0,Stop,1787.72,3.6899,1784.03,59.6447,19,trailing_stop
 Consumer Discretionary,WANT,long,2026-04-22,47.29,2026-05-04,45.69,70,Bull,4.0,Neutral,-112.0,2.5739,-114.57,-3.3834,12,signal_change
-Semiconductors,SOXL,long,2026-04-28,108.75,2026-05-07,162.115,40,Strong Bull,6.0,Stop,2134.6,2.5367,2132.06,49.0713,9,trailing_stop
+Semiconductors,SOXL,long,2026-04-28,108.75,2026-05-07,162.12,40,Strong Bull,6.0,Stop,2134.8,2.5367,2132.26,49.0759,9,trailing_stop
