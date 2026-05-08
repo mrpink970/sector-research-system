@@ -192,6 +192,7 @@ def build_positions(positions, market, min_hold_days, today_str):
         shares      = int(pos['shares'])
         stop        = float(pos['trailing_stop'])
         entry_date  = str(pos['entry_date'])
+        total_cost  = entry_price * shares
 
         gain_pct    = (cur_price - entry_price) / entry_price * 100
         gain_dollar = (cur_price - entry_price) * shares
@@ -219,7 +220,9 @@ def build_positions(positions, market, min_hold_days, today_str):
               <div style="background:{hold_color};border-radius:99px;height:4px;width:{hold_pct}%"></div>
             </div>
           </td>
+          <td style="padding:12px 14px;font-family:'DM Mono',monospace">{shares}</td>
           <td style="padding:12px 14px;font-family:'DM Mono',monospace">${entry_price:.2f}</td>
+          <td style="padding:12px 14px;font-family:'DM Mono',monospace">${total_cost:,.2f}</td>
           <td style="padding:12px 14px;font-family:'DM Mono',monospace">${cur_price:.2f}</td>
           <td style="padding:12px 14px;color:{g_color};font-weight:600;font-family:'DM Mono',monospace">
             {g_sign}{gain_pct:.1f}%<br>
@@ -239,7 +242,9 @@ def build_positions(positions, market, min_hold_days, today_str):
           <th style="padding:10px 14px;text-align:left;font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase">Ticker</th>
           <th style="padding:10px 14px;text-align:left;font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase">Entry Date</th>
           <th style="padding:10px 14px;text-align:left;font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase">Days Held</th>
+          <th style="padding:10px 14px;text-align:left;font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase">Shares</th>
           <th style="padding:10px 14px;text-align:left;font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase">Entry $</th>
+          <th style="padding:10px 14px;text-align:left;font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase">Total Cost</th>
           <th style="padding:10px 14px;text-align:left;font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase">Current $</th>
           <th style="padding:10px 14px;text-align:left;font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase">Gain / Loss</th>
           <th style="padding:10px 14px;text-align:left;font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase">Trailing Stop</th>
@@ -317,7 +322,7 @@ def build_sector_signals(scores, indicators, allowed_sectors):
         tooltip = f"""
         <div class="tooltip-content" style="display:none;position:absolute;z-index:99;background:#1f2937;border-radius:8px;padding:12px 14px;min-width:200px;box-shadow:0 8px 24px rgba(0,0,0,.3);top:0;left:105%">
           <div style="font-weight:700;color:#fff;margin-bottom:8px;font-size:12px">{sector} Breakdown</div>
-          </table>{tooltip_rows}</table>
+          </td>{tooltip_rows}</table>
           <div style="border-top:1px solid #374151;margin-top:8px;padding-top:8px;font-weight:700;color:#fff;font-size:12px">Total: {score:+d}</div>
         </div>"""
 
