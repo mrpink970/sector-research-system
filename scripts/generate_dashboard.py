@@ -243,7 +243,7 @@ def build_positions(positions, market, min_hold_days, today_str):
           <th style="padding:10px 14px;text-align:left;font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase">Current $</th>
           <th style="padding:10px 14px;text-align:left;font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase">Gain / Loss</th>
           <th style="padding:10px 14px;text-align:left;font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase">Trailing Stop</th>
-        <tr>
+        </tr>
       </thead>
       <tbody>{rows_html}</tbody>
     </table>
@@ -317,7 +317,7 @@ def build_sector_signals(scores, indicators, allowed_sectors):
         tooltip = f"""
         <div class="tooltip-content" style="display:none;position:absolute;z-index:99;background:#1f2937;border-radius:8px;padding:12px 14px;min-width:200px;box-shadow:0 8px 24px rgba(0,0,0,.3);top:0;left:105%">
           <div style="font-weight:700;color:#fff;margin-bottom:8px;font-size:12px">{sector} Breakdown</div>
-          <table>{tooltip_rows}</table>
+          </table>{tooltip_rows}</table>
           <div style="border-top:1px solid #374151;margin-top:8px;padding-top:8px;font-weight:700;color:#fff;font-size:12px">Total: {score:+d}</div>
         </div>"""
 
@@ -351,7 +351,7 @@ def build_sector_signals(scores, indicators, allowed_sectors):
       Hover any card to see breakdown. Range: -7 to +7.
     </div>"""
 
-def build_charts(trade_log, positions, market, account_size):
+def build_charts(trade_log, positions, market, account_size, start_date=None):
     """
     Calculate daily equity curve INCLUDING open positions.
     Drawdown is computed on daily mark-to-market portfolio value.
@@ -367,6 +367,10 @@ def build_charts(trade_log, positions, market, account_size):
 
     # Ensure date columns are strings for consistent comparison
     market['date'] = pd.to_datetime(market['date']).dt.strftime("%Y-%m-%d")
+    
+    # Filter market data to start date if provided
+    if start_date:
+        market = market[market['date'] >= start_date].copy()
     
     # Get all unique trading dates in order
     all_dates = sorted(market['date'].unique())
@@ -463,7 +467,7 @@ def build_charts(trade_log, positions, market, account_size):
         <div style="font-size:13px;font-weight:700;color:#111;margin-bottom:14px">Equity Curve</div>
         <canvas id="equityChart" height="160"></canvas>
         <div style="font-size:10px;color:#9ca3af;margin-top:8px;text-align:center">
-          Includes open positions at daily market close
+          Includes open positions at daily market close | Start date: {start_date if start_date else 'system start'}
         </div>
       </div>
       <div style="flex:1;min-width:280px;background:#fff;border-radius:12px;padding:20px;box-shadow:0 1px 3px rgba(0,0,0,.08)">
@@ -752,7 +756,7 @@ def main():
 {section("Performance Overview", build_kpi(performance, trade_log, account_size, margin_pct, margin_rate), "&#127942;")}
 
 <!-- Charts -->
-{section("Equity Curve &amp; Drawdown", build_charts(trade_log, positions, market, account_size), "&#128202;")}
+{section("Equity Curve &amp; Drawdown", build_charts(trade_log, positions, market, account_size, start_date), "&#128202;")}
 
 <!-- Open Positions -->
 {section("Open Positions", build_positions(positions, market, min_hold, today_str), "&#128202;")}
