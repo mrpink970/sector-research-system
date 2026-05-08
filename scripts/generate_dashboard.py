@@ -56,6 +56,12 @@ def fmt_dollar(v, sign=False):
     prefix = "+" if sign and v > 0 else ""
     return f"{prefix}${v:,.2f}"
 
+def fmt_dollar_compact(v):
+    """Format dollars without decimal places for larger numbers"""
+    if v is None or (isinstance(v, float) and math.isnan(v)):
+        return "$0"
+    return f"${v:,.0f}"
+
 def fmt_pct(v, sign=False, decimals=1):
     if v is None or (isinstance(v, float) and math.isnan(v)):
         return "0.0%"
@@ -97,7 +103,7 @@ def kpi_card(label, value, sub="", value_style=""):
       {f'<div style="font-size:11px;color:#9ca3af;margin-top:6px">{sub}</div>' if sub else ''}
     </div>"""
 
-def build_kpi(perf, trade_log, account_size, margin_pct, margin_rate):
+def build_kpi(perf, trade_log, account_size, margin_pct, margin_rate, positions, market):
     if perf.empty or perf['total_trades'].iloc[0] == 0:
         balance  = account_size
         net_prof = 0.0
@@ -123,19 +129,47 @@ def build_kpi(perf, trade_log, account_size, margin_pct, margin_rate):
     net_color = "#10b981" if net_prof >= 0 else "#ef4444"
     net_arrow = "&#9650;" if net_prof > 0 else "&#9660;" if net_prof < 0 else "&#9644;"
 
+    # Calculate margin used from open positions
+    margin_used = 0.0
+    daily_interest_cost = 0.0
+    margin_limit = balance * margin_pct
+    
+    if not positions.empty and not market.empty:
+        latest_date = market['date'].max()
+        latest_prices = {}
+        for _, row in market[market['date'] == latest_date].iterrows():
+            latest_prices[row['ticker']] = float(row['close'])
+        
+        for _, pos in positions.iterrows():
+            ticker = pos['ticker']
+            cur_price = latest_prices.get(ticker, float(pos['entry_price']))
+            shares = int(pos['shares'])
+            position_value = cur_price * shares
+            margin_used += position_value * margin_pct
+        
+        # Daily interest cost on borrowed amount
+        daily_rate = margin_rate / 365.0
+        daily_interest_cost = margin_used * daily_rate
+
+    margin_used_pct_of_limit = (margin_used / margin_limit * 100) if margin_limit > 0 else 0
+
     cards = (
         kpi_card("Account Balance", fmt_dollar(balance),
                  f"Started: {fmt_dollar(account_size)} &nbsp;|&nbsp; Buying power: {fmt_dollar(buying_pw)}") +
         kpi_card("Net Profit",
                  f'{net_arrow} {fmt_dollar(abs(net_prof))} <span style="font-size:18px">({fmt_pct(net_pct, sign=True)})</span>',
-                 f"Margin interest paid: {fmt_dollar(interest)}",
+                 f"Margin interest paid (total): {fmt_dollar(interest)}",
                  f"color:{net_color}") +
         kpi_card("Win Rate", fmt_pct(win_rate),
                  f"{n_trades} total trades &nbsp;|&nbsp; Max drawdown: {fmt_pct(max_dd)}",
                  f"color:{win_color}") +
         kpi_card("Expectancy", fmt_pct(expect, sign=True),
                  "Average net return per trade",
-                 f"color:{'#10b981' if expect >= 0 else '#ef4444'}")
+                 f"color:{'#10b981' if expect >= 0 else '#ef4444'}") +
+        kpi_card("Margin Utilization",
+                 f"{fmt_dollar_compact(margin_used)} / {fmt_dollar_compact(margin_limit)} ({margin_used_pct_of_limit:.0f}% used)",
+                 f"20% max allowed | {margin_rate:.1f}% APR | {fmt_dollar_compact(daily_interest_cost)}/day",
+                 "color:#f59e0b")
     )
     return f'<div style="display:flex;gap:16px;flex-wrap:wrap">{cards}</div>'
 
@@ -322,7 +356,7 @@ def build_sector_signals(scores, indicators, allowed_sectors):
         tooltip = f"""
         <div class="tooltip-content" style="display:none;position:absolute;z-index:99;background:#1f2937;border-radius:8px;padding:12px 14px;min-width:200px;box-shadow:0 8px 24px rgba(0,0,0,.3);top:0;left:105%">
           <div style="font-weight:700;color:#fff;margin-bottom:8px;font-size:12px">{sector} Breakdown</div>
-          </td>{tooltip_rows}</table>
+          <table>{tooltip_rows}</table>
           <div style="border-top:1px solid #374151;margin-top:8px;padding-top:8px;font-weight:700;color:#fff;font-size:12px">Total: {score:+d}</div>
         </div>"""
 
@@ -758,7 +792,7 @@ def main():
 </div>
 
 <!-- KPI Cards -->
-{section("Performance Overview", build_kpi(performance, trade_log, account_size, margin_pct, margin_rate), "&#127942;")}
+{section("Performance Overview", build_kpi(performance, trade_log, account_size, margin_pct, margin_rate, positions, market), "&#127942;")}
 
 <!-- Charts -->
 {section("Equity Curve &amp; Drawdown", build_charts(trade_log, positions, market, account_size, start_date), "&#128202;")}
