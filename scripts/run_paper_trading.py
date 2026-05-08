@@ -378,11 +378,15 @@ def main():
             position.stop_pct = stepped_stop_pct_for_ticker(position.ticker, current_gain_pct, params)
             position.trailing_stop = position.highest_price * (1 - position.stop_pct)
 
+            # Check if stop was triggered
             if bar["low"] <= position.trailing_stop:
+                # Exit at the trailing stop price (or lower if gap down)
+                exit_price = min(position.trailing_stop, bar["open"])
+                
                 closed = close_position(
                     position=position,
                     exit_date=trade_date,
-                    exit_price=bar["open"],
+                    exit_price=exit_price,
                     exit_signal="Stop",
                     exit_type="trailing_stop",
                     margin_daily_rate=margin_daily_rate,
@@ -422,10 +426,13 @@ def main():
                 exit_type = "ticker_changed"
 
             if exit_type:
+                # For non-stop exits, use the open price
+                exit_price = bar["open"]
+                
                 closed = close_position(
                     position=position,
                     exit_date=trade_date,
-                    exit_price=bar["open"],
+                    exit_price=exit_price,
                     exit_signal=raw_signal,
                     exit_type=exit_type,
                     margin_daily_rate=margin_daily_rate,
