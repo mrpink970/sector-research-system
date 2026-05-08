@@ -563,6 +563,7 @@ date,sector,signal_etf,event_type,old_value,new_value,total_score,signal_state,r
 2026-04-30,Consumer Discretionary,XLY,Signal Change,Neutral,Bull,3,Bull,3,
 2026-05-01,Consumer Discretionary,XLY,Signal Change,Bull,Neutral,2,Neutral,4,
 2026-05-07,Consumer Discretionary,XLY,Signal Change,Neutral,Bull,3,Bull,3,
+2026-05-08,Consumer Discretionary,XLY,Signal Change,Bull,Neutral,2,Neutral,3,
 2024-05-15,Consumer Staples,XLP,Rank #1 End,1,2,0,Neutral,2,
 2024-05-17,Consumer Staples,XLP,Rank #1 Start,2,1,0,Neutral,1,
 2024-05-20,Consumer Staples,XLP,Rank #1 End,1,2,0,Neutral,2,

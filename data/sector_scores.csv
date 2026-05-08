@@ -7016,9 +7016,9 @@ date,sector,signal_etf,selected_etf,direction,total_score,signal_state,score_cha
 2026-05-08,Nasdaq Growth,QQQ,TQQQ,long,7,Strong Bull,0,1
 2026-05-08,Semiconductors,SMH,SOXL,long,7,Strong Bull,1,1
 2026-05-08,Technology,XLK,TECL,long,7,Strong Bull,1,1
-2026-05-08,Consumer Discretionary,XLY,WANT,long,3,Bull,0,2
 2026-05-08,Consumer Staples,XLP,UGE,long,3,Bull,1,2
 2026-05-08,Real Estate,XLRE,DRN,long,3,Bull,1,2
+2026-05-08,Consumer Discretionary,XLY,,none,2,Neutral,-1,3
 2026-05-08,Industrials,XLI,,none,2,Neutral,0,3
 2026-05-08,Biotechnology,XBI,,none,1,Neutral,0,4
 2026-05-08,Communication Services,XLC,,none,1,Neutral,0,4

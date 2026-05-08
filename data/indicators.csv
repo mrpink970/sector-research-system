@@ -7015,7 +7015,7 @@ date,sector,signal_etf,trend_score,trend_ignition_score,momentum_score,relative_
 2026-05-07,Utilities,XLU,-2,-1,0,-1,0,0,0
 2026-05-08,Biotechnology,XBI,2,1,0,-1,-1,0,0
 2026-05-08,Communication Services,XLC,2,1,0,-1,-1,0,0
-2026-05-08,Consumer Discretionary,XLY,2,1,0,0,0,0,0
+2026-05-08,Consumer Discretionary,XLY,2,1,0,-1,0,0,0
 2026-05-08,Consumer Staples,XLP,2,1,0,0,0,0,0
 2026-05-08,Energy,XLE,-2,-1,-2,-1,-1,-1,0
 2026-05-08,Financials,XLF,2,1,0,-1,-1,0,0
