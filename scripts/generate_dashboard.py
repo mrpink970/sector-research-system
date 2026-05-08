@@ -243,7 +243,7 @@ def build_positions(positions, market, min_hold_days, today_str):
           <th style="padding:10px 14px;text-align:left;font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase">Current $</th>
           <th style="padding:10px 14px;text-align:left;font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase">Gain / Loss</th>
           <th style="padding:10px 14px;text-align:left;font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase">Trailing Stop</th>
-        </tr>
+        <tr>
       </thead>
       <tbody>{rows_html}</tbody>
     </table>
@@ -351,40 +351,110 @@ def build_sector_signals(scores, indicators, allowed_sectors):
       Hover any card to see breakdown. Range: -7 to +7.
     </div>"""
 
-def build_charts(trade_log, account_size):
-    if trade_log.empty:
+def build_charts(trade_log, positions, market, account_size):
+    """
+    Calculate daily equity curve INCLUDING open positions.
+    Drawdown is computed on daily mark-to-market portfolio value.
+    """
+    if market.empty:
         return """
         <div style="display:flex;gap:16px;flex-wrap:wrap">
           <div style="flex:1;min-width:280px;background:#fff;border-radius:12px;padding:24px;text-align:center;color:#9ca3af;box-shadow:0 1px 3px rgba(0,0,0,.08)">
             <div style="font-size:13px;font-weight:600;color:#374151;margin-bottom:16px">Equity Curve</div>
-            <div style="font-size:32px;margin-bottom:8px">&#128202;</div>
-            <div>No trades yet. Chart will appear after first closed trade.</div>
-          </div>
-          <div style="flex:1;min-width:280px;background:#fff;border-radius:12px;padding:24px;text-align:center;color:#9ca3af;box-shadow:0 1px 3px rgba(0,0,0,.08)">
-            <div style="font-size:13px;font-weight:600;color:#374151;margin-bottom:16px">Drawdown</div>
-            <div style="font-size:32px;margin-bottom:8px">&#128201;</div>
-            <div>No trades yet. Chart will appear after first closed trade.</div>
+            <div>No market data available.</div>
           </div>
         </div>"""
 
-    tl = trade_log.sort_values('entry_date').reset_index(drop=True)
-    pnl_col = 'net_pnl_dollars' if 'net_pnl_dollars' in tl.columns else 'gross_pnl_dollars'
+    # Ensure date columns are strings for consistent comparison
+    market['date'] = pd.to_datetime(market['date']).dt.strftime("%Y-%m-%d")
+    
+    # Get all unique trading dates in order
+    all_dates = sorted(market['date'].unique())
+    if len(all_dates) < 2:
+        return """
+        <div style="display:flex;gap:16px;flex-wrap:wrap">
+          <div style="flex:1;min-width:280px;background:#fff;border-radius:12px;padding:24px;text-align:center;color:#9ca3af;box-shadow:0 1px 3px rgba(0,0,0,.08)">
+            <div style="font-size:13px;font-weight:600;color:#374151;margin-bottom:16px">Equity Curve</div>
+            <div>Insufficient market data for equity curve.</div>
+          </div>
+        </div>"""
 
-    equity    = [account_size]
-    drawdowns = [0.0]
-    labels    = [str(tl.iloc[0]['entry_date'])]
-    peak      = account_size
+    # Build a map of closing prices by date and ticker for fast lookup
+    price_map = {}
+    for _, row in market.iterrows():
+        date_key = row['date']
+        ticker = row['ticker']
+        if date_key not in price_map:
+            price_map[date_key] = {}
+        price_map[date_key][ticker] = float(row['close'])
 
-    for _, row in tl.iterrows():
-        bal  = equity[-1] + float(row[pnl_col])
-        peak = max(peak, bal)
-        dd   = (bal - peak) / peak * 100 if peak > 0 else 0
-        equity.append(round(bal, 2))
-        drawdowns.append(round(dd, 2))
-        labels.append(str(row.get('exit_date', row['entry_date'])))
+    # Build cumulative closed P&L by exit date
+    closed_pnl_by_date = {}
+    if not trade_log.empty:
+        pnl_col = 'net_pnl_dollars' if 'net_pnl_dollars' in trade_log.columns else 'gross_pnl_dollars'
+        for _, row in trade_log.iterrows():
+            exit_date = row['exit_date']
+            closed_pnl_by_date[exit_date] = closed_pnl_by_date.get(exit_date, 0) + row[pnl_col]
 
-    eq_json  = json.dumps(equity)
-    dd_json  = json.dumps(drawdowns)
+    # Build position entry info for quick lookup
+    position_info = {}
+    if not positions.empty:
+        for _, pos in positions.iterrows():
+            ticker = pos['ticker']
+            position_info[ticker] = {
+                'entry_date': pos['entry_date'],
+                'entry_price': float(pos['entry_price']),
+                'shares': int(pos['shares'])
+            }
+
+    # Calculate daily equity
+    daily_equity = {}
+    cumulative_closed_pnl = 0
+    peak = account_size
+    max_drawdown_pct = 0.0
+    
+    for trade_date in all_dates:
+        # Add any closed P&L that settled on this date
+        cumulative_closed_pnl += closed_pnl_by_date.get(trade_date, 0)
+        
+        # Calculate open position P&L at this date's close
+        open_pnl = 0.0
+        for ticker, info in position_info.items():
+            entry_date = info['entry_date']
+            # Only include position if entry date is on or before this trade date
+            if trade_date >= entry_date:
+                # Get closing price for this ticker on this date
+                ticker_prices = price_map.get(trade_date, {})
+                if ticker in ticker_prices:
+                    close_price = ticker_prices[ticker]
+                    open_pnl += (close_price - info['entry_price']) * info['shares']
+        
+        total_equity = account_size + cumulative_closed_pnl + open_pnl
+        daily_equity[trade_date] = round(total_equity, 2)
+        
+        # Update peak and track max drawdown
+        if total_equity > peak:
+            peak = total_equity
+        if peak > 0:
+            current_dd = (total_equity - peak) / peak * 100
+            if current_dd < max_drawdown_pct:
+                max_drawdown_pct = current_dd
+    
+    labels = list(daily_equity.keys())
+    equity_values = list(daily_equity.values())
+    
+    # Calculate drawdown percentage for each point
+    drawdown_values = []
+    running_peak = account_size
+    for eq in equity_values:
+        if eq > running_peak:
+            running_peak = eq
+        dd = (eq - running_peak) / running_peak * 100 if running_peak > 0 else 0
+        drawdown_values.append(round(dd, 2))
+    
+    # Convert to JSON for Chart.js
+    eq_json = json.dumps(equity_values)
+    dd_json = json.dumps(drawdown_values)
     lbl_json = json.dumps(labels)
 
     return f"""
@@ -392,10 +462,16 @@ def build_charts(trade_log, account_size):
       <div style="flex:1;min-width:280px;background:#fff;border-radius:12px;padding:20px;box-shadow:0 1px 3px rgba(0,0,0,.08)">
         <div style="font-size:13px;font-weight:700;color:#111;margin-bottom:14px">Equity Curve</div>
         <canvas id="equityChart" height="160"></canvas>
+        <div style="font-size:10px;color:#9ca3af;margin-top:8px;text-align:center">
+          Includes open positions at daily market close
+        </div>
       </div>
       <div style="flex:1;min-width:280px;background:#fff;border-radius:12px;padding:20px;box-shadow:0 1px 3px rgba(0,0,0,.08)">
         <div style="font-size:13px;font-weight:700;color:#111;margin-bottom:14px">Drawdown</div>
         <canvas id="drawdownChart" height="160"></canvas>
+        <div style="font-size:10px;color:#9ca3af;margin-top:8px;text-align:center">
+          Max drawdown: {fmt_pct(max_drawdown_pct)}
+        </div>
       </div>
     </div>
     <script>
@@ -428,6 +504,8 @@ def build_charts(trade_log, account_size):
           }}]
         }},
         options: {{
+          responsive: true,
+          maintainAspectRatio: true,
           plugins: {{ legend: {{ display: false }},
             tooltip: {{ callbacks: {{ label: function(c) {{ return '$' + c.raw.toLocaleString('en-US', {{minimumFractionDigits:2}}); }} }} }}
           }},
@@ -454,13 +532,14 @@ def build_charts(trade_log, account_size):
           }}]
         }},
         options: {{
+          responsive: true,
+          maintainAspectRatio: true,
           plugins: {{ legend: {{ display: false }},
             tooltip: {{ callbacks: {{ label: function(c) {{ return c.raw.toFixed(1) + '%'; }} }} }}
           }},
           scales: {{
             x: {{ ticks: {{ maxTicksLimit: 8, font: {{ size: 10 }} }}, grid: {{ display: false }} }},
-            y: {{ ticks: {{ callback: function(v) {{ return v.toFixed(0) + '%'; }}, font: {{ size: 10 }} }},
-                 max: 0 }}
+            y: {{ ticks: {{ callback: function(v) {{ return v.toFixed(1) + '%'; }}, font: {{ size: 10 }} }} }}
           }}
         }}
       }});
@@ -673,7 +752,7 @@ def main():
 {section("Performance Overview", build_kpi(performance, trade_log, account_size, margin_pct, margin_rate), "&#127942;")}
 
 <!-- Charts -->
-{section("Equity Curve &amp; Drawdown", build_charts(trade_log, account_size), "&#128202;")}
+{section("Equity Curve &amp; Drawdown", build_charts(trade_log, positions, market, account_size), "&#128202;")}
 
 <!-- Open Positions -->
 {section("Open Positions", build_positions(positions, market, min_hold, today_str), "&#128202;")}
