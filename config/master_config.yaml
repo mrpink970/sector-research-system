@@ -39,8 +39,8 @@ systems:
 
 email_recipients:
   - "mrpink970@gmail.com"
- # - "mwhite7680@gmail.com"
- # - "jacobfarino@gmail.com"
+  - "mwhite7680@gmail.com"
+  - "jacobfarino@gmail.com"
 
 global:
   timezone: "America/New_York"
