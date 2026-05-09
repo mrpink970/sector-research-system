@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>4ETF Paper Trading Dashboard | Live Data</title>
+    <title>2 ETF Bull System Dashboard | Live Data</title>
     <style>
         * {
             margin: 0;
@@ -242,8 +242,8 @@
 <body>
 <div class="dashboard">
     <div class="header">
-        <h1>📊 4ETF Paper Trading Dashboard</h1>
-        <p>3x Leveraged ETFs • Single Position • Trailing Stop System</p>
+        <h1>📊 2 ETF Bull System Dashboard</h1>
+        <p>Dual Leveraged Bull System • SOXL/TQQQ • 12% Trailing Stop</p>
     </div>
 
     <div class="kpi-grid" id="kpiContainer">
@@ -286,7 +286,7 @@
                     </tr>
                 </thead>
                 <tbody id="tradesBody">
-                    <tr><td colspan="10" class="loading">Loading trade log...</td></tr>
+                    <tr><td colspan="10" class="loading">Loading trade log...<\/td><\/tr>
                 </tbody>
             </table>
         </div>
@@ -310,7 +310,7 @@
 
     <div class="last-updated" id="lastUpdated">Last updated: --</div>
     <div class="footer">
-        ⚡ Trailing stop: 12% from highest price • Data from GitHub CSV files
+        ⚡ 2 ETF Bull System • Long-only SOXL/TQQQ • 12% trailing stop
     </div>
 </div>
 
@@ -421,7 +421,7 @@
             currentPosition = pos;
         }
         
-        // CASH BALANCE FIX: Cash = starting + realized - cost of open positions
+        // Cash balance = starting + realized - cost of open positions
         const cashBalance = STARTING_BALANCE + realizedPL - openPositionCost;
         const totalEquity = cashBalance + currentValue;
         const totalReturn = totalEquity - STARTING_BALANCE;
@@ -519,7 +519,7 @@
         // Render closed trades table
         const tbody = document.getElementById('tradesBody');
         if (tradeLog.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="10">No closed trades yet</td></tr>';
+            tbody.innerHTML = '<td><td colspan="10">No closed trades yet<\/td><\/tr>';
         } else {
             const recentTrades = [...tradeLog].reverse().slice(0, 20);
             tbody.innerHTML = recentTrades.map(trade => {
@@ -549,7 +549,7 @@
         
         // Render system status
         document.getElementById('systemStatus').innerHTML = `
-            <div><strong>System:</strong> 4ETF Paper Trading</div>
+            <div><strong>System:</strong> 2 ETF Bull System</div>
             <div><strong>Status:</strong> <span class="positive">● Active</span></div>
             <div><strong>Position Limit:</strong> 1 (single position)</div>
             <div><strong>Cash Zone:</strong> |score| < 2 = no entry</div>
@@ -563,7 +563,7 @@
         document.getElementById('strategyParams').innerHTML = `
             <div><strong>Strategy:</strong> Single position • Rotation enabled</div>
             <div><strong>Trailing Stop:</strong> 12% from highest price</div>
-            <div><strong>Position Size:</strong> 95% of cash balance</div>
+            <div><strong>Position Size:</strong> 100% of cash balance</div>
             <div><strong>Score Smoothing:</strong> 5-day EMA (α=0.20)</div>
             <div><strong>Entry Confirmation:</strong> Minimum 2 days signal</div>
         `;
