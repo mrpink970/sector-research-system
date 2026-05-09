@@ -9,7 +9,7 @@ import smtplib
 from email.message import EmailMessage
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List
 
 import pandas as pd
 import yaml
@@ -30,9 +30,6 @@ def load_config() -> dict:
         return yaml.safe_load(f)
 
 
-# ============================================================
-# DATA LOADING HELPERS
-# ============================================================
 def safe_read_csv(path: Path) -> pd.DataFrame:
     """Safely read CSV, return empty DataFrame if error"""
     if not path.exists():
@@ -45,7 +42,7 @@ def safe_read_csv(path: Path) -> pd.DataFrame:
 
 
 def safe_float(value, default=0.0) -> float:
-    """Safely convert to float, return default if None or NaN"""
+    """Safely convert to float"""
     if value is None or (isinstance(value, float) and pd.isna(value)):
         return default
     try:
@@ -54,9 +51,19 @@ def safe_float(value, default=0.0) -> float:
         return default
 
 
+def safe_int(value, default=0) -> int:
+    """Safely convert to int"""
+    return int(safe_float(value, default))
+
+
+# ============================================================
+# SYSTEM DATA EXTRACTION
+# ============================================================
+
 def get_sector_system_data(config: dict) -> dict:
     """Extract performance data for sector system"""
     paths = config['systems']['sector']['data_files']
+    start_balance = config['systems']['sector']['starting_balance']
     
     perf = safe_read_csv(Path(paths['performance']))
     positions = safe_read_csv(Path(paths['positions']))
@@ -64,34 +71,32 @@ def get_sector_system_data(config: dict) -> dict:
     result = {
         'name': config['systems']['sector']['display_name'],
         'start_date': config['systems']['sector']['start_date'],
-        'starting_balance': config['systems']['sector']['starting_balance'],
+        'starting_balance': start_balance,
         'dashboard_url': config['systems']['sector']['dashboard_url'],
-        'has_data': False,
-        'balance': None,
-        'total_return_pct': None,
-        'win_rate': None,
-        'total_trades': None,
-        'max_drawdown': None,
+        'balance': start_balance,
+        'total_return_pct': 0.0,
+        'win_rate': 0.0,
+        'total_trades': 0,
         'open_positions': [],
         'open_count': 0,
     }
     
     if not perf.empty:
-        result['has_data'] = True
-        result['balance'] = safe_float(perf.iloc[0].get('balance', None))
-        result['total_return_pct'] = safe_float(perf.iloc[0].get('total_return_pct', None))
-        result['win_rate'] = safe_float(perf.iloc[0].get('win_rate', None))
-        result['total_trades'] = int(safe_float(perf.iloc[0].get('total_trades', 0)))
-        result['max_drawdown'] = safe_float(perf.iloc[0].get('max_drawdown_pct', None))
+        row = perf.iloc[0]
+        net_profit = safe_float(row.get('net_profit_dollars', 0))
+        result['balance'] = start_balance + net_profit
+        result['total_return_pct'] = safe_float(row.get('total_return_pct', 0))
+        result['win_rate'] = safe_float(row.get('win_rate_pct', 0))
+        result['total_trades'] = safe_int(row.get('total_trades', 0))
     
     if not positions.empty:
         for _, row in positions.iterrows():
+            entry_price = safe_float(row.get('entry_price', 0))
+            shares = safe_int(row.get('shares', 0))
             result['open_positions'].append({
                 'ticker': row.get('ticker', 'N/A'),
-                'sector': row.get('sector', 'N/A'),
-                'entry_price': safe_float(row.get('entry_price', 0)),
-                'current_price': safe_float(row.get('current_price', row.get('entry_price', 0))),
-                'shares': int(safe_float(row.get('shares', 0))),
+                'shares': shares,
+                'entry_price': entry_price,
             })
         result['open_count'] = len(result['open_positions'])
     
@@ -101,6 +106,7 @@ def get_sector_system_data(config: dict) -> dict:
 def get_two_etf_system_data(config: dict) -> dict:
     """Extract performance data for 2 ETF Bull system"""
     paths = config['systems']['two_etf']['data_files']
+    start_balance = config['systems']['two_etf']['starting_balance']
     
     perf = safe_read_csv(Path(paths['performance']))
     positions = safe_read_csv(Path(paths['positions']))
@@ -108,38 +114,32 @@ def get_two_etf_system_data(config: dict) -> dict:
     result = {
         'name': config['systems']['two_etf']['display_name'],
         'start_date': config['systems']['two_etf']['start_date'],
-        'starting_balance': config['systems']['two_etf']['starting_balance'],
+        'starting_balance': start_balance,
         'dashboard_url': config['systems']['two_etf']['dashboard_url'],
-        'has_data': False,
-        'balance': None,
-        'total_return_pct': None,
-        'win_rate': None,
-        'total_trades': None,
-        'max_drawdown': None,
+        'balance': start_balance,
+        'total_return_pct': 0.0,
+        'win_rate': 0.0,
+        'total_trades': 0,
         'open_positions': [],
         'open_count': 0,
     }
     
     if not perf.empty:
-        result['has_data'] = True
-        result['balance'] = safe_float(perf.iloc[0].get('balance', None))
-        result['total_return_pct'] = safe_float(perf.iloc[0].get('total_return_pct', None))
-        result['win_rate'] = safe_float(perf.iloc[0].get('win_rate', None))
-        result['total_trades'] = int(safe_float(perf.iloc[0].get('total_trades', 0)))
-        result['max_drawdown'] = safe_float(perf.iloc[0].get('max_drawdown_pct', None))
+        row = perf.iloc[0]
+        total_pl = safe_float(row.get('total_gross_pl', 0))
+        result['balance'] = start_balance + total_pl
+        result['total_return_pct'] = (result['balance'] / start_balance - 1) * 100
+        result['win_rate'] = safe_float(row.get('win_rate', 0)) * 100
+        result['total_trades'] = safe_int(row.get('total_trades', 0))
     
     if not positions.empty:
         for _, row in positions.iterrows():
             entry_price = safe_float(row.get('entry_price', 0))
-            shares = int(safe_float(row.get('shares', 0)))
-            current_price = safe_float(row.get('highest_price', entry_price))
+            shares = safe_int(row.get('shares', 0))
             result['open_positions'].append({
                 'ticker': row.get('ticker', 'N/A'),
-                'entry_price': entry_price,
-                'current_price': current_price,
                 'shares': shares,
-                'total_cost': entry_price * shares,
-                'unrealized_pnl': (current_price - entry_price) * shares,
+                'entry_price': entry_price,
             })
         result['open_count'] = len(result['open_positions'])
     
@@ -147,8 +147,9 @@ def get_two_etf_system_data(config: dict) -> dict:
 
 
 def get_stock_system_data(config: dict) -> dict:
-    """Extract performance data for stock system"""
+    """Extract performance data for stock system (trend + breakout combined)"""
     paths = config['systems']['stock']['data_files']
+    start_balance = config['systems']['stock']['starting_balance']
     
     perf = safe_read_csv(Path(paths['performance']))
     positions_trend = safe_read_csv(Path(paths['positions_trend']))
@@ -157,31 +158,31 @@ def get_stock_system_data(config: dict) -> dict:
     result = {
         'name': config['systems']['stock']['display_name'],
         'start_date': config['systems']['stock']['start_date'],
-        'starting_balance': config['systems']['stock']['starting_balance'],
+        'starting_balance': start_balance,
         'dashboard_url': config['systems']['stock']['dashboard_url'],
-        'has_data': False,
-        'balance': None,
-        'total_return_pct': None,
-        'win_rate': None,
-        'total_trades': None,
-        'max_drawdown': None,
+        'balance': start_balance,
+        'total_return_pct': 0.0,
+        'win_rate': 0.0,
+        'total_trades': 0,
         'open_positions': [],
         'open_count': 0,
     }
     
     if not perf.empty:
-        result['has_data'] = True
-        # Stock performance CSV may have separate rows for trend and breakout
-        if 'balance' in perf.columns:
-            result['balance'] = safe_float(perf['balance'].sum())
-        if 'total_return_pct' in perf.columns:
-            result['total_return_pct'] = safe_float(perf['total_return_pct'].mean())
-        if 'win_rate' in perf.columns:
-            result['win_rate'] = safe_float(perf['win_rate'].mean())
-        if 'total_trades' in perf.columns:
-            result['total_trades'] = int(safe_float(perf['total_trades'].sum()))
-        if 'max_drawdown_pct' in perf.columns:
-            result['max_drawdown'] = safe_float(perf['max_drawdown_pct'].min())
+        # Sum balances from trend and breakout rows
+        total_balance = perf['balance'].sum() if 'balance' in perf.columns else start_balance
+        result['balance'] = total_balance
+        result['total_return_pct'] = (total_balance / start_balance - 1) * 100
+        
+        # Sum total trades
+        result['total_trades'] = safe_int(perf['total_trades'].sum()) if 'total_trades' in perf.columns else 0
+        
+        # Weighted average win rate
+        if 'total_trades' in perf.columns and 'win_rate' in perf.columns:
+            total_trades = perf['total_trades'].sum()
+            if total_trades > 0:
+                weighted_win_rate = (perf['total_trades'] * perf['win_rate']).sum() / total_trades
+                result['win_rate'] = weighted_win_rate
     
     # Combine positions from both strategies
     all_positions = []
@@ -190,16 +191,16 @@ def get_stock_system_data(config: dict) -> dict:
             all_positions.append({
                 'ticker': row.get('ticker', 'N/A'),
                 'system': 'Trend',
+                'shares': safe_int(row.get('shares', 0)),
                 'entry_price': safe_float(row.get('entry_price', 0)),
-                'shares': int(safe_float(row.get('shares', 0))),
             })
     if not positions_breakout.empty:
         for _, row in positions_breakout.iterrows():
             all_positions.append({
                 'ticker': row.get('ticker', 'N/A'),
                 'system': 'Breakout',
+                'shares': safe_int(row.get('shares', 0)),
                 'entry_price': safe_float(row.get('entry_price', 0)),
-                'shares': int(safe_float(row.get('shares', 0))),
             })
     
     result['open_positions'] = all_positions
@@ -212,14 +213,12 @@ def get_stock_system_data(config: dict) -> dict:
 # EMAIL FORMATTING
 # ============================================================
 def format_currency(value: float) -> str:
-    """Format as currency with commas"""
     if value is None or value == 0:
         return "$0.00"
     return f"${value:,.2f}"
 
 
 def format_percent(value: float) -> str:
-    """Format as percentage with sign"""
     if value is None:
         return "0.0%"
     sign = "+" if value >= 0 else ""
@@ -227,25 +226,19 @@ def format_percent(value: float) -> str:
 
 
 def format_position_summary(positions: List[dict]) -> str:
-    """Format open positions for email"""
     if not positions:
         return "None"
     
     lines = []
-    for pos in positions[:5]:  # Limit to 5 positions
+    for pos in positions[:5]:
         ticker = pos.get('ticker', 'N/A')
-        entry = pos.get('entry_price', 0)
         shares = pos.get('shares', 0)
-        
-        # Calculate approximate P&L if current price available
-        current = pos.get('current_price', entry)
-        pnl_pct = ((current - entry) / entry * 100) if entry > 0 else 0
-        pnl_symbol = "+" if pnl_pct >= 0 else ""
+        entry = pos.get('entry_price', 0)
         
         if 'system' in pos:
-            lines.append(f"      • {ticker} ({pos['system']}): {shares} shares @ ${entry:.2f} ({pnl_symbol}{pnl_pct:.1f}%)")
+            lines.append(f"      • {ticker} ({pos['system']}): {shares} shares @ ${entry:.2f}")
         else:
-            lines.append(f"      • {ticker}: {shares} shares @ ${entry:.2f} ({pnl_symbol}{pnl_pct:.1f}%)")
+            lines.append(f"      • {ticker}: {shares} shares @ ${entry:.2f}")
     
     if len(positions) > 5:
         lines.append(f"      ... and {len(positions) - 5} more")
@@ -254,30 +247,10 @@ def format_position_summary(positions: List[dict]) -> str:
 
 
 def build_html_email(data: dict, config: dict) -> str:
-    """Build HTML email content"""
     sector = data['sector']
     two_etf = data['two_etf']
     stock = data['stock']
     date_str = datetime.now().strftime("%Y-%m-%d")
-    
-    # Safe value extraction with defaults
-    sector_balance = format_currency(sector.get('balance'))
-    sector_return = format_percent(sector.get('total_return_pct'))
-    sector_win_rate = sector.get('win_rate', 0)
-    sector_trades = sector.get('total_trades', 0)
-    sector_dd = sector.get('max_drawdown', 0)
-    
-    two_etf_balance = format_currency(two_etf.get('balance'))
-    two_etf_return = format_percent(two_etf.get('total_return_pct'))
-    two_etf_win_rate = two_etf.get('win_rate', 0)
-    two_etf_trades = two_etf.get('total_trades', 0)
-    two_etf_dd = two_etf.get('max_drawdown', 0)
-    
-    stock_balance = format_currency(stock.get('balance'))
-    stock_return = format_percent(stock.get('total_return_pct'))
-    stock_win_rate = stock.get('win_rate', 0)
-    stock_trades = stock.get('total_trades', 0)
-    stock_dd = stock.get('max_drawdown', 0)
     
     html = f"""
 <!DOCTYPE html>
@@ -296,7 +269,7 @@ def build_html_email(data: dict, config: dict) -> str:
         .metrics {{ display: flex; flex-wrap: wrap; gap: 16px; margin-bottom: 16px; }}
         .metric {{ flex: 1; min-width: 100px; background: #f8fafc; padding: 12px 16px; border-radius: 12px; }}
         .metric-label {{ font-size: 11px; text-transform: uppercase; color: #6c7e8f; letter-spacing: 0.5px; margin-bottom: 4px; }}
-        .metric-value {{ font-size: 20px; font-weight: 700; color: #1a2a3a; }}
+        .metric-value {{ font-size: 20px; font-weight: 700; }}
         .metric-value.positive {{ color: #1e8a4c; }}
         .metric-value.negative {{ color: #c2412c; }}
         .positions {{ background: #f8fafc; padding: 16px; border-radius: 12px; margin-top: 12px; font-family: monospace; font-size: 13px; }}
@@ -304,9 +277,6 @@ def build_html_email(data: dict, config: dict) -> str:
         .dashboard-link {{ margin-top: 16px; }}
         .dashboard-link a {{ color: #2c7fb8; text-decoration: none; font-weight: 600; }}
         .footer {{ background: #f8fafc; padding: 16px 30px; text-align: center; font-size: 12px; color: #8ba0b0; }}
-        hr {{ border: none; border-top: 1px solid #e2e8f0; margin: 16px 0; }}
-        .positive-text {{ color: #1e8a4c; }}
-        .negative-text {{ color: #c2412c; }}
     </style>
 </head>
 <body>
@@ -318,29 +288,24 @@ def build_html_email(data: dict, config: dict) -> str:
 """
     
     # Sector System
-    sector_return_class = "positive-text" if sector.get('total_return_pct', 0) >= 0 else "negative-text"
-    sector_dd_class = "negative-text"
+    sector_return_class = "positive" if sector['total_return_pct'] >= 0 else "negative"
     html += f"""
     <div class="system">
         <h2>💰 {sector['name']}</h2>
         <div class="metrics">
             <div class="metric">
                 <div class="metric-label">Balance</div>
-                <div class="metric-value">{sector_balance}</div>
+                <div class="metric-value">{format_currency(sector['balance'])}</div>
                 <div style="font-size: 11px; color: #6c7e8f;">Started: {format_currency(sector['starting_balance'])} ({sector['start_date']})</div>
             </div>
             <div class="metric">
                 <div class="metric-label">Total Return</div>
-                <div class="metric-value {sector_return_class}">{sector_return}</div>
+                <div class="metric-value {sector_return_class}">{format_percent(sector['total_return_pct'])}</div>
             </div>
             <div class="metric">
                 <div class="metric-label">Win Rate</div>
-                <div class="metric-value">{sector_win_rate:.1f}%</div>
-                <div style="font-size: 11px; color: #6c7e8f;">{sector_trades} trades</div>
-            </div>
-            <div class="metric">
-                <div class="metric-label">Max Drawdown</div>
-                <div class="metric-value {sector_dd_class}">{format_percent(-abs(sector_dd))}</div>
+                <div class="metric-value">{sector['win_rate']:.1f}%</div>
+                <div style="font-size: 11px; color: #6c7e8f;">{sector['total_trades']} trades</div>
             </div>
         </div>
         <div class="positions">
@@ -354,29 +319,24 @@ def build_html_email(data: dict, config: dict) -> str:
 """
     
     # 2 ETF System
-    two_etf_return_class = "positive-text" if two_etf.get('total_return_pct', 0) >= 0 else "negative-text"
-    two_etf_dd_class = "negative-text"
+    two_etf_return_class = "positive" if two_etf['total_return_pct'] >= 0 else "negative"
     html += f"""
     <div class="system">
         <h2>📈 {two_etf['name']}</h2>
         <div class="metrics">
             <div class="metric">
                 <div class="metric-label">Balance</div>
-                <div class="metric-value">{two_etf_balance}</div>
+                <div class="metric-value">{format_currency(two_etf['balance'])}</div>
                 <div style="font-size: 11px; color: #6c7e8f;">Started: {format_currency(two_etf['starting_balance'])} ({two_etf['start_date']})</div>
             </div>
             <div class="metric">
                 <div class="metric-label">Total Return</div>
-                <div class="metric-value {two_etf_return_class}">{two_etf_return}</div>
+                <div class="metric-value {two_etf_return_class}">{format_percent(two_etf['total_return_pct'])}</div>
             </div>
             <div class="metric">
                 <div class="metric-label">Win Rate</div>
-                <div class="metric-value">{two_etf_win_rate:.1f}%</div>
-                <div style="font-size: 11px; color: #6c7e8f;">{two_etf_trades} trades</div>
-            </div>
-            <div class="metric">
-                <div class="metric-label">Max Drawdown</div>
-                <div class="metric-value {two_etf_dd_class}">{format_percent(-abs(two_etf_dd))}</div>
+                <div class="metric-value">{two_etf['win_rate']:.1f}%</div>
+                <div style="font-size: 11px; color: #6c7e8f;">{two_etf['total_trades']} trades</div>
             </div>
         </div>
         <div class="positions">
@@ -390,29 +350,24 @@ def build_html_email(data: dict, config: dict) -> str:
 """
     
     # Stock System
-    stock_return_class = "positive-text" if stock.get('total_return_pct', 0) >= 0 else "negative-text"
-    stock_dd_class = "negative-text"
+    stock_return_class = "positive" if stock['total_return_pct'] >= 0 else "negative"
     html += f"""
     <div class="system">
         <h2>📊 {stock['name']}</h2>
         <div class="metrics">
             <div class="metric">
                 <div class="metric-label">Balance</div>
-                <div class="metric-value">{stock_balance}</div>
+                <div class="metric-value">{format_currency(stock['balance'])}</div>
                 <div style="font-size: 11px; color: #6c7e8f;">Started: {format_currency(stock['starting_balance'])} ({stock['start_date']})</div>
             </div>
             <div class="metric">
                 <div class="metric-label">Total Return</div>
-                <div class="metric-value {stock_return_class}">{stock_return}</div>
+                <div class="metric-value {stock_return_class}">{format_percent(stock['total_return_pct'])}</div>
             </div>
             <div class="metric">
                 <div class="metric-label">Win Rate</div>
-                <div class="metric-value">{stock_win_rate:.1f}%</div>
-                <div style="font-size: 11px; color: #6c7e8f;">{stock_trades} trades</div>
-            </div>
-            <div class="metric">
-                <div class="metric-label">Max Drawdown</div>
-                <div class="metric-value {stock_dd_class}">{format_percent(-abs(stock_dd))}</div>
+                <div class="metric-value">{stock['win_rate']:.1f}%</div>
+                <div style="font-size: 11px; color: #6c7e8f;">{stock['total_trades']} trades</div>
             </div>
         </div>
         <div class="positions">
@@ -441,18 +396,17 @@ def build_html_email(data: dict, config: dict) -> str:
 
 
 def send_email(html_content: str, recipients: List[str]) -> bool:
-    """Send HTML email to all recipients"""
     mail_username = os.environ.get("MAIL_USERNAME")
     mail_password = os.environ.get("MAIL_PASSWORD")
     
     if not mail_username or not mail_password:
-        print("❌ Email credentials not found in environment")
+        print("❌ Email credentials not found")
         return False
     
     date_str = datetime.now().strftime("%Y-%m-%d")
     
     msg = EmailMessage()
-    msg.set_content("Please enable HTML to view this email.")  # Fallback
+    msg.set_content("Please enable HTML to view this email.")
     msg.add_alternative(html_content, subtype='html')
     msg["Subject"] = f"📊 Trading Systems Daily Summary - {date_str}"
     msg["From"] = mail_username
@@ -464,9 +418,6 @@ def send_email(html_content: str, recipients: List[str]) -> bool:
             smtp.login(mail_username, mail_password)
             smtp.send_message(msg)
         print(f"✅ Email sent to {len(recipients)} recipient(s)")
-        if len(recipients) > 1:
-            print(f"   Primary: {recipients[0]}")
-            print(f"   CC: {', '.join(recipients[1:])}")
         return True
     except Exception as e:
         print(f"❌ Failed to send email: {e}")
@@ -481,7 +432,6 @@ def main():
     print("MONITORING ENGINE")
     print("=" * 60)
     
-    # Load config
     try:
         config = load_config()
         print(f"✅ Loaded config from {CONFIG_PATH}")
@@ -489,19 +439,17 @@ def main():
         print(f"❌ Failed to load config: {e}")
         return
     
-    # Collect data from all systems
     print("\n📊 Collecting system data...")
     
     sector_data = get_sector_system_data(config)
-    print(f"   Sector System: {'✅' if sector_data['has_data'] else '⚠️ No data'}")
+    print(f"   Sector System: Balance ${sector_data['balance']:,.2f} ({sector_data['total_trades']} trades)")
     
     two_etf_data = get_two_etf_system_data(config)
-    print(f"   2 ETF System:  {'✅' if two_etf_data['has_data'] else '⚠️ No data'}")
+    print(f"   2 ETF System:  Balance ${two_etf_data['balance']:,.2f} ({two_etf_data['total_trades']} trades)")
     
     stock_data = get_stock_system_data(config)
-    print(f"   Stock System:  {'✅' if stock_data['has_data'] else '⚠️ No data'}")
+    print(f"   Stock System:  Balance ${stock_data['balance']:,.2f} ({stock_data['total_trades']} trades)")
     
-    # Build email
     print("\n📧 Building email...")
     data = {
         'sector': sector_data,
@@ -510,13 +458,12 @@ def main():
     }
     html_content = build_html_email(data, config)
     
-    # Send to all recipients
     recipients = config.get('email_recipients', [])
     if not recipients:
-        print("⚠️ No email recipients found in config")
+        print("⚠️ No email recipients found")
         return
     
-    print(f"\n📨 Sending to {len(recipients)} recipient(s):")
+    print(f"\n📨 Sending to {len(recipients)} recipient(s)...")
     for r in recipients:
         print(f"   • {r}")
     
