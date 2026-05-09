@@ -1,270 +1,213 @@
 #!/usr/bin/env python3
 """
-ETF Daily Data Updater
-Fetches OHLC data for SOXL, TQQQ, SOXS, SQQQ, SMH, QQQ, and SOXX
-Updates the Excel workbook without losing existing data
+ETF Daily Data Updater - SIMPLIFIED VERSION
+Fetches only last 30 days of data
+Updated for main repo structure - stores data in data/4_etf/
 """
 
 import sys
 import pandas as pd
 import yfinance as yf
 from openpyxl import load_workbook
-from openpyxl.utils import get_column_letter
 from datetime import datetime, timedelta
+import numpy as np
 import warnings
 warnings.filterwarnings('ignore')
 
-# Tickers to fetch
-TICKERS = {
-    'SOXL': 'SOXL',
-    'TQQQ': 'TQQQ',
-    'SOXS': 'SOXS',
-    'SQQQ': 'SQQQ',
-    'SMH': 'SMH',
-    'QQQ': 'QQQ',
-    'SOXX': 'SOXX',  # NEW: Added SOXX
-}
+# ============================================================================
+# PATH CONFIGURATION - Updated for main repo structure
+# ============================================================================
+from pathlib import Path
 
-# Column suffixes for each ticker
-COLUMN_SUFFIXES = ['_Open', '_High', '_Low', '_Close', '_%Chg', '_3D', '_5D']
+# Updated path: data/4_etf/4_ETF_Workbook.xlsx
+WORKBOOK_PATH = Path("data/4_etf/4_ETF_Workbook.xlsx")
 
-# Required columns for Daily_Data sheet (will be auto-created if missing)
-REQUIRED_COLUMNS = []
-for ticker in TICKERS.keys():
-    for suffix in COLUMN_SUFFIXES:
-        REQUIRED_COLUMNS.append(f"{ticker}{suffix}")
+TICKERS = ['SOXL', 'TQQQ', 'SOXS', 'SQQQ']
 
 
-def ensure_columns_exist(worksheet, required_columns):
-    """Automatically add missing columns to the worksheet without disturbing existing data"""
-    existing_columns = []
-    for col in range(1, worksheet.max_column + 1):
-        cell_value = worksheet.cell(row=1, column=col).value
-        if cell_value:
-            existing_columns.append(str(cell_value).strip())
+def fetch_ticker_data(ticker, days=30):
+    """Fetch data for a single ticker"""
+    end_date = datetime.now()
+    start_date = end_date - timedelta(days=days)
     
-    missing_columns = [col for col in required_columns if col not in existing_columns]
+    print(f"  Fetching {ticker} from {start_date.date()} to {end_date.date()}")
     
-    if missing_columns:
-        print(f"Adding {len(missing_columns)} missing columns: {missing_columns[:5]}...")
-        
-        # Add missing columns to the right of existing data
-        next_col = worksheet.max_column + 1
-        for col_name in missing_columns:
-            worksheet.cell(row=1, column=next_col, value=col_name)
-            next_col += 1
-        
-        return True
-    return False
-
-
-def fetch_historical_data(ticker, start_date, end_date):
-    """Fetch historical OHLC data from Yahoo Finance"""
     try:
-        stock = yf.Ticker(ticker)
-        data = stock.history(start=start_date, end=end_date)
+        data = yf.download(ticker, start=start_date, end=end_date, progress=False)
         if data.empty:
-            print(f"Warning: No data for {ticker}")
+            print(f"    WARNING: No data for {ticker}")
             return None
+        
+        # Reset index to get Date as column
+        data = data.reset_index()
+        data['Date'] = data['Date'].dt.strftime('%Y-%m-%d')
+        
         return data
     except Exception as e:
-        print(f"Error fetching {ticker}: {e}")
+        print(f"    ERROR: {e}")
         return None
 
 
-def calculate_returns(df, ticker):
-    """Calculate 1D, 3D, 5D returns from close prices"""
-    if df is None or df.empty:
-        return {}
-    
-    # Calculate returns
-    returns_1d = df['Close'].pct_change() * 100
-    returns_3d = df['Close'].pct_change(periods=3) * 100
-    returns_5d = df['Close'].pct_change(periods=5) * 100
-    
-    # Create return columns
-    result = {}
-    for date in df.index:
-        date_str = date.strftime('%Y-%m-%d')
-        result[date_str] = {
-            f"{ticker}_%Chg": round(returns_1d.get(date, 0), 4) if date in returns_1d.index else 0,
-            f"{ticker}_3D": round(returns_3d.get(date, 0), 4) if date in returns_3d.index else 0,
-            f"{ticker}_5D": round(returns_5d.get(date, 0), 4) if date in returns_5d.index else 0,
-        }
-    
-    return result
+def to_scalar(value):
+    """Convert numpy types to Python scalar"""
+    if value is None:
+        return None
+    if isinstance(value, (np.ndarray, pd.Series)):
+        # Get the first element if it's an array/series
+        if len(value) > 0:
+            val = value.item() if hasattr(value, 'item') else float(value[0])
+            return float(val)
+        return None
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return None
 
 
 def update_workbook(workbook_path):
-    """Main function to update the workbook with latest data"""
-    
+    """Update the Excel workbook with latest ETF data"""
     print("=" * 60)
-    print("ETF DAILY DATA UPDATER")
+    print("ETF DATA UPDATER - SIMPLIFIED")
     print("=" * 60)
+    print(f"Workbook path: {workbook_path}")
     
-    # Load workbook
-    try:
-        wb = load_workbook(workbook_path)
-        print(f"Loaded workbook: {workbook_path}")
-    except Exception as e:
-        print(f"Error loading workbook: {e}")
-        return False
-    
-    # Ensure Daily_Data sheet exists
-    if 'Daily_Data' not in wb.sheetnames:
-        print("Creating Daily_Data sheet...")
-        ws = wb.create_sheet('Daily_Data')
-        # Add Date column
-        ws.cell(row=1, column=1, value='Date')
-    else:
-        ws = wb['Daily_Data']
-        print("Daily_Data sheet found")
-    
-    # Auto-add missing columns
-    if ensure_columns_exist(ws, REQUIRED_COLUMNS):
-        print("Added missing columns - existing data preserved")
-    
-    # Read existing data into DataFrame
-    data_rows = []
-    headers = []
-    
-    # Get headers from first row
-    for col in range(1, ws.max_column + 1):
-        header = ws.cell(row=1, column=col).value
-        if header:
-            headers.append(str(header).strip())
-    
-    # Read existing data rows
-    for row in range(2, ws.max_row + 1):
-        row_data = {}
-        has_data = False
-        for col_idx, header in enumerate(headers, start=1):
-            cell_value = ws.cell(row=row, column=col_idx).value
-            if cell_value is not None and str(cell_value).strip() != '':
-                has_data = True
-            row_data[header] = cell_value
-        if has_data:
-            data_rows.append(row_data)
-    
-    existing_df = pd.DataFrame(data_rows) if data_rows else pd.DataFrame()
-    
-    # Determine date range
-    end_date = datetime.now()
-    start_date = end_date - timedelta(days=365)  # Get 1 year of history
-    
-    print(f"\nFetching data from {start_date.date()} to {end_date.date()}")
+    # Ensure directory exists
+    workbook_path.parent.mkdir(parents=True, exist_ok=True)
     
     # Fetch data for all tickers
     all_data = {}
-    all_returns = {}
-    
-    for ticker_symbol in TICKERS.keys():
-        print(f"Fetching {ticker_symbol}...")
-        df = fetch_historical_data(ticker_symbol, start_date, end_date)
+    for ticker in TICKERS:
+        df = fetch_ticker_data(ticker, days=30)
         if df is not None:
-            all_data[ticker_symbol] = df
-            all_returns[ticker_symbol] = calculate_returns(df, ticker_symbol)
+            all_data[ticker] = df
     
-    # Build complete dataset
+    if not all_data:
+        print("ERROR: No data fetched")
+        return False
+    
+    # Get all unique dates
     all_dates = set()
-    for ticker, df in all_data.items():
-        all_dates.update(df.index.strftime('%Y-%m-%d'))
-    
+    for df in all_data.values():
+        all_dates.update(df['Date'].tolist())
     all_dates = sorted(all_dates)
     
-    # Create complete DataFrame
-    complete_data = {}
+    print(f"\nDates: {all_dates[0]} to {all_dates[-1]} ({len(all_dates)} days)")
+    
+    # Build the DataFrame
+    rows = []
     for date in all_dates:
-        complete_data[date] = {'Date': date}
-        
+        row = {'Date': date}
         for ticker, df in all_data.items():
-            date_obj = datetime.strptime(date, '%Y-%m-%d')
-            if date_obj in df.index:
-                row = df.loc[date_obj]
-                complete_data[date][f"{ticker}_Open"] = round(row['Open'], 6)
-                complete_data[date][f"{ticker}_High"] = round(row['High'], 6)
-                complete_data[date][f"{ticker}_Low"] = round(row['Low'], 6)
-                complete_data[date][f"{ticker}_Close"] = round(row['Close'], 6)
+            ticker_data = df[df['Date'] == date]
+            if not ticker_data.empty:
+                # Extract scalar values using .item() or direct access
+                open_val = ticker_data['Open'].iloc[0]
+                high_val = ticker_data['High'].iloc[0]
+                low_val = ticker_data['Low'].iloc[0]
+                close_val = ticker_data['Close'].iloc[0]
+                
+                # Convert to scalar using .item() if needed
+                if hasattr(open_val, 'item'):
+                    open_val = open_val.item()
+                    high_val = high_val.item()
+                    low_val = low_val.item()
+                    close_val = close_val.item()
+                
+                row[f"{ticker}_Open"] = round(float(open_val), 4) if open_val is not None else None
+                row[f"{ticker}_High"] = round(float(high_val), 4) if high_val is not None else None
+                row[f"{ticker}_Low"] = round(float(low_val), 4) if low_val is not None else None
+                row[f"{ticker}_Close"] = round(float(close_val), 4) if close_val is not None else None
             else:
-                complete_data[date][f"{ticker}_Open"] = None
-                complete_data[date][f"{ticker}_High"] = None
-                complete_data[date][f"{ticker}_Low"] = None
-                complete_data[date][f"{ticker}_Close"] = None
-            
-            # Add return data
-            if ticker in all_returns and date in all_returns[ticker]:
-                complete_data[date].update(all_returns[ticker][date])
+                row[f"{ticker}_Open"] = None
+                row[f"{ticker}_High"] = None
+                row[f"{ticker}_Low"] = None
+                row[f"{ticker}_Close"] = None
+        rows.append(row)
     
-    # Convert to DataFrame
-    new_df = pd.DataFrame.from_dict(complete_data, orient='index')
-    new_df = new_df.sort_index()  # Sort by date
+    df_final = pd.DataFrame(rows)
     
-    # Merge with existing data (preserve existing values)
-    if not existing_df.empty and 'Date' in existing_df.columns:
-        # Convert existing DataFrame dates to string for merging
-        existing_df['Date'] = existing_df['Date'].astype(str)
-        new_df['Date'] = new_df['Date'].astype(str)
+    # Calculate returns
+    for ticker in TICKERS:
+        close_col = f"{ticker}_Close"
+        if close_col in df_final.columns:
+            df_final[close_col] = pd.to_numeric(df_final[close_col], errors='coerce')
+            df_final[f"{ticker}_%Chg"] = df_final[close_col].pct_change() * 100
+            df_final[f"{ticker}_%Chg"] = df_final[f"{ticker}_%Chg"].round(4)
+            df_final[f"{ticker}_3D"] = df_final[close_col].pct_change(periods=3) * 100
+            df_final[f"{ticker}_3D"] = df_final[f"{ticker}_3D"].round(4)
+            df_final[f"{ticker}_5D"] = df_final[close_col].pct_change(periods=5) * 100
+            df_final[f"{ticker}_5D"] = df_final[f"{ticker}_5D"].round(4)
+    
+    print(f"\nFinal data: {len(df_final)} rows, {len(df_final.columns)} columns")
+    
+    # Write to Excel
+    try:
+        if workbook_path.exists():
+            wb = load_workbook(workbook_path)
+        else:
+            print(f"Workbook not found, creating new one at {workbook_path}")
+            wb = load_workbook()
         
-        # Merge: new data overwrites existing, but keep existing columns not in new data
-        merged_df = existing_df.set_index('Date').combine_first(new_df.set_index('Date')).reset_index()
-        merged_df.rename(columns={'index': 'Date'}, inplace=True)
-        final_df = merged_df.sort_values('Date')
-    else:
-        final_df = new_df
+        if 'Daily_Data' in wb.sheetnames:
+            wb.remove(wb['Daily_Data'])
+    except Exception as e:
+        print(f"Error loading workbook: {e}")
+        wb = load_workbook()
+        if 'Daily_Data' in wb.sheetnames:
+            wb.remove(wb['Daily_Data'])
     
-    # Write back to Excel
-    print("\nWriting data to Excel...")
-    
-    # Clear existing data (keep headers)
-    for row in range(2, ws.max_row + 1):
-        for col in range(1, ws.max_column + 1):
-            ws.cell(row=row, column=col, value=None)
+    ws = wb.create_sheet('Daily_Data')
     
     # Write headers
-    headers = ['Date'] + [col for col in final_df.columns if col != 'Date']
-    for col_idx, header in enumerate(headers, start=1):
+    headers = list(df_final.columns)
+    for col_idx, header in enumerate(headers, 1):
         ws.cell(row=1, column=col_idx, value=header)
     
-    # Write data rows
-    for row_idx, (_, row) in enumerate(final_df.iterrows(), start=2):
-        for col_idx, header in enumerate(headers, start=1):
-            value = row[header] if header in row.index else None
-            if value is not None and not pd.isna(value):
-                ws.cell(row=row_idx, column=col_idx, value=value)
+    # Write data
+    rows_written = 0
+    for row_idx, row in df_final.iterrows():
+        excel_row = row_idx + 2
+        for col_idx, header in enumerate(headers, 1):
+            value = row[header]
+            if pd.notna(value):
+                try:
+                    ws.cell(row=excel_row, column=col_idx, value=float(value))
+                except (TypeError, ValueError):
+                    ws.cell(row=excel_row, column=col_idx, value=value)
+        rows_written += 1
     
-    # Auto-adjust column widths
-    for col in range(1, ws.max_column + 1):
-        max_length = 0
-        col_letter = get_column_letter(col)
-        for row in range(1, min(ws.max_row, 100) + 1):
-            cell_value = ws.cell(row=row, column=col).value
-            if cell_value:
-                max_length = max(max_length, len(str(cell_value)))
-        adjusted_width = min(max_length + 2, 20)
-        ws.column_dimensions[col_letter].width = adjusted_width
+    print(f"Wrote {rows_written} rows")
     
-    # Save workbook
-    try:
-        wb.save(workbook_path)
-        print(f"\n✅ Successfully updated {workbook_path}")
-        print(f"   Total rows: {len(final_df)}")
-        print(f"   Date range: {final_df['Date'].min()} to {final_df['Date'].max()}")
-        print(f"   Columns: {len(headers)}")
-        return True
-    except Exception as e:
-        print(f"Error saving workbook: {e}")
-        return False
-
-
-def main():
-    if len(sys.argv) > 1:
-        workbook_path = sys.argv[1]
+    # Ensure Signal sheet
+    if 'Signal' not in wb.sheetnames:
+        ws_signal = wb.create_sheet('Signal')
+        ws_signal['D23'] = 'SOXL'
+        ws_signal['D24'] = 'TQQQ'
+        ws_signal['D27'] = datetime.now().strftime('%Y-%m-%d')
+        print("Created Signal sheet")
     else:
-        workbook_path = "4_ETF_Trading_Workbook_Template.xlsx"
+        # Update signal date
+        ws_signal = wb['Signal']
+        ws_signal['D27'] = datetime.now().strftime('%Y-%m-%d')
+        print("Updated Signal sheet date")
     
-    success = update_workbook(workbook_path)
-    sys.exit(0 if success else 1)
+    wb.save(workbook_path)
+    print(f"\n✅ Updated {workbook_path}")
+    print(f"   Rows: {len(df_final)}")
+    
+    # Print last few rows for verification
+    print("\nLast 3 rows of data:")
+    cols_to_show = ['Date', 'SOXL_Open', 'SOXL_High', 'SOXL_Close']
+    available_cols = [c for c in cols_to_show if c in df_final.columns]
+    if available_cols:
+        # Convert to string to avoid numpy display issues
+        print(df_final.tail(3)[available_cols].to_string())
+    else:
+        print("No SOXL data available")
+    
+    return True
 
 
 if __name__ == "__main__":
-    main()
+    success = update_workbook(WORKBOOK_PATH)
+    sys.exit(0 if success else 1)
