@@ -1,0 +1,80 @@
+# Trading Systems Master Configuration
+# This file is the single source of truth for all system parameters
+# Last updated: 2026-05-09
+
+sector_system:
+  name: "Sector Rotation System"
+  display_name: "Sector System"
+  start_date: "2026-03-31"
+  starting_balance: 5000
+  data_files:
+    performance: "data/paper_performance.csv"
+    positions: "data/paper_positions.csv"
+    trade_log: "data/paper_trade_log.csv"
+  exit_rules:
+    trailing_stop:
+      initial: 0.18
+      tighten_at: [0.10, 0.20, 0.40]
+      tighten_to: [0.14, 0.12, 0.10]
+    min_hold_days: 10
+    signal_loss_exit: true
+    qqq_filter: true
+  dashboard_url: "https://mrpink970.github.io/sector-research-system/dashboard.html"
+
+two_etf_system:
+  name: "2 ETF Bull System"
+  display_name: "2 ETF Bull"
+  start_date: "2026-03-31"
+  starting_balance: 5000
+  data_files:
+    performance: "data/4_etf/etf_paper_performance.csv"
+    positions: "data/4_etf/etf_paper_positions.csv"
+    trade_log: "data/4_etf/etf_paper_trade_log.csv"
+  exit_rules:
+    trailing_stop: 0.12
+    min_score: 2.0
+    min_hold_days: 0
+    regime_filter: true
+    crash_protection: false
+    ma50_buffer: 1.00
+  dashboard_url: "https://mrpink970.github.io/sector-research-system/docs/4_etf/4etf_dashboard.html"
+
+stock_system:
+  name: "Stock Discovery System"
+  display_name: "Stock System"
+  start_date: "2026-04-02"
+  starting_balance: 2000
+  data_files:
+    performance: "data/stocks/stock_performance.csv"
+    positions_trend: "data/stocks/trend_open_positions.csv"
+    positions_breakout: "data/stocks/breakout_open_positions.csv"
+    trade_log_trend: "data/stocks/trend_trade_log.csv"
+    trade_log_breakout: "data/stocks/breakout_trade_log.csv"
+  exit_rules:
+    trend:
+      trailing_stop:
+        steps: [0.10, 0.20, 0.30, 0.50]
+        tighten_to: [0.09, 0.08, 0.07, 0.05]
+      min_hold_days: 3
+      confirmation_days: 2
+      min_score: 6
+    breakout:
+      trailing_stop:
+        steps: [0.10, 0.20, 0.40]
+        tighten_to: [0.06, 0.05, 0.04]
+      min_hold_days: 3
+      confirmation_days: 2
+      min_score: 6
+  dashboard_url: "https://mrpink970.github.io/sector-research-system/stock_dashboard.html"
+
+# Email recipients for daily monitoring
+email_recipients:
+  - "mrpink970@gmail.com"
+  - "mwhite7680@gmail.com"
+  - "jacobfarino@gmail.com"
+
+# Global settings
+global:
+  timezone: "America/New_York"
+  market_close_hour: 16
+  market_close_minute: 30
