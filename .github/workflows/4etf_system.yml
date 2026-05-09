@@ -1,0 +1,42 @@
+name: ETF Paper Trading
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '30 0 * * 1-5'   # 00:30 UTC weekdays (after data updates)
+
+permissions:
+  contents: write
+
+jobs:
+  run-etf-paper-trading:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install packages
+        run: |
+          pip install openpyxl pandas
+
+      - name: Run ETF paper trading
+        env:
+          MAIL_USERNAME: ${{ secrets.MAIL_USERNAME }}
+          MAIL_PASSWORD: ${{ secrets.MAIL_PASSWORD }}
+          MAIL_TO: ${{ secrets.MAIL_TO }}
+        run: |
+          python run_etf_paper_trading.py
+
+      - name: Commit outputs
+        run: |
+          git config --global user.name "github-actions"
+          git config --global user.email "actions@github.com"
+          git add etf_paper_positions.csv etf_paper_trade_log.csv etf_paper_performance.csv account_balance.csv
+          git diff --cached --quiet && echo "No changes" || git commit -m "ETF paper trading update"
+          git push
