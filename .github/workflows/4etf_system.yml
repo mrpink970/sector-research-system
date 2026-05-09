@@ -1,42 +1,51 @@
-name: ETF Paper Trading
+name: 4ETF Paper Trading System
 
 on:
-  workflow_dispatch:
   schedule:
-    - cron: '30 0 * * 1-5'   # 00:30 UTC weekdays (after data updates)
-
-permissions:
-  contents: write
+    # Run weekdays at 4:30 PM ET (market close)
+    - cron: '30 20 * * 1-5'
+  workflow_dispatch:  # Allow manual trigger
 
 jobs:
-  run-etf-paper-trading:
+  run_4etf_system:
     runs-on: ubuntu-latest
-
+    
     steps:
-      - name: Checkout repo
+      - name: Checkout repository
         uses: actions/checkout@v4
-
+      
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-
-      - name: Install packages
+      
+      - name: Install dependencies
         run: |
-          pip install openpyxl pandas
-
-      - name: Run ETF paper trading
+          pip install pandas openpyxl yfinance
+      
+      - name: Create data directory
+        run: |
+          mkdir -p data/4_etf
+      
+      - name: Run data update (fetch latest prices)
+        run: |
+          python scripts/4_etf/update_4etf_data.py
+        env:
+          YFINANCE_API_KEY: ${{ secrets.YFINANCE_API_KEY }}
+      
+      - name: Run trading system
+        run: |
+          python scripts/4_etf/run_4etf_system.py
         env:
           MAIL_USERNAME: ${{ secrets.MAIL_USERNAME }}
           MAIL_PASSWORD: ${{ secrets.MAIL_PASSWORD }}
           MAIL_TO: ${{ secrets.MAIL_TO }}
+      
+      - name: Commit and push updated CSV files
         run: |
-          python run_etf_paper_trading.py
-
-      - name: Commit outputs
-        run: |
-          git config --global user.name "github-actions"
-          git config --global user.email "actions@github.com"
-          git add etf_paper_positions.csv etf_paper_trade_log.csv etf_paper_performance.csv account_balance.csv
-          git diff --cached --quiet && echo "No changes" || git commit -m "ETF paper trading update"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/4_etf/*.csv
+          git add data/4_etf/*.xlsx
+          git diff --staged --quiet || git commit -m "4ETF system update $(date '+%Y-%m-%d %H:%M')"
           git push
