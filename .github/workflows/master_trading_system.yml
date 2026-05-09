@@ -1,0 +1,89 @@
+name: Master Trading System
+
+on:
+  schedule:
+    - cron: '0 22 * * 1-5'   # 6:00 PM ET (22:00 UTC) Monday-Friday
+  workflow_dispatch:          # Manual trigger available
+
+jobs:
+  run_all_systems:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      
+      - name: Install dependencies
+        run: |
+          pip install pandas openpyxl yfinance pyyaml
+      
+      - name: Create data directories
+        run: |
+          mkdir -p data/4_etf
+          mkdir -p data/stocks
+      
+      # ============================================================
+      # 1. RUN 2 ETF BULL SYSTEM
+      # ============================================================
+      - name: Run 2 ETF Bull System
+        run: python scripts/4_etf/run_4etf_system.py
+        env:
+          MAIL_USERNAME: ${{ secrets.MAIL_USERNAME }}
+          MAIL_PASSWORD: ${{ secrets.MAIL_PASSWORD }}
+          MAIL_TO: ${{ secrets.MAIL_TO }}
+      
+      # ============================================================
+      # 2. RUN SECTOR SYSTEM
+      # ============================================================
+      - name: Run Sector System
+        run: python scripts/run_paper_trading.py
+        env:
+          MAIL_USERNAME: ${{ secrets.MAIL_USERNAME }}
+          MAIL_PASSWORD: ${{ secrets.MAIL_PASSWORD }}
+          MAIL_TO: ${{ secrets.MAIL_TO }}
+      
+      # ============================================================
+      # 3. RUN STOCK SYSTEM
+      # ============================================================
+      - name: Run Stock System
+        run: python scripts/run_stock_trading.py
+      
+      # ============================================================
+      # 4. GENERATE ALL DASHBOARDS
+      # ============================================================
+      - name: Generate Sector Dashboard
+        run: python scripts/generate_dashboard.py
+      
+      - name: Generate 2 ETF Dashboard
+        run: cat docs/4_etf/4etf_dashboard.html > /dev/null  # Dashboard exists, no generation script needed
+        # Note: 2 ETF dashboard is static HTML that reads CSV files
+      
+      - name: Generate Stock Dashboard
+        run: python scripts/generate_stock_dashboard.py
+        continue-on-error: true  # If not exists yet
+      
+      # ============================================================
+      # 5. RUN MONITORING ENGINE (sends email to all recipients)
+      # ============================================================
+      - name: Run Monitoring Engine
+        run: python scripts/monitoring_engine.py
+        env:
+          MAIL_USERNAME: ${{ secrets.MAIL_USERNAME }}
+          MAIL_PASSWORD: ${{ secrets.MAIL_PASSWORD }}
+      
+      # ============================================================
+      # 6. COMMIT AND PUSH UPDATES
+      # ============================================================
+      - name: Commit and push updates
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/
+          git add docs/
+          git diff --staged --quiet || git commit -m "Master system update $(date '+%Y-%m-%d %H:%M')"
+          git push
