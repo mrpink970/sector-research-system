@@ -1,0 +1,46 @@
+# Master Configuration for Monitoring Engine
+# Last updated: 2026-05-09
+
+systems:
+  sector:
+    name: "Sector Rotation System"
+    display_name: "Sector System"
+    start_date: "2026-03-31"
+    starting_balance: 5000
+    dashboard_url: "https://mrpink970.github.io/sector-research-system/dashboard.html"
+    data_files:
+      performance: "data/paper_performance.csv"
+      positions: "data/paper_positions.csv"
+      trade_log: "data/paper_trade_log.csv"
+
+  two_etf:
+    name: "2 ETF Bull System"
+    display_name: "2 ETF Bull"
+    start_date: "2026-03-31"
+    starting_balance: 5000
+    dashboard_url: "https://mrpink970.github.io/sector-research-system/docs/4_etf/4etf_dashboard.html"
+    data_files:
+      performance: "data/4_etf/etf_paper_performance.csv"
+      positions: "data/4_etf/etf_paper_positions.csv"
+      trade_log: "data/4_etf/etf_paper_trade_log.csv"
+
+  stock:
+    name: "Stock Discovery System"
+    display_name: "Stock System"
+    start_date: "2026-04-02"
+    starting_balance: 2000
+    dashboard_url: "https://mrpink970.github.io/sector-research-system/stock_dashboard.html"
+    data_files:
+      performance: "data/stocks/stock_performance.csv"
+      positions_trend: "data/stocks/trend_open_positions.csv"
+      positions_breakout: "data/stocks/breakout_open_positions.csv"
+      trade_log_trend: "data/stocks/trend_trade_log.csv"
+      trade_log_breakout: "data/stocks/breakout_trade_log.csv"
+
+email_recipients:
+  - "mrpink970@gmail.com"
+  - "mwhite7680@gmail.com"
+  - "jacobfarino@gmail.com"
+
+global:
+  timezone: "America/New_York"
