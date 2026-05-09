@@ -1,4 +1,5 @@
-# Master Configuration for Monitoring Engine
+# Trading Systems Master Configuration
+# This file is the single source of truth for monitoring engine
 # Last updated: 2026-05-09
 
 systems:
@@ -37,10 +38,12 @@ systems:
       trade_log_trend: "data/stocks/trend_trade_log.csv"
       trade_log_breakout: "data/stocks/breakout_trade_log.csv"
 
+# Email recipients for daily monitoring
 email_recipients:
   - "mrpink970@gmail.com"
   - "mwhite7680@gmail.com"
   - "jacobfarino@gmail.com"
 
+# Global settings
 global:
   timezone: "America/New_York"
