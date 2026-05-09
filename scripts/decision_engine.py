@@ -2,6 +2,7 @@
 """
 Decision Engine - Morning analysis and trade recommendations
 Runs at 10:00 AM ET to capture opening action
+Saves decision log for later review and backtesting
 """
 
 import os
@@ -226,6 +227,57 @@ def generate_recommendations(
 
 
 # ============================================================
+# DECISION LOGGING
+# ============================================================
+
+def save_decision_log(
+    timestamp: str,
+    qqq_price: float,
+    qqq_change: float,
+    soxl_price: float,
+    soxl_change: float,
+    tqqq_price: float,
+    tqqq_change: float,
+    regime: str,
+    recommendations: List[str],
+    systems: Dict
+) -> None:
+    """Save decision log for later review and backtesting"""
+    
+    log_path = Path("data/decision_log.csv")
+    
+    # Create row
+    new_row = {
+        'timestamp': timestamp,
+        'qqq_price': round(qqq_price, 2),
+        'qqq_change_pct': round(qqq_change, 2),
+        'soxl_price': round(soxl_price, 2),
+        'soxl_change_pct': round(soxl_change, 2),
+        'tqqq_price': round(tqqq_price, 2),
+        'tqqq_change_pct': round(tqqq_change, 2),
+        'regime': regime,
+        'recommendations': " | ".join(recommendations),
+        'sector_return_pct': round(systems.get('sector', {}).get('return', 0), 2),
+        'two_etf_return_pct': round(systems.get('two_etf', {}).get('return', 0), 2),
+        'stock_return_pct': round(systems.get('stock', {}).get('return', 0), 2),
+        'sector_win_rate': round(systems.get('sector', {}).get('win_rate', 0), 2),
+        'two_etf_win_rate': round(systems.get('two_etf', {}).get('win_rate', 0), 2),
+        'stock_win_rate': round(systems.get('stock', {}).get('win_rate', 0), 2),
+    }
+    
+    # Append to CSV
+    new_df = pd.DataFrame([new_row])
+    if log_path.exists():
+        existing_df = pd.read_csv(log_path)
+        updated_df = pd.concat([existing_df, new_df], ignore_index=True)
+    else:
+        updated_df = new_df
+    
+    updated_df.to_csv(log_path, index=False)
+    print(f"✅ Decision logged to {log_path}")
+
+
+# ============================================================
 # EMAIL
 # ============================================================
 
@@ -349,6 +401,21 @@ def main():
     print(f"   SOXL: {soxl_change:+.2f}%")
     print(f"   TQQQ: {tqqq_change:+.2f}%")
     print(f"\n   Systems active: {len(systems)}")
+    
+    # Save decision log
+    print("\n💾 Saving decision log...")
+    save_decision_log(
+        timestamp=datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        qqq_price=qqq_current,
+        qqq_change=qqq_change,
+        soxl_price=soxl_current,
+        soxl_change=soxl_change,
+        tqqq_price=tqqq_current,
+        tqqq_change=tqqq_change,
+        regime=regime,
+        recommendations=recommendations,
+        systems=systems
+    )
     
     # Send email
     print("\n📧 Sending decision email...")
