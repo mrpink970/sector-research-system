@@ -1,0 +1,491 @@
+#!/usr/bin/env python3
+"""
+Monitoring Engine - Daily email summary of all trading systems
+Reads master_config.yaml and sends formatted email to all recipients
+"""
+
+import os
+import smtplib
+from email.message import EmailMessage
+from datetime import datetime
+from pathlib import Path
+from typing import Dict, List, Optional, Tuple
+
+import pandas as pd
+import yaml
+
+
+# ============================================================
+# CONFIGURATION
+# ============================================================
+CONFIG_PATH = Path("config/master_config.yaml")
+
+
+def load_config() -> dict:
+    """Load master configuration file"""
+    if not CONFIG_PATH.exists():
+        raise FileNotFoundError(f"Config not found: {CONFIG_PATH}")
+    
+    with open(CONFIG_PATH, "r", encoding="utf-8") as f:
+        return yaml.safe_load(f)
+
+
+# ============================================================
+# DATA LOADING HELPERS
+# ============================================================
+def safe_read_csv(path: Path) -> pd.DataFrame:
+    """Safely read CSV, return empty DataFrame if error"""
+    if not path.exists():
+        return pd.DataFrame()
+    try:
+        df = pd.read_csv(path)
+        return df if not df.empty else pd.DataFrame()
+    except Exception:
+        return pd.DataFrame()
+
+
+def get_sector_system_data(config: dict) -> dict:
+    """Extract performance data for sector system"""
+    paths = config['systems']['sector']['data_files']
+    
+    perf = safe_read_csv(Path(paths['performance']))
+    positions = safe_read_csv(Path(paths['positions']))
+    
+    result = {
+        'name': config['systems']['sector']['display_name'],
+        'start_date': config['systems']['sector']['start_date'],
+        'starting_balance': config['systems']['sector']['starting_balance'],
+        'dashboard_url': config['systems']['sector']['dashboard_url'],
+        'has_data': False,
+        'balance': None,
+        'total_return_pct': None,
+        'win_rate': None,
+        'total_trades': None,
+        'max_drawdown': None,
+        'open_positions': [],
+        'open_count': 0,
+    }
+    
+    if not perf.empty:
+        result['has_data'] = True
+        result['balance'] = perf.iloc[0].get('balance', None)
+        result['total_return_pct'] = perf.iloc[0].get('total_return_pct', None)
+        result['win_rate'] = perf.iloc[0].get('win_rate', None)
+        result['total_trades'] = perf.iloc[0].get('total_trades', None)
+        result['max_drawdown'] = perf.iloc[0].get('max_drawdown_pct', None)
+    
+    if not positions.empty:
+        for _, row in positions.iterrows():
+            result['open_positions'].append({
+                'ticker': row.get('ticker', 'N/A'),
+                'sector': row.get('sector', 'N/A'),
+                'entry_price': row.get('entry_price', 0),
+                'current_price': row.get('current_price', row.get('entry_price', 0)),
+                'shares': row.get('shares', 0),
+            })
+        result['open_count'] = len(result['open_positions'])
+    
+    return result
+
+
+def get_two_etf_system_data(config: dict) -> dict:
+    """Extract performance data for 2 ETF Bull system"""
+    paths = config['systems']['two_etf']['data_files']
+    
+    perf = safe_read_csv(Path(paths['performance']))
+    positions = safe_read_csv(Path(paths['positions']))
+    
+    # For 2 ETF, positions CSV has ticker, entry_price, shares, highest_price
+    result = {
+        'name': config['systems']['two_etf']['display_name'],
+        'start_date': config['systems']['two_etf']['start_date'],
+        'starting_balance': config['systems']['two_etf']['starting_balance'],
+        'dashboard_url': config['systems']['two_etf']['dashboard_url'],
+        'has_data': False,
+        'balance': None,
+        'total_return_pct': None,
+        'win_rate': None,
+        'total_trades': None,
+        'max_drawdown': None,
+        'open_positions': [],
+        'open_count': 0,
+    }
+    
+    if not perf.empty:
+        result['has_data'] = True
+        result['balance'] = perf.iloc[0].get('balance', None)
+        result['total_return_pct'] = perf.iloc[0].get('total_return_pct', None)
+        result['win_rate'] = perf.iloc[0].get('win_rate', None)
+        result['total_trades'] = perf.iloc[0].get('total_trades', None)
+        result['max_drawdown'] = perf.iloc[0].get('max_drawdown_pct', None)
+    
+    if not positions.empty:
+        for _, row in positions.iterrows():
+            entry_price = row.get('entry_price', 0)
+            shares = row.get('shares', 0)
+            current_price = row.get('highest_price', entry_price)  # Use highest as current
+            result['open_positions'].append({
+                'ticker': row.get('ticker', 'N/A'),
+                'entry_price': entry_price,
+                'current_price': current_price,
+                'shares': shares,
+                'total_cost': entry_price * shares if entry_price and shares else 0,
+                'unrealized_pnl': (current_price - entry_price) * shares if entry_price and shares else 0,
+            })
+        result['open_count'] = len(result['open_positions'])
+    
+    return result
+
+
+def get_stock_system_data(config: dict) -> dict:
+    """Extract performance data for stock system"""
+    paths = config['systems']['stock']['data_files']
+    
+    perf = safe_read_csv(Path(paths['performance']))
+    positions_trend = safe_read_csv(Path(paths['positions_trend']))
+    positions_breakout = safe_read_csv(Path(paths['positions_breakout']))
+    
+    result = {
+        'name': config['systems']['stock']['display_name'],
+        'start_date': config['systems']['stock']['start_date'],
+        'starting_balance': config['systems']['stock']['starting_balance'],
+        'dashboard_url': config['systems']['stock']['dashboard_url'],
+        'has_data': False,
+        'balance': None,
+        'total_return_pct': None,
+        'win_rate': None,
+        'total_trades': None,
+        'max_drawdown': None,
+        'open_positions': [],
+        'open_count': 0,
+    }
+    
+    if not perf.empty:
+        result['has_data'] = True
+        # Stock performance CSV has separate rows for trend and breakout
+        total_balance = perf['balance'].sum() if 'balance' in perf.columns else None
+        result['balance'] = total_balance
+        result['total_return_pct'] = perf['total_return_pct'].mean() if 'total_return_pct' in perf.columns else None
+        result['win_rate'] = perf['win_rate'].mean() if 'win_rate' in perf.columns else None
+        result['total_trades'] = perf['total_trades'].sum() if 'total_trades' in perf.columns else None
+        result['max_drawdown'] = perf['max_drawdown_pct'].min() if 'max_drawdown_pct' in perf.columns else None
+    
+    # Combine positions from both strategies
+    all_positions = []
+    if not positions_trend.empty:
+        for _, row in positions_trend.iterrows():
+            all_positions.append({
+                'ticker': row.get('ticker', 'N/A'),
+                'system': 'Trend',
+                'entry_price': row.get('entry_price', 0),
+                'shares': row.get('shares', 0),
+            })
+    if not positions_breakout.empty:
+        for _, row in positions_breakout.iterrows():
+            all_positions.append({
+                'ticker': row.get('ticker', 'N/A'),
+                'system': 'Breakout',
+                'entry_price': row.get('entry_price', 0),
+                'shares': row.get('shares', 0),
+            })
+    
+    result['open_positions'] = all_positions
+    result['open_count'] = len(all_positions)
+    
+    return result
+
+
+# ============================================================
+# EMAIL FORMATTING
+# ============================================================
+def format_currency(value: float) -> str:
+    """Format as currency with commas"""
+    if value is None:
+        return "N/A"
+    return f"${value:,.2f}"
+
+
+def format_percent(value: float) -> str:
+    """Format as percentage with sign"""
+    if value is None:
+        return "N/A"
+    sign = "+" if value >= 0 else ""
+    return f"{sign}{value:.1f}%"
+
+
+def format_position_summary(positions: List[dict]) -> str:
+    """Format open positions for email"""
+    if not positions:
+        return "None"
+    
+    lines = []
+    for pos in positions[:5]:  # Limit to 5 positions
+        ticker = pos.get('ticker', 'N/A')
+        entry = pos.get('entry_price', 0)
+        shares = pos.get('shares', 0)
+        
+        # Calculate approximate P&L if current price available
+        current = pos.get('current_price', entry)
+        pnl_pct = ((current - entry) / entry * 100) if entry > 0 else 0
+        pnl_symbol = "+" if pnl_pct >= 0 else ""
+        
+        if 'system' in pos:
+            lines.append(f"      • {ticker} ({pos['system']}): {shares} shares @ ${entry:.2f} ({pnl_symbol}{pnl_pct:.1f}%)")
+        else:
+            lines.append(f"      • {ticker}: {shares} shares @ ${entry:.2f} ({pnl_symbol}{pnl_pct:.1f}%)")
+    
+    if len(positions) > 5:
+        lines.append(f"      ... and {len(positions) - 5} more")
+    
+    return "\n".join(lines)
+
+
+def build_html_email(data: dict, config: dict) -> str:
+    """Build HTML email content"""
+    sector = data['sector']
+    two_etf = data['two_etf']
+    stock = data['stock']
+    date_str = datetime.now().strftime("%Y-%m-%d")
+    
+    html = f"""
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Trading Systems Daily Summary - {date_str}</title>
+    <style>
+        body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; line-height: 1.6; color: #1a2a3a; background-color: #f0f4f8; margin: 0; padding: 20px; }}
+        .container {{ max-width: 800px; margin: 0 auto; background: white; border-radius: 16px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }}
+        .header {{ background: linear-gradient(135deg, #1e1e2f 0%, #2d2d4e 100%); color: white; padding: 24px 30px; }}
+        .header h1 {{ margin: 0 0 8px 0; font-size: 24px; }}
+        .header p {{ margin: 0; opacity: 0.8; font-size: 14px; }}
+        .system {{ border-bottom: 1px solid #e2e8f0; padding: 24px 30px; }}
+        .system h2 {{ margin: 0 0 16px 0; font-size: 20px; color: #1a4d7a; }}
+        .metrics {{ display: flex; flex-wrap: wrap; gap: 16px; margin-bottom: 16px; }}
+        .metric {{ flex: 1; min-width: 100px; background: #f8fafc; padding: 12px 16px; border-radius: 12px; }}
+        .metric-label {{ font-size: 11px; text-transform: uppercase; color: #6c7e8f; letter-spacing: 0.5px; margin-bottom: 4px; }}
+        .metric-value {{ font-size: 20px; font-weight: 700; color: #1a2a3a; }}
+        .metric-value.positive {{ color: #1e8a4c; }}
+        .metric-value.negative {{ color: #c2412c; }}
+        .positions {{ background: #f8fafc; padding: 16px; border-radius: 12px; margin-top: 12px; font-family: monospace; font-size: 13px; }}
+        .positions-title {{ font-weight: 700; margin-bottom: 8px; color: #4a627a; }}
+        .dashboard-link {{ margin-top: 16px; }}
+        .dashboard-link a {{ color: #2c7fb8; text-decoration: none; font-weight: 600; }}
+        .footer {{ background: #f8fafc; padding: 16px 30px; text-align: center; font-size: 12px; color: #8ba0b0; }}
+        hr {{ border: none; border-top: 1px solid #e2e8f0; margin: 16px 0; }}
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h1>📊 Trading Systems Daily Summary</h1>
+        <p>{date_str} | Market Closed</p>
+    </div>
+"""
+    
+    # Sector System
+    html += f"""
+    <div class="system">
+        <h2>💰 {sector['name']}</h2>
+        <div class="metrics">
+            <div class="metric">
+                <div class="metric-label">Balance</div>
+                <div class="metric-value">{format_currency(sector['balance'])}</div>
+                <div style="font-size: 11px; color: #6c7e8f;">Started: {format_currency(sector['starting_balance'])} ({sector['start_date']})</div>
+            </div>
+            <div class="metric">
+                <div class="metric-label">Total Return</div>
+                <div class="metric-value {'positive' if (sector['total_return_pct'] or 0) >= 0 else 'negative'}">{format_percent(sector['total_return_pct'])}</div>
+            </div>
+            <div class="metric">
+                <div class="metric-label">Win Rate</div>
+                <div class="metric-value">{sector['win_rate']:.1f}%</div>
+                <div style="font-size: 11px; color: #6c7e8f;">{sector['total_trades']} trades</div>
+            </div>
+            <div class="metric">
+                <div class="metric-label">Max Drawdown</div>
+                <div class="metric-value negative">{format_percent(-abs(sector['max_drawdown'] or 0))}</div>
+            </div>
+        </div>
+        <div class="positions">
+            <div class="positions-title">📌 Open Positions ({sector['open_count']})</div>
+            <pre style="margin: 0; font-family: monospace; font-size: 12px;">{format_position_summary(sector['open_positions'])}</pre>
+        </div>
+        <div class="dashboard-link">
+            <a href="{sector['dashboard_url']}">🔗 View Full Dashboard →</a>
+        </div>
+    </div>
+"""
+    
+    # 2 ETF System
+    html += f"""
+    <div class="system">
+        <h2>📈 {two_etf['name']}</h2>
+        <div class="metrics">
+            <div class="metric">
+                <div class="metric-label">Balance</div>
+                <div class="metric-value">{format_currency(two_etf['balance'])}</div>
+                <div style="font-size: 11px; color: #6c7e8f;">Started: {format_currency(two_etf['starting_balance'])} ({two_etf['start_date']})</div>
+            </div>
+            <div class="metric">
+                <div class="metric-label">Total Return</div>
+                <div class="metric-value {'positive' if (two_etf['total_return_pct'] or 0) >= 0 else 'negative'}">{format_percent(two_etf['total_return_pct'])}</div>
+            </div>
+            <div class="metric">
+                <div class="metric-label">Win Rate</div>
+                <div class="metric-value">{two_etf['win_rate']:.1f}%</div>
+                <div style="font-size: 11px; color: #6c7e8f;">{two_etf['total_trades']} trades</div>
+            </div>
+            <div class="metric">
+                <div class="metric-label">Max Drawdown</div>
+                <div class="metric-value negative">{format_percent(-abs(two_etf['max_drawdown'] or 0))}</div>
+            </div>
+        </div>
+        <div class="positions">
+            <div class="positions-title">📌 Open Positions ({two_etf['open_count']})</div>
+            <pre style="margin: 0; font-family: monospace; font-size: 12px;">{format_position_summary(two_etf['open_positions'])}</pre>
+        </div>
+        <div class="dashboard-link">
+            <a href="{two_etf['dashboard_url']}">🔗 View Full Dashboard →</a>
+        </div>
+    </div>
+"""
+    
+    # Stock System
+    html += f"""
+    <div class="system">
+        <h2>📊 {stock['name']}</h2>
+        <div class="metrics">
+            <div class="metric">
+                <div class="metric-label">Balance</div>
+                <div class="metric-value">{format_currency(stock['balance'])}</div>
+                <div style="font-size: 11px; color: #6c7e8f;">Started: {format_currency(stock['starting_balance'])} ({stock['start_date']})</div>
+            </div>
+            <div class="metric">
+                <div class="metric-label">Total Return</div>
+                <div class="metric-value {'positive' if (stock['total_return_pct'] or 0) >= 0 else 'negative'}">{format_percent(stock['total_return_pct'])}</div>
+            </div>
+            <div class="metric">
+                <div class="metric-label">Win Rate</div>
+                <div class="metric-value">{stock['win_rate']:.1f}%</div>
+                <div style="font-size: 11px; color: #6c7e8f;">{stock['total_trades']} trades</div>
+            </div>
+            <div class="metric">
+                <div class="metric-label">Max Drawdown</div>
+                <div class="metric-value negative">{format_percent(-abs(stock['max_drawdown'] or 0))}</div>
+            </div>
+        </div>
+        <div class="positions">
+            <div class="positions-title">📌 Open Positions ({stock['open_count']})</div>
+            <pre style="margin: 0; font-family: monospace; font-size: 12px;">{format_position_summary(stock['open_positions'])}</pre>
+        </div>
+        <div class="dashboard-link">
+            <a href="{stock['dashboard_url']}">🔗 View Full Dashboard →</a>
+        </div>
+    </div>
+"""
+    
+    # Footer
+    recipients = ", ".join(config.get('email_recipients', []))
+    html += f"""
+    <div class="footer">
+        <p>⚡ Automated daily summary | Data as of market close {date_str}</p>
+        <p>Sent to: {recipients}</p>
+    </div>
+</div>
+</body>
+</html>
+"""
+    
+    return html
+
+
+def send_email(html_content: str, recipients: List[str]) -> bool:
+    """Send HTML email to all recipients"""
+    mail_username = os.environ.get("MAIL_USERNAME")
+    mail_password = os.environ.get("MAIL_PASSWORD")
+    
+    if not mail_username or not mail_password:
+        print("❌ Email credentials not found in environment")
+        return False
+    
+    date_str = datetime.now().strftime("%Y-%m-%d")
+    
+    msg = EmailMessage()
+    msg.set_content("Please enable HTML to view this email.")  # Fallback
+    msg.add_alternative(html_content, subtype='html')
+    msg["Subject"] = f"📊 Trading Systems Daily Summary - {date_str}"
+    msg["From"] = mail_username
+    msg["To"] = recipients[0] if recipients else mail_username
+    msg["Cc"] = recipients[1:] if len(recipients) > 1 else []
+    
+    try:
+        with smtplib.SMTP_SSL("smtp.gmail.com", 465) as smtp:
+            smtp.login(mail_username, mail_password)
+            smtp.send_message(msg)
+        print(f"✅ Email sent to {len(recipients)} recipient(s)")
+        if len(recipients) > 1:
+            print(f"   Primary: {recipients[0]}")
+            print(f"   CC: {', '.join(recipients[1:])}")
+        return True
+    except Exception as e:
+        print(f"❌ Failed to send email: {e}")
+        return False
+
+
+# ============================================================
+# MAIN
+# ============================================================
+def main():
+    print("=" * 60)
+    print("MONITORING ENGINE")
+    print("=" * 60)
+    
+    # Load config
+    try:
+        config = load_config()
+        print(f"✅ Loaded config from {CONFIG_PATH}")
+    except Exception as e:
+        print(f"❌ Failed to load config: {e}")
+        return
+    
+    # Collect data from all systems
+    print("\n📊 Collecting system data...")
+    
+    sector_data = get_sector_system_data(config)
+    print(f"   Sector System: {'✅' if sector_data['has_data'] else '⚠️ No data'}")
+    
+    two_etf_data = get_two_etf_system_data(config)
+    print(f"   2 ETF System:  {'✅' if two_etf_data['has_data'] else '⚠️ No data'}")
+    
+    stock_data = get_stock_system_data(config)
+    print(f"   Stock System:  {'✅' if stock_data['has_data'] else '⚠️ No data'}")
+    
+    # Build email
+    print("\n📧 Building email...")
+    data = {
+        'sector': sector_data,
+        'two_etf': two_etf_data,
+        'stock': stock_data,
+    }
+    html_content = build_html_email(data, config)
+    
+    # Send to all recipients
+    recipients = config.get('email_recipients', [])
+    if not recipients:
+        print("⚠️ No email recipients found in config")
+        return
+    
+    print(f"\n📨 Sending to {len(recipients)} recipient(s):")
+    for r in recipients:
+        print(f"   • {r}")
+    
+    send_email(html_content, recipients)
+    
+    print("\n" + "=" * 60)
+    print("MONITORING ENGINE COMPLETE")
+    print("=" * 60)
+
+
+if __name__ == "__main__":
+    main()
