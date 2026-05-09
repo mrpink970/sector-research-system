@@ -2,8 +2,8 @@ name: Master Trading System
 
 on:
   schedule:
-    - cron: '0 22 * * 1-5'   # 6:00 PM ET (22:00 UTC) Monday-Friday
-  workflow_dispatch:          # Manual trigger available
+    - cron: '0 22 * * 1-5'   # 6:00 PM ET Monday-Friday
+  workflow_dispatch:
 
 jobs:
   run_all_systems:
@@ -19,8 +19,7 @@ jobs:
           python-version: '3.11'
       
       - name: Install dependencies
-        run: |
-          pip install pandas openpyxl yfinance pyyaml
+        run: pip install pandas openpyxl yfinance pyyaml
       
       - name: Create data directories
         run: |
@@ -54,21 +53,13 @@ jobs:
         run: python scripts/run_stock_trading.py
       
       # ============================================================
-      # 4. GENERATE ALL DASHBOARDS
+      # 4. GENERATE DASHBOARDS
       # ============================================================
       - name: Generate Sector Dashboard
         run: python scripts/generate_dashboard.py
       
-      - name: Generate 2 ETF Dashboard
-        run: cat docs/4_etf/4etf_dashboard.html > /dev/null  # Dashboard exists, no generation script needed
-        # Note: 2 ETF dashboard is static HTML that reads CSV files
-      
-      - name: Generate Stock Dashboard
-        run: python scripts/generate_stock_dashboard.py
-        continue-on-error: true  # If not exists yet
-      
       # ============================================================
-      # 5. RUN MONITORING ENGINE (sends email to all recipients)
+      # 5. RUN MONITORING ENGINE (sends email)
       # ============================================================
       - name: Run Monitoring Engine
         run: python scripts/monitoring_engine.py
