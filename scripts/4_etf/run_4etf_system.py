@@ -25,7 +25,7 @@ OPTIONS_DATA_PATH = Path("data/4_etf/etf_options_data.csv")
 # Trading parameters
 MAX_TRADES = 1  # Only hold ONE position at a time
 TRAILING_STOP_PCT = 0.12
-POSITION_SIZE_PCT = 0.95  # Use 95% of account balance per trade
+POSITION_SIZE_PCT = 1.0   # Use 100% of account balance per trade
 STARTING_BALANCE = 5000.0
 
 # Cash zone threshold - only trade when |score| >= this value
