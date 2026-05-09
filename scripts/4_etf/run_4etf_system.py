@@ -12,11 +12,15 @@ import pandas as pd
 from openpyxl import load_workbook
 
 
-WORKBOOK_PATH = Path("4_ETF_Trading_Workbook_Template.xlsx")
-POSITIONS_PATH = Path("etf_paper_positions.csv")
-TRADE_LOG_PATH = Path("etf_paper_trade_log.csv")
-PERFORMANCE_PATH = Path("etf_paper_performance.csv")
-ACCOUNT_BALANCE_PATH = Path("account_balance.csv")
+# ============================================================================
+# PATH CONFIGURATION - Keeps original file names
+# ============================================================================
+WORKBOOK_PATH = Path("data/4_etf/4_ETF_Workbook.xlsx")
+POSITIONS_PATH = Path("data/4_etf/etf_paper_positions.csv")
+TRADE_LOG_PATH = Path("data/4_etf/etf_paper_trade_log.csv")
+PERFORMANCE_PATH = Path("data/4_etf/etf_paper_performance.csv")
+ACCOUNT_BALANCE_PATH = Path("data/4_etf/etf_account_balance.csv")
+OPTIONS_DATA_PATH = Path("data/4_etf/etf_options_data.csv")
 
 # Trading parameters
 MAX_TRADES = 1  # Only hold ONE position at a time
@@ -25,7 +29,8 @@ POSITION_SIZE_PCT = 0.95  # Use 95% of account balance per trade
 STARTING_BALANCE = 5000.0
 
 # Cash zone threshold - only trade when |score| >= this value
-MIN_TRADE_SCORE = 5.0
+# CHANGED: Lowered from 5.0 to 2.0 to reduce whipsaw on 3x ETFs
+MIN_TRADE_SCORE = 2.0
 
 # Ranking weights
 RANKING_WEIGHTS = {
@@ -40,7 +45,8 @@ BULL_ETFS = {"SOXL", "TQQQ"}
 BEAR_ETFS = {"SOXS", "SQQQ"}
 ALL_ETFS = BULL_ETFS | BEAR_ETFS
 
-LAST_RUN_PATH = Path("last_processed_date.txt")
+# NEW: Score smoothing for 3x ETFs (5-day effective window)
+_score_history = {}
 
 
 def normalize_text(value) -> str:
@@ -66,63 +72,47 @@ def determine_regime(primary_etf: str) -> str:
     return "neutral"
 
 
-def get_last_processed_date() -> Optional[str]:
-    if LAST_RUN_PATH.exists():
+def calculate_account_balance() -> Tuple[float, float]:
+    """
+    Calculate current account balance from:
+    - Starting balance
+    - All closed trades (realized P&L)
+    - Current open positions (unrealized P&L)
+    Returns (cash_balance, total_equity)
+    """
+    # Start with starting balance
+    cash_balance = STARTING_BALANCE
+    total_realized_pl = 0.0
+    
+    # Add all closed trade P&L
+    if TRADE_LOG_PATH.exists():
         try:
-            with open(LAST_RUN_PATH, 'r') as f:
-                return f.read().strip()
-        except Exception:
-            return None
-    return None
-
-
-def save_last_processed_date(date: str) -> None:
-    try:
-        with open(LAST_RUN_PATH, 'w') as f:
-            f.write(date)
-    except Exception:
-        pass
-
-
-def load_account_balance() -> float:
-    """Load current account balance from CSV, or create with starting balance"""
-    if ACCOUNT_BALANCE_PATH.exists():
+            trade_log = pd.read_csv(TRADE_LOG_PATH)
+            if not trade_log.empty and 'gross_pl' in trade_log.columns:
+                total_realized_pl = trade_log['gross_pl'].sum()
+                cash_balance = STARTING_BALANCE + total_realized_pl
+        except Exception as e:
+            print(f"Warning: Could not read trade log: {e}")
+    
+    # Calculate unrealized P&L from open positions
+    unrealized_pl = 0.0
+    if POSITIONS_PATH.exists():
         try:
-            df = pd.read_csv(ACCOUNT_BALANCE_PATH)
-            if not df.empty and 'balance' in df.columns:
-                return float(df.iloc[-1]['balance'])
-        except Exception:
-            pass
+            positions = pd.read_csv(POSITIONS_PATH)
+            if not positions.empty:
+                for _, row in positions.iterrows():
+                    entry_price = safe_float(row.get('entry_price', 0))
+                    shares = int(row.get('shares', 0))
+                    highest_price = safe_float(row.get('highest_price', 0))
+                    if entry_price and shares and highest_price:
+                        # Use highest_price as current price (conservative estimate)
+                        unrealized_pl += (highest_price - entry_price) * shares
+        except Exception as e:
+            print(f"Warning: Could not read positions: {e}")
     
-    df = pd.DataFrame([{
-        'date': datetime.now().strftime('%Y-%m-%d'),
-        'balance': STARTING_BALANCE,
-        'cash': STARTING_BALANCE,
-        'equity': STARTING_BALANCE
-    }])
-    df.to_csv(ACCOUNT_BALANCE_PATH, index=False)
-    return STARTING_BALANCE
-
-
-def update_account_balance(date: str, cash_balance: float, equity: float = None) -> None:
-    """Update account balance CSV with new balance"""
-    if equity is None:
-        equity = cash_balance
+    total_equity = cash_balance + unrealized_pl
     
-    new_row = pd.DataFrame([{
-        'date': date,
-        'balance': round(cash_balance, 2),
-        'cash': round(cash_balance, 2),
-        'equity': round(equity, 2)
-    }])
-    
-    if ACCOUNT_BALANCE_PATH.exists():
-        existing = pd.read_csv(ACCOUNT_BALANCE_PATH)
-        updated = pd.concat([existing, new_row], ignore_index=True)
-    else:
-        updated = new_row
-    
-    updated.to_csv(ACCOUNT_BALANCE_PATH, index=False)
+    return cash_balance, total_equity
 
 
 def calculate_position_shares(account_balance: float, entry_price: float) -> int:
@@ -244,6 +234,29 @@ def calculate_etf_score(returns: Dict[str, Optional[float]]) -> float:
     return round(score, 4)
 
 
+# NEW: 5-day exponential smoothing for 3x ETFs to reduce whipsaw
+def get_smoothed_score(ticker: str, returns: Dict[str, Dict[str, Optional[float]]]) -> float:
+    """
+    Calculate smoothed score using exponential weighting.
+    Alpha = 0.20 gives approximately 5-day effective window.
+    This prevents normal 1-2 day pullbacks from triggering exits.
+    """
+    raw_score = calculate_etf_score(returns.get(ticker, {}))
+    
+    # Get previous smoothed score (default to raw score if none)
+    prev_score = _score_history.get(ticker, raw_score)
+    
+    # Alpha = 0.20 means: 80% weight on history, 20% on today
+    # Effective window = approximately 5 days
+    alpha = 0.20
+    smoothed = prev_score * (1 - alpha) + raw_score * alpha
+    
+    # Store for next time
+    _score_history[ticker] = smoothed
+    
+    return round(smoothed, 4)
+
+
 def rank_etfs(returns: Dict[str, Dict[str, Optional[float]]], regime: str) -> List[Tuple[str, float]]:
     """Rank ETFs based on momentum scores, filtered by regime"""
     scores = {}
@@ -268,6 +281,7 @@ def rank_etfs(returns: Dict[str, Dict[str, Optional[float]]], regime: str) -> Li
 
 
 def load_workbook_state(path: Path) -> Dict[str, object]:
+    """Load state from workbook - uses Daily_Data for date, Signal sheet for ETFs"""
     if not path.exists():
         raise FileNotFoundError(f"Workbook not found: {path}")
 
@@ -283,21 +297,16 @@ def load_workbook_state(path: Path) -> Dict[str, object]:
 
     primary_etf = normalize_text(signal_ws["D23"].value)
     secondary_etf = normalize_text(signal_ws["D24"].value)
-    signal_date_raw = signal_ws["D27"].value
 
+    # Get the latest date from Daily_Data (source of truth)
     daily_df = read_daily_data_wide(daily_ws)
     daily_date, prices, returns = extract_latest_prices_and_returns(daily_df)
 
-    if signal_date_raw is not None:
-        try:
-            signal_date = str(pd.to_datetime(signal_date_raw).date())
-        except Exception:
-            signal_date = daily_date
-    else:
-        signal_date = daily_date
+    # Use Daily_Data date as the authoritative date
+    asof_date = daily_date
 
     return {
-        "date": signal_date,
+        "date": asof_date,
         "primary_etf": primary_etf,
         "secondary_etf": secondary_etf,
         "regime": determine_regime(primary_etf),
@@ -350,6 +359,9 @@ def load_trade_log() -> pd.DataFrame:
 
 
 def save_positions(df: pd.DataFrame) -> None:
+    """Ensure data/4_etf directory exists before saving"""
+    POSITIONS_PATH.parent.mkdir(parents=True, exist_ok=True)
+    
     cols = [
         "ticker",
         "regime",
@@ -370,6 +382,9 @@ def save_positions(df: pd.DataFrame) -> None:
 
 
 def save_trade_log(df: pd.DataFrame) -> None:
+    """Ensure data/4_etf directory exists before saving"""
+    TRADE_LOG_PATH.parent.mkdir(parents=True, exist_ok=True)
+    
     cols = [
         "ticker",
         "regime",
@@ -389,6 +404,9 @@ def save_trade_log(df: pd.DataFrame) -> None:
 
 
 def save_performance(trade_log: pd.DataFrame) -> None:
+    """Ensure data/4_etf directory exists before saving"""
+    PERFORMANCE_PATH.parent.mkdir(parents=True, exist_ok=True)
+    
     cols = [
         "total_trades",
         "win_rate",
@@ -473,12 +491,6 @@ def update_trailing_stops(
     return out
 
 
-def get_current_score(ticker: str, returns: Dict[str, Dict[str, Optional[float]]]) -> float:
-    """Get the current score for a specific ticker"""
-    etf_returns = returns.get(ticker, {})
-    return calculate_etf_score(etf_returns)
-
-
 def build_exit_list(
     positions: pd.DataFrame,
     current_regime: str,
@@ -486,7 +498,7 @@ def build_exit_list(
     prices: Dict[str, Dict[str, Optional[float]]],
     returns: Dict[str, Dict[str, Optional[float]]],
 ) -> list[dict[str, str]]:
-    """Build exit list including cash zone exits and rotation"""
+    """Build exit list with smoothed scores for 3x ETFs"""
     exits: list[dict[str, str]] = []
 
     if positions.empty:
@@ -497,15 +509,17 @@ def build_exit_list(
         held_regime = normalize_text(row["regime"]).lower()
         entry_score = safe_float(row.get("rank_score_at_entry", 0)) or 0
         
-        # Get current score for this ticker
-        current_score = get_current_score(ticker, returns)
+        # NEW: Use smoothed score instead of raw score
+        current_score = get_smoothed_score(ticker, returns)
 
         # Exit on regime flip
         if current_regime != "neutral" and held_regime != current_regime:
             exits.append({"ticker": ticker, "reason": "regime_flip"})
             continue
 
-        # CASH ZONE EXIT: Exit if score falls into cash zone (-5 to +5)
+        # MODIFIED CASH ZONE EXIT: Using smoothed score and lower threshold
+        # Only exit when smoothed score drops below MIN_TRADE_SCORE (now 2.0)
+        # The smoothing prevents exits on 1-2 day pullbacks
         if abs(current_score) < MIN_TRADE_SCORE:
             exits.append({"ticker": ticker, "reason": f"cash_zone_score_{current_score:.1f}"})
             continue
@@ -517,7 +531,7 @@ def build_exit_list(
             exits.append({"ticker": ticker, "reason": "trailing_stop"})
             continue
 
-        # Rotation logic: exit if a better ETF is available
+        # Rotation logic: exit if a better ETF is available (unchanged)
         if ranked_etfs and len(ranked_etfs) > 0:
             best_etf, best_score = ranked_etfs[0]
             
@@ -534,15 +548,13 @@ def apply_exits(
     asof_date: str,
     prices: Dict[str, Dict[str, Optional[float]]],
     trade_log: pd.DataFrame,
-    current_balance: float,
-) -> tuple[pd.DataFrame, pd.DataFrame, float]:
+) -> tuple[pd.DataFrame, pd.DataFrame]:
     if positions.empty or not exits:
-        return positions, trade_log, current_balance
+        return positions, trade_log
 
     exit_map = {x["ticker"]: x["reason"] for x in exits}
     keep_rows = []
     new_trades = []
-    updated_balance = current_balance
 
     for _, row in positions.iterrows():
         ticker = normalize_text(row["ticker"])
@@ -562,8 +574,6 @@ def apply_exits(
         shares = int(row["shares"])
         gross_pl = (exit_price - entry_price) * shares
         return_pct = ((exit_price / entry_price) - 1) * 100 if entry_price else 0.0
-
-        updated_balance += gross_pl
 
         new_trades.append({
             "ticker": ticker,
@@ -587,7 +597,7 @@ def apply_exits(
 
     updated_log = pd.concat([trade_log, pd.DataFrame(new_trades)], ignore_index=True)
 
-    return remaining, updated_log, updated_balance
+    return remaining, updated_log
 
 
 def build_position_row(
@@ -672,7 +682,7 @@ def apply_entries(
 
 def send_email_summary(asof_date: str, primary_etf: str, secondary_etf: str, 
                        regime: str, positions: pd.DataFrame, trade_log: pd.DataFrame,
-                       account_balance: float, ranked_etfs: List[Tuple[str, float]],
+                       cash_balance: float, total_equity: float, ranked_etfs: List[Tuple[str, float]],
                        new_entries: list = None, new_exits: list = None) -> None:
     
     mail_username = os.environ.get("MAIL_USERNAME")
@@ -689,6 +699,13 @@ def send_email_summary(asof_date: str, primary_etf: str, secondary_etf: str,
         cash_zone = " (CASH ZONE)" if abs(score) < MIN_TRADE_SCORE else ""
         ranking_text += f"   {i}. {etf}: {score:.2f}{cash_zone}\n"
     
+    # Calculate total return
+    total_return = total_equity - STARTING_BALANCE
+    total_return_pct = (total_return / STARTING_BALANCE) * 100
+    
+    # UPDATED: Dashboard URL for main repo
+    dashboard_url = "https://mrpink970.github.io/sector-research-system/docs/4_etf/4etf_dashboard.html"
+    
     body = f"""
 ═══════════════════════════════════════════════════════════
   ETF PAPER TRADING UPDATE - {asof_date}
@@ -696,8 +713,9 @@ def send_email_summary(asof_date: str, primary_etf: str, secondary_etf: str,
 
 📊 MARKET REGIME: {regime.upper()}
 🎯 SIGNAL: {primary_etf} / {secondary_etf}
-💰 ACCOUNT BALANCE: ${account_balance:,.2f}
-📈 MIN TRADE SCORE: {MIN_TRADE_SCORE} (cash zone below this)
+💰 CASH BALANCE: ${cash_balance:,.2f}
+💵 TOTAL EQUITY: ${total_equity:,.2f}
+📈 TOTAL RETURN: {total_return_pct:+.1f}% (${total_return:+,.2f})
 {ranking_text}
 """
     
@@ -720,8 +738,12 @@ def send_email_summary(asof_date: str, primary_etf: str, secondary_etf: str,
             entry_price = safe_float(row["entry_price"])
             shares = int(row["shares"])
             score = safe_float(row.get("rank_score_at_entry", 0)) or 0
+            stop = safe_float(row["trailing_stop"])
+            high = safe_float(row["highest_price"])
+            unrealized = (high - entry_price) * shares if high and entry_price else 0
             body += f"   • {row['ticker']}: {shares} shares @ ${entry_price:.2f}\n"
-            body += f"     Entry Score: {score:.2f} | Stop: ${safe_float(row['trailing_stop']):.2f}\n"
+            body += f"     Current (high): ${high:.2f} | Unrealized: +${unrealized:.2f}\n"
+            body += f"     Stop: ${stop:.2f} | Entry Score: {score:.2f}\n"
     else:
         body += "\n📈 CURRENT OPEN POSITION: None (in cash)\n"
     
@@ -741,7 +763,7 @@ def send_email_summary(asof_date: str, primary_etf: str, secondary_etf: str,
     body += f"""
 ═══════════════════════════════════════════════════════════
   📊 VIEW FULL DASHBOARD:
-  https://mrpink970.github.io/4-etf-trading-plan/Dashboard.html
+  {dashboard_url}
 ═══════════════════════════════════════════════════════════
 
 Generated by GitHub Actions - {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
@@ -765,9 +787,14 @@ Generated by GitHub Actions - {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
 
 def main() -> None:
     print("=" * 50)
-    print("ETF PAPER TRADING SYSTEM (Single Position + Cash Zone)")
+    print("ETF PAPER TRADING SYSTEM (3x ETF Optimized - Smoothing Active)")
     print("=" * 50)
-    print(f"Cash Zone: |score| < {MIN_TRADE_SCORE} → Exit to cash / No entries")
+    print(f"Cash Zone: |smoothed_score| < {MIN_TRADE_SCORE} → Exit to cash / No entries")
+    print(f"Smoothing: 5-day exponential window (prevents whipsaw on 3x ETFs)")
+    print(f"Data directory: {WORKBOOK_PATH.parent}")
+    
+    # Ensure data directory exists
+    WORKBOOK_PATH.parent.mkdir(parents=True, exist_ok=True)
     
     try:
         state = load_workbook_state(WORKBOOK_PATH)
@@ -782,13 +809,7 @@ def main() -> None:
     prices = state["prices"]
     returns = state["returns"]
     
-    # Check for duplicate processing
-    last_processed = get_last_processed_date()
-    if last_processed == asof_date:
-        print(f"Date {asof_date} already processed. Skipping.")
-        return
-    else:
-        print(f"Processing new date: {asof_date}")
+    print(f"\n📅 Processing date: {asof_date} (from Daily_Data)")
     
     # Rank ETFs for this regime
     ranked_etfs = rank_etfs(returns, current_regime)
@@ -797,17 +818,15 @@ def main() -> None:
         cash_zone = " (CASH ZONE)" if abs(score) < MIN_TRADE_SCORE else ""
         print(f"   {i}. {etf}: {score:.2f}{cash_zone}")
     
-    # Load account balance
-    account_balance = load_account_balance()
-    print(f"\n💰 Current account balance: ${account_balance:,.2f}")
+    # Calculate account balance from trade log and positions
+    cash_balance, total_equity = calculate_account_balance()
+    print(f"\n💰 Cash balance: ${cash_balance:,.2f}")
+    print(f"💵 Total equity: ${total_equity:,.2f}")
     
     # Load existing data
     old_positions = load_positions()
     old_trade_log = load_trade_log()
     
-    print(f"\n📅 Date: {asof_date}")
-    print(f"🎯 Signal: {primary_etf} / {secondary_etf}")
-    print(f"📈 Regime: {current_regime}")
     print(f"📌 Existing positions: {len(old_positions)}")
     
     new_entries = []
@@ -816,7 +835,7 @@ def main() -> None:
     # Update trailing stops
     positions = update_trailing_stops(old_positions, prices)
     
-    # Build exit list (including cash zone exits)
+    # Build exit list (using smoothed scores)
     exits = build_exit_list(
         positions=positions,
         current_regime=current_regime,
@@ -848,13 +867,12 @@ def main() -> None:
                     })
     
     # Apply exits and update balance
-    positions, trade_log, updated_balance = apply_exits(
+    positions, trade_log = apply_exits(
         positions=positions,
         exits=exits,
         asof_date=asof_date,
         prices=prices,
         trade_log=old_trade_log,
-        current_balance=account_balance,
     )
     
     # Process entries (only if we have no position and top score is strong)
@@ -863,7 +881,7 @@ def main() -> None:
         if abs(top_score) >= MIN_TRADE_SCORE:
             entry_price = prices.get(top_etf, {}).get("open")
             if entry_price:
-                shares = calculate_position_shares(updated_balance, entry_price)
+                shares = calculate_position_shares(cash_balance, entry_price)
                 new_entries.append({
                     "ticker": top_etf,
                     "price": entry_price,
@@ -879,20 +897,13 @@ def main() -> None:
         ranked_etfs=ranked_etfs,
         asof_date=asof_date,
         prices=prices,
-        account_balance=updated_balance,
+        account_balance=cash_balance,
     )
     
-    # Save data
+    # Save data (directories auto-created in save functions)
     save_positions(positions)
     save_trade_log(trade_log)
     save_performance(trade_log)
-    
-    # Update account balance if changed
-    if updated_balance != account_balance:
-        update_account_balance(asof_date, updated_balance)
-    
-    # Save processed date
-    save_last_processed_date(asof_date)
     
     # Send email
     send_email_summary(
@@ -902,7 +913,8 @@ def main() -> None:
         regime=current_regime,
         positions=positions,
         trade_log=trade_log,
-        account_balance=updated_balance,
+        cash_balance=cash_balance,
+        total_equity=total_equity,
         ranked_etfs=ranked_etfs,
         new_entries=new_entries,
         new_exits=new_exits,
@@ -913,7 +925,8 @@ def main() -> None:
     print("SUMMARY")
     print("=" * 50)
     print(f"Date: {asof_date}")
-    print(f"Account Balance: ${updated_balance:,.2f}")
+    print(f"Cash Balance: ${cash_balance:,.2f}")
+    print(f"Total Equity: ${total_equity:,.2f}")
     print(f"Regime: {current_regime}")
     print(f"Open positions: {len(positions)}")
     if len(positions) > 0:
