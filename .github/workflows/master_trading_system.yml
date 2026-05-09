@@ -26,9 +26,7 @@ jobs:
           mkdir -p data/4_etf
           mkdir -p data/stocks
       
-      # ============================================================
       # 1. RUN 2 ETF BULL SYSTEM
-      # ============================================================
       - name: Run 2 ETF Bull System
         run: python scripts/4_etf/run_4etf_system.py
         env:
@@ -36,9 +34,7 @@ jobs:
           MAIL_PASSWORD: ${{ secrets.MAIL_PASSWORD }}
           MAIL_TO: ${{ secrets.MAIL_TO }}
       
-      # ============================================================
       # 2. RUN SECTOR SYSTEM
-      # ============================================================
       - name: Run Sector System
         run: python scripts/run_paper_trading.py
         env:
@@ -46,30 +42,22 @@ jobs:
           MAIL_PASSWORD: ${{ secrets.MAIL_PASSWORD }}
           MAIL_TO: ${{ secrets.MAIL_TO }}
       
-      # ============================================================
-      # 3. RUN STOCK SYSTEM
-      # ============================================================
+      # 3. RUN STOCK SYSTEM (FIXED PATH)
       - name: Run Stock System
-        run: python scripts/run_stock_trading.py
+        run: python scripts/stocks/run_stock_trading.py
       
-      # ============================================================
       # 4. GENERATE DASHBOARDS
-      # ============================================================
       - name: Generate Sector Dashboard
         run: python scripts/generate_dashboard.py
       
-      # ============================================================
-      # 5. RUN MONITORING ENGINE (sends email)
-      # ============================================================
+      # 5. RUN MONITORING ENGINE
       - name: Run Monitoring Engine
         run: python scripts/monitoring_engine.py
         env:
           MAIL_USERNAME: ${{ secrets.MAIL_USERNAME }}
           MAIL_PASSWORD: ${{ secrets.MAIL_PASSWORD }}
       
-      # ============================================================
       # 6. COMMIT AND PUSH UPDATES
-      # ============================================================
       - name: Commit and push updates
         run: |
           git config user.name "github-actions[bot]"
