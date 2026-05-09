@@ -905,20 +905,19 @@ def main() -> None:
     save_trade_log(trade_log)
     save_performance(trade_log)
     
-    # Send email
-    send_email_summary(
-        asof_date=asof_date,
-        primary_etf=primary_etf,
-        secondary_etf=secondary_etf,
-        regime=current_regime,
-        positions=positions,
-        trade_log=trade_log,
-        cash_balance=cash_balance,
-        total_equity=total_equity,
-        ranked_etfs=ranked_etfs,
-        new_entries=new_entries,
-        new_exits=new_exits,
-    )
+    # send_email_summary(
+#     asof_date=asof_date,
+#     primary_etf=primary_etf,
+#     secondary_etf=secondary_etf,
+#     regime=current_regime,
+#     positions=positions,
+#     trade_log=trade_log,
+#     cash_balance=cash_balance,
+#     total_equity=total_equity,
+#     ranked_etfs=ranked_etfs,
+#     new_entries=new_entries,
+#     new_exits=new_exits,
+# )
     
     # Print summary
     print("\n" + "=" * 50)
