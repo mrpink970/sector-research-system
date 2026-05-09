@@ -8,6 +8,7 @@ Updated for main repo structure - stores data in data/4_etf/
 import sys
 import pandas as pd
 import yfinance as yf
+from openpyxl import Workbook
 from openpyxl import load_workbook
 from datetime import datetime, timedelta
 import numpy as np
@@ -48,22 +49,6 @@ def fetch_ticker_data(ticker, days=30):
         return None
 
 
-def to_scalar(value):
-    """Convert numpy types to Python scalar"""
-    if value is None:
-        return None
-    if isinstance(value, (np.ndarray, pd.Series)):
-        # Get the first element if it's an array/series
-        if len(value) > 0:
-            val = value.item() if hasattr(value, 'item') else float(value[0])
-            return float(val)
-        return None
-    try:
-        return float(value)
-    except (TypeError, ValueError):
-        return None
-
-
 def update_workbook(workbook_path):
     """Update the Excel workbook with latest ETF data"""
     print("=" * 60)
@@ -100,13 +85,13 @@ def update_workbook(workbook_path):
         for ticker, df in all_data.items():
             ticker_data = df[df['Date'] == date]
             if not ticker_data.empty:
-                # Extract scalar values using .item() or direct access
+                # Extract scalar values
                 open_val = ticker_data['Open'].iloc[0]
                 high_val = ticker_data['High'].iloc[0]
                 low_val = ticker_data['Low'].iloc[0]
                 close_val = ticker_data['Close'].iloc[0]
                 
-                # Convert to scalar using .item() if needed
+                # Convert to scalar
                 if hasattr(open_val, 'item'):
                     open_val = open_val.item()
                     high_val = high_val.item()
@@ -140,23 +125,28 @@ def update_workbook(workbook_path):
     
     print(f"\nFinal data: {len(df_final)} rows, {len(df_final.columns)} columns")
     
-    # Write to Excel
-    try:
-        if workbook_path.exists():
+    # Write to Excel - FIXED: Properly handle new/existing workbook
+    if workbook_path.exists():
+        try:
             wb = load_workbook(workbook_path)
-        else:
-            print(f"Workbook not found, creating new one at {workbook_path}")
-            wb = load_workbook()
-        
-        if 'Daily_Data' in wb.sheetnames:
-            wb.remove(wb['Daily_Data'])
-    except Exception as e:
-        print(f"Error loading workbook: {e}")
-        wb = load_workbook()
-        if 'Daily_Data' in wb.sheetnames:
-            wb.remove(wb['Daily_Data'])
+            print("Loaded existing workbook")
+        except Exception as e:
+            print(f"Could not load existing workbook: {e}")
+            print("Creating new workbook")
+            wb = Workbook()
+    else:
+        print("Creating new workbook")
+        wb = Workbook()
+        # Remove the default sheet that comes with new workbook
+        if 'Sheet' in wb.sheetnames:
+            wb.remove(wb['Sheet'])
     
-    ws = wb.create_sheet('Daily_Data')
+    # Remove old Daily_Data sheet if it exists
+    if 'Daily_Data' in wb.sheetnames:
+        wb.remove(wb['Daily_Data'])
+    
+    # Create new Daily_Data sheet
+    ws = wb.create_sheet('Daily_Data', 0)  # Insert at beginning
     
     # Write headers
     headers = list(df_final.columns)
@@ -176,7 +166,7 @@ def update_workbook(workbook_path):
                     ws.cell(row=excel_row, column=col_idx, value=value)
         rows_written += 1
     
-    print(f"Wrote {rows_written} rows")
+    print(f"Wrote {rows_written} rows to Daily_Data sheet")
     
     # Ensure Signal sheet
     if 'Signal' not in wb.sheetnames:
@@ -191,6 +181,7 @@ def update_workbook(workbook_path):
         ws_signal['D27'] = datetime.now().strftime('%Y-%m-%d')
         print("Updated Signal sheet date")
     
+    # Save the workbook
     wb.save(workbook_path)
     print(f"\n✅ Updated {workbook_path}")
     print(f"   Rows: {len(df_final)}")
@@ -200,7 +191,6 @@ def update_workbook(workbook_path):
     cols_to_show = ['Date', 'SOXL_Open', 'SOXL_High', 'SOXL_Close']
     available_cols = [c for c in cols_to_show if c in df_final.columns]
     if available_cols:
-        # Convert to string to avoid numpy display issues
         print(df_final.tail(3)[available_cols].to_string())
     else:
         print("No SOXL data available")
