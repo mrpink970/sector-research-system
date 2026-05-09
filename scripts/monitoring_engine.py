@@ -61,7 +61,7 @@ def safe_int(value, default=0) -> int:
 # ============================================================
 
 def get_sector_system_data(config: dict) -> dict:
-    """Extract performance data for sector system - return calculated from balance"""
+    """Extract performance data for sector system"""
     paths = config['systems']['sector']['data_files']
     start_balance = config['systems']['sector']['starting_balance']
     
@@ -85,7 +85,6 @@ def get_sector_system_data(config: dict) -> dict:
         row = perf.iloc[0]
         net_profit = safe_float(row.get('net_profit_dollars', 0))
         result['balance'] = start_balance + net_profit
-        # Calculate return from actual balance (matches dashboard)
         result['total_return_pct'] = (result['balance'] / start_balance - 1) * 100
         result['win_rate'] = safe_float(row.get('win_rate_pct', 0))
         result['total_trades'] = safe_int(row.get('total_trades', 0))
@@ -105,7 +104,7 @@ def get_sector_system_data(config: dict) -> dict:
 
 
 def get_two_etf_system_data(config: dict) -> dict:
-    """Extract performance data for 2 ETF Bull system - returns total equity with correct return"""
+    """Extract performance data for 2 ETF Bull system"""
     paths = config['systems']['two_etf']['data_files']
     start_balance = config['systems']['two_etf']['starting_balance']
     
@@ -133,28 +132,25 @@ def get_two_etf_system_data(config: dict) -> dict:
         result['win_rate'] = safe_float(row.get('win_rate', 0)) * 100
         result['total_trades'] = safe_int(row.get('total_trades', 0))
     
-    # Calculate cash balance (starting + realized)
-    cash_balance = start_balance + realized_pl
-    
-    # Calculate position value from open positions
-    position_value = 0.0
+    # Calculate unrealized P&L from open positions
+    unrealized_pl = 0.0
     if not positions.empty:
         for _, row in positions.iterrows():
             shares = safe_int(row.get('shares', 0))
+            entry_price = safe_float(row.get('entry_price', 0))
             highest_price = safe_float(row.get('highest_price', 0))
-            position_value += shares * highest_price
+            unrealized_pl += (highest_price - entry_price) * shares
             
             result['open_positions'].append({
                 'ticker': row.get('ticker', 'N/A'),
                 'shares': shares,
-                'entry_price': safe_float(row.get('entry_price', 0)),
+                'entry_price': entry_price,
             })
         result['open_count'] = len(result['open_positions'])
     
-    # Total equity = cash + position value
-    total_equity = cash_balance + position_value
+    # Total equity = starting + realized + unrealized
+    total_equity = start_balance + realized_pl + unrealized_pl
     result['balance'] = total_equity
-    # Calculate return from total equity (matches dashboard)
     result['total_return_pct'] = (total_equity / start_balance - 1) * 100
     
     return result
@@ -183,22 +179,17 @@ def get_stock_system_data(config: dict) -> dict:
     }
     
     if not perf.empty:
-        # Sum balances from trend and breakout rows
         total_balance = perf['balance'].sum() if 'balance' in perf.columns else start_balance
         result['balance'] = total_balance
         result['total_return_pct'] = (total_balance / start_balance - 1) * 100
-        
-        # Sum total trades
         result['total_trades'] = safe_int(perf['total_trades'].sum()) if 'total_trades' in perf.columns else 0
         
-        # Weighted average win rate
         if 'total_trades' in perf.columns and 'win_rate' in perf.columns:
             total_trades = perf['total_trades'].sum()
             if total_trades > 0:
                 weighted_win_rate = (perf['total_trades'] * perf['win_rate']).sum() / total_trades
                 result['win_rate'] = weighted_win_rate
     
-    # Combine positions from both strategies
     all_positions = []
     if not positions_trend.empty:
         for _, row in positions_trend.iterrows():
