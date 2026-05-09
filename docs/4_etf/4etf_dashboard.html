@@ -19,7 +19,7 @@
         }
 
         .dashboard {
-            max-width: 1200px;
+            max-width: 1400px;
             margin: 0 auto;
         }
 
@@ -91,7 +91,7 @@
             border: 1px solid #e2e8f0;
             overflow: hidden;
             flex: 1;
-            min-width: 280px;
+            min-width: 300px;
         }
 
         .card-header {
@@ -184,6 +184,49 @@
             text-align: right;
             margin-top: 0.5rem;
         }
+        
+        /* Full-width table card */
+        .full-width-card {
+            background: white;
+            border-radius: 1rem;
+            border: 1px solid #e2e8f0;
+            overflow: auto;
+            margin-bottom: 1.2rem;
+        }
+        
+        .full-width-card .card-header {
+            position: sticky;
+            left: 0;
+        }
+        
+        .full-width-card .card-content {
+            overflow-x: auto;
+        }
+        
+        .data-table-wide {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.75rem;
+            min-width: 700px;
+        }
+        
+        .data-table-wide th {
+            text-align: left;
+            padding: 0.6rem 0.5rem;
+            font-weight: 600;
+            color: #4a627a;
+            border-bottom: 1px solid #e2edf2;
+            background: #fafcfd;
+        }
+        
+        .data-table-wide td {
+            padding: 0.6rem 0.5rem;
+            border-bottom: 1px solid #f0f4f8;
+        }
+        
+        .text-right {
+            text-align: right;
+        }
     </style>
 </head>
 <body>
@@ -213,24 +256,44 @@
         </div>
     </div>
 
-    <div class="two-col">
-        <div class="card">
-            <div class="card-header">📜 Recent Closed Trades</div>
-            <div class="card-content">
-                <table class="data-table" id="tradesTable">
-                    <thead>
-                        <tr><th>Ticker</th><th>Exit Date</th><th>Return %</th><th>P&L</th><th>Exit Reason</th></tr>
-                    </thead>
-                    <tbody id="tradesBody">
-                        <tr><td colspan="5" class="loading">Loading trade log...<\/td><\/tr>
-                    </tbody>
-                θable
-            </div>
+    <!-- Recent Closed Trades - Full width card -->
+    <div class="full-width-card">
+        <div class="card-header">📜 Recent Closed Trades</div>
+        <div class="card-content">
+            <table class="data-table-wide" id="tradesTable">
+                <thead>
+                    <tr>
+                        <th>Ticker</th>
+                        <th>Entry Date</th>
+                        <th>Exit Date</th>
+                        <th class="text-right">Shares</th>
+                        <th class="text-right">Entry $</th>
+                        <th class="text-right">Exit $</th>
+                        <th class="text-right">Total Cost</th>
+                        <th class="text-right">Return %</th>
+                        <th class="text-right">P&L</th>
+                        <th>Exit Reason</th>
+                    </tr>
+                </thead>
+                <tbody id="tradesBody">
+                    <tr><td colspan="10" class="loading">Loading trade log...</td></tr>
+                </tbody>
+            </table>
         </div>
+    </div>
+
+    <div class="two-col">
         <div class="card">
             <div class="card-header">📊 System Status</div>
             <div class="card-content" id="systemStatus">
                 <div class="loading">Loading status...</div>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header">⚙️ Strategy Parameters</div>
+            <div class="card-content" id="strategyParams">
+                <div class="loading">Loading parameters...</div>
             </div>
         </div>
     </div>
@@ -244,8 +307,7 @@
 <script>
     const STARTING_BALANCE = 5000;
     
-    // UPDATED: GitHub raw URLs for main repo structure
-    // CSV files are now in data/4_etf/ directory
+    // GitHub raw URLs for main repo structure
     const POSITIONS_URL = 'https://raw.githubusercontent.com/mrpink970/sector-research-system/main/data/4_etf/etf_paper_positions.csv';
     const TRADE_LOG_URL = 'https://raw.githubusercontent.com/mrpink970/sector-research-system/main/data/4_etf/etf_paper_trade_log.csv';
     const PERFORMANCE_URL = 'https://raw.githubusercontent.com/mrpink970/sector-research-system/main/data/4_etf/etf_paper_performance.csv';
@@ -292,11 +354,19 @@
         return '$' + num.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
     }
 
+    function formatCurrencyNoDecimals(value) {
+        if (value === undefined || value === null) return '$0';
+        const num = parseFloat(value);
+        if (isNaN(num)) return '$0';
+        return '$' + num.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    }
+
     function formatPercent(value, decimals = 2) {
         if (value === undefined || value === null) return '0%';
         const num = parseFloat(value);
         if (isNaN(num)) return '0%';
-        return num.toFixed(decimals) + '%';
+        const sign = num >= 0 ? '+' : '';
+        return sign + num.toFixed(decimals) + '%';
     }
 
     async function loadAndRender() {
@@ -351,8 +421,9 @@
         const totalReturnPct = (totalReturn / STARTING_BALANCE) * 100;
         const winRate = tradeLog.length > 0 ? (winningTrades / tradeLog.length) * 100 : 0;
         const positionReturn = entryPrice > 0 ? ((highestPrice - entryPrice) / entryPrice) * 100 : 0;
+        const totalCost = entryPrice * shares;
         
-        // Get performance metrics from performance CSV if available
+        // Get performance metrics
         let totalTrades = tradeLog.length;
         let maxDrawdown = 0;
         let profitFactor = 0;
@@ -392,16 +463,17 @@
             </div>
         `;
         
-        // Render position card
+        // Render position card with shares and total cost
         if (currentPosition) {
             document.getElementById('positionCard').innerHTML = `
                 <div class="current-position-card">
                     <div><span class="badge-bull">${regime ? regime.toUpperCase() : 'BULL'}</span></div>
                     <div class="big-number">${ticker} • ${formatPercent(positionReturn)}</div>
                     <div style="margin: 0.5rem 0;">
-                        Entry: ${formatCurrency(entryPrice)} | Current (high): ${formatCurrency(highestPrice)}
+                        <div>Entry: ${formatCurrency(entryPrice)} | Current: ${formatCurrency(highestPrice)}</div>
+                        <div>Shares: ${shares} | Total Cost: ${formatCurrency(totalCost)}</div>
                     </div>
-                    <div>Shares: ${shares} | Unrealized: <span class="positive">${unrealizedPL >= 0 ? '+' : ''}${formatCurrency(unrealizedPL)}</span></div>
+                    <div>Unrealized: <span class="positive">${unrealizedPL >= 0 ? '+' : ''}${formatCurrency(unrealizedPL)}</span></div>
                     <div class="small-note" style="margin-top: 0.5rem;">
                         Trailing Stop: ${formatCurrency(trailingStop)} (12% from high of ${formatCurrency(highestPrice)})
                     </div>
@@ -424,32 +496,41 @@
             <div><strong>Total Equity:</strong> <span class="positive">${formatCurrency(totalEquity)}</span></div>
             <div><strong>Total Return:</strong> <span class="${totalReturnPct >= 0 ? 'positive' : 'negative'}">${formatPercent(totalReturnPct)}</span></div>
             <hr>
-            ${currentPosition ? `<div><strong>${ticker}:</strong> ${formatPercent(positionReturn)} (${unrealizedPL >= 0 ? '+' : ''}${formatCurrency(unrealizedPL)})</div>` : '<div>No open position</div>'}
+            ${currentPosition ? `<div><strong>${ticker}:</strong> ${shares} shares @ ${formatCurrency(entryPrice)} = ${formatCurrency(totalCost)}</div>
+            <div><strong>Current Value:</strong> ${formatCurrency(highestPrice * shares)}</div>
+            <div><strong>Unrealized:</strong> <span class="${unrealizedPL >= 0 ? 'positive' : 'negative'}">${unrealizedPL >= 0 ? '+' : ''}${formatCurrency(unrealizedPL)} (${formatPercent(positionReturn)})</span></div>` : '<div>No open position</div>'}
             <hr>
             <div><strong>Realized P&L:</strong> ${realizedPL >= 0 ? '+' : ''}${formatCurrency(realizedPL)}</div>
             <div><strong>Unrealized P&L:</strong> <span class="${unrealizedPL >= 0 ? 'positive' : 'negative'}">${unrealizedPL >= 0 ? '+' : ''}${formatCurrency(unrealizedPL)}</span></div>
             ${maxDrawdown !== 0 ? `<div><strong>Max Drawdown:</strong> ${formatPercent(Math.abs(maxDrawdown))}</div>` : ''}
             ${profitFactor !== 0 ? `<div><strong>Profit Factor:</strong> ${profitFactor.toFixed(2)}</div>` : ''}
-            <hr>
-            <div><strong>Strategy:</strong> Single position • Rotation enabled</div>
-            <div><strong>Trailing Stop:</strong> 12% from highest price</div>
         `;
         
-        // Render closed trades
+        // Render closed trades with shares, entry, exit, total cost
         const tbody = document.getElementById('tradesBody');
         if (tradeLog.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="5">No closed trades yet</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="10">No closed trades yet</td></tr>';
         } else {
-            const recentTrades = [...tradeLog].reverse().slice(0, 10);
+            const recentTrades = [...tradeLog].reverse().slice(0, 20);
             tbody.innerHTML = recentTrades.map(trade => {
                 const plClass = (trade.gross_pl || 0) >= 0 ? 'positive' : 'negative';
                 const returnPct = trade.return_pct || 0;
+                const entryPrice = trade.entry_price || 0;
+                const exitPrice = trade.exit_price || 0;
+                const shares_count = trade.shares || 0;
+                const totalCostTrade = entryPrice * shares_count;
+                
                 return `
                     <tr>
                         <td><strong>${trade.ticker || 'N/A'}</strong></td>
+                        <td>${trade.entry_date || 'N/A'}</td>
                         <td>${trade.exit_date || 'N/A'}</td>
-                        <td class="${returnPct >= 0 ? 'positive' : 'negative'}">${returnPct >= 0 ? '+' : ''}${formatPercent(returnPct)}</td>
-                        <td class="${plClass}">${(trade.gross_pl || 0) >= 0 ? '+' : ''}${formatCurrency(trade.gross_pl || 0)}</td>
+                        <td class="text-right">${shares_count}</td>
+                        <td class="text-right">${formatCurrency(entryPrice)}</td>
+                        <td class="text-right">${formatCurrency(exitPrice)}</td>
+                        <td class="text-right">${formatCurrency(totalCostTrade)}</td>
+                        <td class="text-right ${returnPct >= 0 ? 'positive' : 'negative'}">${formatPercent(returnPct)}</td>
+                        <td class="text-right ${plClass}">${(trade.gross_pl || 0) >= 0 ? '+' : ''}${formatCurrency(trade.gross_pl || 0)}</td>
                         <td>${trade.exit_reason || 'trailing_stop'}</td>
                     </tr>
                 `;
@@ -459,14 +540,22 @@
         // Render system status
         document.getElementById('systemStatus').innerHTML = `
             <div><strong>System:</strong> 4ETF Paper Trading</div>
-            <div><strong>Status:</strong> <span class="positive">Active</span></div>
+            <div><strong>Status:</strong> <span class="positive">● Active</span></div>
             <div><strong>Position Limit:</strong> 1 (single position)</div>
             <div><strong>Cash Zone:</strong> |score| < 2 = no entry</div>
-            <div><strong>Trailing Stop:</strong> 12% fixed</div>
             <div><strong>Data Source:</strong> Yahoo Finance</div>
             <hr>
             <div><strong>Current Signal:</strong> SOXL (smoothed score)</div>
             <div><strong>Market Regime:</strong> ${regime ? regime.toUpperCase() : 'BULL'}</div>
+        `;
+        
+        // Render strategy parameters
+        document.getElementById('strategyParams').innerHTML = `
+            <div><strong>Strategy:</strong> Single position • Rotation enabled</div>
+            <div><strong>Trailing Stop:</strong> 12% from highest price</div>
+            <div><strong>Position Size:</strong> 95% of cash balance</div>
+            <div><strong>Score Smoothing:</strong> 5-day EMA (α=0.20)</div>
+            <div><strong>Entry Confirmation:</strong> Minimum 2 days signal</div>
         `;
         
         document.getElementById('lastUpdated').innerHTML = `Last updated: ${new Date().toLocaleString()}`;
