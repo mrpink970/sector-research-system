@@ -1,0 +1,3 @@
+date,soxl_price,soxl_daily_pct,leaps_expiration,leaps_strike,leaps_bid,leaps_ask,leaps_mid,leaps_iv,leaps_oi,leaps_volume,leaps_available,short_expiration,short_days,short_strike,short_bid,short_ask,short_mid,short_iv,short_oi,short_volume,short_available,put_strike,put_bid,put_ask,put_mid,put_iv,put_available
+2026-04-08,67.5,19.36,2027-01-15,56,27.55,29.75,28.65,107.6,318,142,True,2026-04-17,9,75.0,1.8,1.97,1.88,100.44,1742,1917,True,60.0,0.54,0.58,0.56,125.2,True
+2026-04-09,67.5,19.36,2027-01-15,56,27.55,29.75,28.65,107.79,318,142,True,2026-04-17,8,75.0,1.8,1.97,1.88,105.91,1742,1917,True,60.0,0.54,0.58,0.56,153.32,True
