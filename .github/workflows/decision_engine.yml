@@ -1,0 +1,28 @@
+name: Decision Engine
+
+on:
+  schedule:
+    - cron: '0 14 * * 1-5'   # 10:00 AM ET (14:00 UTC)
+  workflow_dispatch:
+
+jobs:
+  run_decision_engine:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      
+      - name: Install dependencies
+        run: pip install pandas yfinance pyyaml
+      
+      - name: Run Decision Engine
+        run: python scripts/decision_engine.py
+        env:
+          MAIL_USERNAME: ${{ secrets.MAIL_USERNAME }}
+          MAIL_PASSWORD: ${{ secrets.MAIL_PASSWORD }}
