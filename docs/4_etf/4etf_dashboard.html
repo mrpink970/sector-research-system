@@ -136,6 +136,16 @@
             display: inline-block;
         }
 
+        .badge-bear {
+            background: #fee2e2;
+            color: #991b1b;
+            padding: 0.2rem 0.5rem;
+            border-radius: 20px;
+            font-size: 0.65rem;
+            font-weight: 600;
+            display: inline-block;
+        }
+
         .current-position-card {
             background: #e8f5e9;
             border-radius: 0.75rem;
@@ -207,7 +217,7 @@
             width: 100%;
             border-collapse: collapse;
             font-size: 0.75rem;
-            min-width: 700px;
+            min-width: 900px;
         }
         
         .data-table-wide th {
@@ -354,13 +364,6 @@
         return '$' + num.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
     }
 
-    function formatCurrencyNoDecimals(value) {
-        if (value === undefined || value === null) return '$0';
-        const num = parseFloat(value);
-        if (isNaN(num)) return '$0';
-        return '$' + num.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-    }
-
     function formatPercent(value, decimals = 2) {
         if (value === undefined || value === null) return '0%';
         const num = parseFloat(value);
@@ -390,7 +393,8 @@
             }
         });
         
-        // Calculate unrealized P&L from positions
+        // Calculate open position cost and unrealized P&L
+        let openPositionCost = 0;
         let unrealizedPL = 0;
         let currentPosition = null;
         let highestPrice = 0;
@@ -400,6 +404,7 @@
         let shares = 0;
         let ticker = '';
         let regime = '';
+        let currentValue = 0;
         
         if (positions.length > 0) {
             const pos = positions[0];
@@ -410,20 +415,21 @@
             entryDate = pos.entry_date;
             ticker = pos.ticker;
             regime = pos.regime;
-            unrealizedPL = (highestPrice - entryPrice) * shares;
+            openPositionCost = entryPrice * shares;
+            currentValue = highestPrice * shares;
+            unrealizedPL = currentValue - openPositionCost;
             currentPosition = pos;
         }
         
-        // Calculate totals
-        const cashBalance = STARTING_BALANCE + realizedPL;
-        const totalEquity = cashBalance + unrealizedPL;
+        // CASH BALANCE FIX: Cash = starting + realized - cost of open positions
+        const cashBalance = STARTING_BALANCE + realizedPL - openPositionCost;
+        const totalEquity = cashBalance + currentValue;
         const totalReturn = totalEquity - STARTING_BALANCE;
         const totalReturnPct = (totalReturn / STARTING_BALANCE) * 100;
         const winRate = tradeLog.length > 0 ? (winningTrades / tradeLog.length) * 100 : 0;
         const positionReturn = entryPrice > 0 ? ((highestPrice - entryPrice) / entryPrice) * 100 : 0;
-        const totalCost = entryPrice * shares;
         
-        // Get performance metrics
+        // Get performance metrics from performance CSV
         let totalTrades = tradeLog.length;
         let maxDrawdown = 0;
         let profitFactor = 0;
@@ -444,7 +450,7 @@
             <div class="kpi-card">
                 <div class="kpi-label">📈 Total Equity</div>
                 <div class="kpi-value positive">${formatCurrency(totalEquity)}</div>
-                <div class="small-note">Cash + Unrealized</div>
+                <div class="small-note">Cash + Position Value</div>
             </div>
             <div class="kpi-card">
                 <div class="kpi-label">🏆 Win Rate</div>
@@ -459,19 +465,21 @@
             <div class="kpi-card">
                 <div class="kpi-label">📌 Open Positions</div>
                 <div class="kpi-value">${positions.length}</div>
-                <div class="small-note">Unrealized: ${unrealizedPL >= 0 ? '+' : ''}${formatCurrency(unrealizedPL)}</div>
+                <div class="small-note">Position Cost: ${formatCurrency(openPositionCost)}</div>
             </div>
         `;
         
-        // Render position card with shares and total cost
+        // Render position card
         if (currentPosition) {
+            const badgeClass = regime === 'bear' ? 'badge-bear' : 'badge-bull';
+            const regimeDisplay = regime ? regime.toUpperCase() : 'BULL';
             document.getElementById('positionCard').innerHTML = `
                 <div class="current-position-card">
-                    <div><span class="badge-bull">${regime ? regime.toUpperCase() : 'BULL'}</span></div>
+                    <div><span class="${badgeClass}">${regimeDisplay}</span></div>
                     <div class="big-number">${ticker} • ${formatPercent(positionReturn)}</div>
                     <div style="margin: 0.5rem 0;">
                         <div>Entry: ${formatCurrency(entryPrice)} | Current: ${formatCurrency(highestPrice)}</div>
-                        <div>Shares: ${shares} | Total Cost: ${formatCurrency(totalCost)}</div>
+                        <div>Shares: ${shares} | Total Cost: ${formatCurrency(openPositionCost)}</div>
                     </div>
                     <div>Unrealized: <span class="positive">${unrealizedPL >= 0 ? '+' : ''}${formatCurrency(unrealizedPL)}</span></div>
                     <div class="small-note" style="margin-top: 0.5rem;">
@@ -496,17 +504,19 @@
             <div><strong>Total Equity:</strong> <span class="positive">${formatCurrency(totalEquity)}</span></div>
             <div><strong>Total Return:</strong> <span class="${totalReturnPct >= 0 ? 'positive' : 'negative'}">${formatPercent(totalReturnPct)}</span></div>
             <hr>
-            ${currentPosition ? `<div><strong>${ticker}:</strong> ${shares} shares @ ${formatCurrency(entryPrice)} = ${formatCurrency(totalCost)}</div>
-            <div><strong>Current Value:</strong> ${formatCurrency(highestPrice * shares)}</div>
-            <div><strong>Unrealized:</strong> <span class="${unrealizedPL >= 0 ? 'positive' : 'negative'}">${unrealizedPL >= 0 ? '+' : ''}${formatCurrency(unrealizedPL)} (${formatPercent(positionReturn)})</span></div>` : '<div>No open position</div>'}
+            ${currentPosition ? `
+                <div><strong>${ticker}:</strong> ${shares} shares @ ${formatCurrency(entryPrice)} = ${formatCurrency(openPositionCost)}</div>
+                <div><strong>Current Value:</strong> ${formatCurrency(currentValue)}</div>
+                <div><strong>Unrealized:</strong> <span class="${unrealizedPL >= 0 ? 'positive' : 'negative'}">${unrealizedPL >= 0 ? '+' : ''}${formatCurrency(unrealizedPL)} (${formatPercent(positionReturn)})</span></div>
+            ` : '<div>No open position</div>'}
             <hr>
             <div><strong>Realized P&L:</strong> ${realizedPL >= 0 ? '+' : ''}${formatCurrency(realizedPL)}</div>
             <div><strong>Unrealized P&L:</strong> <span class="${unrealizedPL >= 0 ? 'positive' : 'negative'}">${unrealizedPL >= 0 ? '+' : ''}${formatCurrency(unrealizedPL)}</span></div>
-            ${maxDrawdown !== 0 ? `<div><strong>Max Drawdown:</strong> ${formatPercent(Math.abs(maxDrawdown))}</div>` : ''}
-            ${profitFactor !== 0 ? `<div><strong>Profit Factor:</strong> ${profitFactor.toFixed(2)}</div>` : ''}
+            ${maxDrawdown !== 0 && maxDrawdown !== undefined ? `<div><strong>Max Drawdown:</strong> ${formatPercent(Math.abs(maxDrawdown))}</div>` : ''}
+            ${profitFactor !== 0 && profitFactor !== undefined ? `<div><strong>Profit Factor:</strong> ${profitFactor.toFixed(2)}</div>` : ''}
         `;
         
-        // Render closed trades with shares, entry, exit, total cost
+        // Render closed trades table
         const tbody = document.getElementById('tradesBody');
         if (tradeLog.length === 0) {
             tbody.innerHTML = '<tr><td colspan="10">No closed trades yet</td></tr>';
@@ -515,19 +525,19 @@
             tbody.innerHTML = recentTrades.map(trade => {
                 const plClass = (trade.gross_pl || 0) >= 0 ? 'positive' : 'negative';
                 const returnPct = trade.return_pct || 0;
-                const entryPrice = trade.entry_price || 0;
-                const exitPrice = trade.exit_price || 0;
-                const shares_count = trade.shares || 0;
-                const totalCostTrade = entryPrice * shares_count;
+                const entryPriceTrade = trade.entry_price || 0;
+                const exitPriceTrade = trade.exit_price || 0;
+                const sharesCount = trade.shares || 0;
+                const totalCostTrade = entryPriceTrade * sharesCount;
                 
                 return `
                     <tr>
                         <td><strong>${trade.ticker || 'N/A'}</strong></td>
                         <td>${trade.entry_date || 'N/A'}</td>
                         <td>${trade.exit_date || 'N/A'}</td>
-                        <td class="text-right">${shares_count}</td>
-                        <td class="text-right">${formatCurrency(entryPrice)}</td>
-                        <td class="text-right">${formatCurrency(exitPrice)}</td>
+                        <td class="text-right">${sharesCount}</td>
+                        <td class="text-right">${formatCurrency(entryPriceTrade)}</td>
+                        <td class="text-right">${formatCurrency(exitPriceTrade)}</td>
                         <td class="text-right">${formatCurrency(totalCostTrade)}</td>
                         <td class="text-right ${returnPct >= 0 ? 'positive' : 'negative'}">${formatPercent(returnPct)}</td>
                         <td class="text-right ${plClass}">${(trade.gross_pl || 0) >= 0 ? '+' : ''}${formatCurrency(trade.gross_pl || 0)}</td>
