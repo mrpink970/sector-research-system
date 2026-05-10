@@ -59,11 +59,11 @@ regime_filter: true
 qqq_ma_period: 50
 
 # Dashboard
-dashboard_url: "https://mrpink970.github.io/sector-research-system/docs/ai_system/ai_dashboard.html"
+dashboard_url: "https://mrpink970.github.io/sector-research-system/docs/ai/ai_dashboard.html"
 
 # Data files
 data_files:
-  performance: "data/ai_system/ai_performance.csv"
-  positions: "data/ai_system/ai_positions.csv"
-  trade_log: "data/ai_system/ai_trade_log.csv"
-  scores: "data/ai_system/ai_scores.csv"
+  performance: "data/ai/performance.csv"
+  positions: "data/ai/positions.csv"
+  trade_log: "data/ai/trade_log.csv"
+  scores: "data/ai/scores.csv"
