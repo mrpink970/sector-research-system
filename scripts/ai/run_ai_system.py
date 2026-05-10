@@ -2,12 +2,13 @@
 """
 AI Specific System - Focused on AI hardware and infrastructure
 No SOXL (already in other systems), includes DRAM, CHAT, ARTY
+Adaptive logic for new ETFs with limited history
 """
 
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
@@ -38,7 +39,9 @@ def load_config() -> dict:
 def fetch_market_data(tickers: List[str]) -> pd.DataFrame:
     """Fetch daily OHLC data for all tickers plus QQQ"""
     all_tickers = list(set(tickers + ["QQQ"]))
-    data = yf.download(all_tickers, start="2026-01-01", end=datetime.now().strftime("%Y-%m-%d"), group_by='ticker', progress=False)
+    # Get 1 year of data for proper indicator calculation
+    start_date = (datetime.now() - timedelta(days=365)).strftime("%Y-%m-%d")
+    data = yf.download(all_tickers, start=start_date, end=datetime.now().strftime("%Y-%m-%d"), group_by='ticker', progress=False)
     
     prices = {}
     for ticker in all_tickers:
@@ -51,23 +54,45 @@ def fetch_market_data(tickers: List[str]) -> pd.DataFrame:
     return df.dropna()
 
 
-def calculate_score(ret_1d: float, ret_3d: float, ret_5d: float) -> float:
-    """Calculate momentum score (same as other systems)"""
+def calculate_score(ret_1d: float, ret_3d: float, ret_5d: float, available_days: int = 30) -> float:
+    """Calculate momentum score with adaptive weights based on data availability"""
     weights = {'1d': 0.30, '3d': 0.25, '5d': 0.20, 'trend': 0.15, 'vol': 0.10}
+    
+    # Adjust weights if not enough data for longer periods
+    if available_days < 5:
+        # Only use 1-day return
+        weights['1d'] = 0.70
+        weights['trend'] = 0.30
+        weights['3d'] = 0
+        weights['5d'] = 0
+        weights['vol'] = 0
+    elif available_days < 10:
+        # Only use 1d and 3d
+        weights['1d'] = 0.45
+        weights['3d'] = 0.35
+        weights['trend'] = 0.20
+        weights['5d'] = 0
+        weights['vol'] = 0
     
     ret_1d = ret_1d if pd.notna(ret_1d) else 0
     ret_3d = ret_3d if pd.notna(ret_3d) else 0
     ret_5d = ret_5d if pd.notna(ret_5d) else 0
     
-    score = (ret_1d * weights['1d'] + ret_3d * weights['3d'] + ret_5d * weights['5d'])
+    score = (ret_1d * weights['1d'] + 
+             ret_3d * weights['3d'] + 
+             ret_5d * weights['5d'])
     
-    if ret_1d > 0 and ret_3d > 0 and ret_5d > 0:
-        score += 5 * weights['trend']
-    elif ret_1d < 0 and ret_3d < 0 and ret_5d < 0:
-        score -= 5 * weights['trend']
+    # Trend strength (only if enough data)
+    if available_days >= 5:
+        if ret_1d > 0 and ret_3d > 0 and ret_5d > 0:
+            score += 5 * weights['trend']
+        elif ret_1d < 0 and ret_3d < 0 and ret_5d < 0:
+            score -= 5 * weights['trend']
     
-    volatility = abs(ret_1d - ret_3d) if pd.notna(ret_1d - ret_3d) else 0
-    score += max(0, 10 - volatility) * weights['vol']
+    # Volatility adjustment (only if enough data)
+    if available_days >= 3:
+        volatility = abs(ret_1d - ret_3d) if pd.notna(ret_1d - ret_3d) else 0
+        score += max(0, 10 - volatility) * weights['vol']
     
     return round(score, 4)
 
@@ -90,23 +115,40 @@ def get_trailing_stop(leverage: int, gain_pct: float, config: dict) -> float:
 
 
 def get_regime(df: pd.DataFrame, idx: int, config: dict) -> str:
-    """Determine market regime based on QQQ"""
+    """Determine market regime with adaptive moving averages based on available data"""
     if not config['regime_filter']:
         return "BULL"
     
-    qqq = df['QQQ'].iloc[idx]
-    qqq_ma50 = df['QQQ'].rolling(50).mean().iloc[idx]
-    qqq_ma20 = df['QQQ'].rolling(20).mean().iloc[idx]
-    ma20_slope = qqq_ma20 > df['QQQ'].rolling(20).mean().shift(1).iloc[idx]
+    qqq_series = df['QQQ'].dropna()
+    available_days = len(qqq_series)
     
-    if qqq > qqq_ma50 and ma20_slope:
+    # Determine periods based on available data
+    if available_days >= 50:
+        ma_long = 50
+        ma_short = 20
+    elif available_days >= 30:
+        ma_long = 30
+        ma_short = 15
+    elif available_days >= 20:
+        ma_long = 20
+        ma_short = 10
+    else:
+        # Not enough data - stay in cash
+        return "CASH"
+    
+    qqq = df['QQQ'].iloc[idx]
+    qqq_ma_long = df['QQQ'].rolling(ma_long).mean().iloc[idx]
+    qqq_ma_short = df['QQQ'].rolling(ma_short).mean().iloc[idx]
+    ma_short_slope = qqq_ma_short > df['QQQ'].rolling(ma_short).mean().shift(1).iloc[idx]
+    
+    if qqq > qqq_ma_long and ma_short_slope:
         return "BULL"
     return "CASH"
 
 
 def main():
     print("=" * 60)
-    print("AI SPECIFIC SYSTEM")
+    print("AI SPECIFIC SYSTEM (Adaptive)")
     print("=" * 60)
     
     config = load_config()
@@ -119,11 +161,19 @@ def main():
     print(f"Universe: {', '.join(tickers)}")
     print(f"Start balance: ${start_balance:,.2f}")
     print(f"Position limit: {position_limit}")
+    print(f"Min score: {min_score}")
     
     # Fetch data
     print("\n📥 Fetching market data...")
     df = fetch_market_data(tickers)
     print(f"✅ Data: {df.index[0].date()} to {df.index[-1].date()} ({len(df)} days)")
+    
+    # Print data availability for each ticker
+    print("\n📊 Data availability:")
+    for ticker in tickers + ["QQQ"]:
+        available = len(df[ticker].dropna())
+        pct = (available / len(df)) * 100 if len(df) > 0 else 0
+        print(f"   {ticker}: {available} days ({pct:.0f}%)")
     
     # Calculate returns
     for ticker in tickers:
@@ -137,8 +187,13 @@ def main():
     trade_log = []
     score_history = {}
     
+    # Determine minimum index for valid calculations
+    min_idx = 50  # Default, will be adjusted
+    if len(df) < 50:
+        min_idx = max(20, len(df) - 10)
+    
     # Main loop
-    for i in range(50, len(df) - 1):
+    for i in range(min_idx, len(df) - 1):
         date = df.index[i]
         next_date = df.index[i + 1]
         
@@ -162,7 +217,7 @@ def main():
             stop_pct = get_trailing_stop(leverage, current_gain, config)
             trailing_stop = pos.highest_price * (1 - stop_pct)
             
-            # Check stop (using close as low proxy)
+            # Check stop
             low_price = df[ticker].iloc[i]
             if low_price <= trailing_stop:
                 exit_price = min(trailing_stop, df[ticker].iloc[i + 1])
@@ -205,11 +260,13 @@ def main():
                 cash += gross_pl
                 continue
             
-            # Check score
+            # Check score (with available days)
+            ticker_data = df[ticker].dropna()
+            available_days = len(ticker_data)
             ret_1d = df[f'{ticker}_ret_1d'].iloc[i]
-            ret_3d = df[f'{ticker}_ret_3d'].iloc[i]
-            ret_5d = df[f'{ticker}_ret_5d'].iloc[i]
-            current_score = calculate_score(ret_1d, ret_3d, ret_5d)
+            ret_3d = df[f'{ticker}_ret_3d'].iloc[i] if available_days >= 3 else 0
+            ret_5d = df[f'{ticker}_ret_5d'].iloc[i] if available_days >= 5 else 0
+            current_score = calculate_score(ret_1d, ret_3d, ret_5d, available_days)
             
             if current_score < min_score:
                 exit_price = df[ticker].iloc[i + 1]
@@ -243,10 +300,18 @@ def main():
             scores = {}
             for item in universe:
                 ticker = item['ticker']
+                ticker_data = df[ticker].dropna()
+                available_days = len(ticker_data)
+                
+                # Skip if not enough data
+                if available_days < 10:
+                    scores[ticker] = -999
+                    continue
+                
                 ret_1d = df[f'{ticker}_ret_1d'].iloc[i]
-                ret_3d = df[f'{ticker}_ret_3d'].iloc[i]
-                ret_5d = df[f'{ticker}_ret_5d'].iloc[i]
-                raw_score = calculate_score(ret_1d, ret_3d, ret_5d)
+                ret_3d = df[f'{ticker}_ret_3d'].iloc[i] if available_days >= 3 else 0
+                ret_5d = df[f'{ticker}_ret_5d'].iloc[i] if available_days >= 5 else 0
+                raw_score = calculate_score(ret_1d, ret_3d, ret_5d, available_days)
                 
                 # Smoothing
                 prev = score_history.get(ticker, raw_score)
@@ -259,7 +324,7 @@ def main():
             open_tickers = [p.ticker for p in positions]
             
             entries_needed = position_limit - len(positions)
-            for ticker, score in sorted_scores[:entries_needed]:
+            for ticker, score in sorted_scores[:entries_needed * 2]:  # Take extra candidates
                 if ticker in open_tickers:
                     continue
                 if score >= min_score:
@@ -280,6 +345,7 @@ def main():
                                 leverage=leverage
                             ))
                             print(f"  📈 ENTRY: {ticker} @ ${entry_price:.2f} ({shares} shares, score: {score:.1f})")
+                            break  # Enter one position at a time
     
     # Save results
     data_dir = Path("data/ai")
