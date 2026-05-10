@@ -30,7 +30,7 @@ class Position:
 
 
 def load_config() -> dict:
-    config_path = Path("config/ai_system_parameters.yaml")
+    config_path = Path("config/ai_parameters.yaml")
     with open(config_path, "r", encoding="utf-8") as f:
         return yaml.safe_load(f)
 
@@ -162,8 +162,8 @@ def main():
             stop_pct = get_trailing_stop(leverage, current_gain, config)
             trailing_stop = pos.highest_price * (1 - stop_pct)
             
-            # Check stop
-            low_price = df[ticker].iloc[i]  # Using close as proxy for low
+            # Check stop (using close as low proxy)
+            low_price = df[ticker].iloc[i]
             if low_price <= trailing_stop:
                 exit_price = min(trailing_stop, df[ticker].iloc[i + 1])
                 gross_pl = (exit_price - pos.entry_price) * pos.shares
@@ -282,7 +282,7 @@ def main():
                             print(f"  📈 ENTRY: {ticker} @ ${entry_price:.2f} ({shares} shares, score: {score:.1f})")
     
     # Save results
-    data_dir = Path("data/ai_system")
+    data_dir = Path("data/ai")
     data_dir.mkdir(parents=True, exist_ok=True)
     
     # Positions
@@ -297,12 +297,12 @@ def main():
             'entry_score': p.entry_score,
             'leverage': p.leverage
         } for p in positions])
-        pos_df.to_csv(data_dir / "ai_positions.csv", index=False)
+        pos_df.to_csv(data_dir / "positions.csv", index=False)
     
     # Trade log
     if trade_log:
         trade_df = pd.DataFrame(trade_log)
-        trade_df.to_csv(data_dir / "ai_trade_log.csv", index=False)
+        trade_df.to_csv(data_dir / "trade_log.csv", index=False)
     
     # Performance
     if trade_log:
@@ -325,7 +325,7 @@ def main():
             'net_profit_dollars': round(total_pl, 2),
             'final_balance': round(final_balance, 2)
         }])
-        perf_df.to_csv(data_dir / "ai_performance.csv", index=False)
+        perf_df.to_csv(data_dir / "performance.csv", index=False)
         
         print(f"\n📊 AI SYSTEM RESULTS:")
         print(f"   Trades: {len(trade_log)}")
@@ -337,7 +337,7 @@ def main():
     else:
         print("\n📊 No trades executed")
     
-    print(f"\n✅ AI System complete. Data saved to data/ai_system/")
+    print(f"\n✅ AI System complete. Data saved to data/ai/")
     print(f"   Positions: {len(positions)} open")
     print(f"   Trades: {len(trade_log)} closed")
 
