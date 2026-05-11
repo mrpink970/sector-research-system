@@ -1,0 +1,57 @@
+# Quantum Computing System Configuration
+name: "Quantum Computing System"
+display_name: "Quantum System"
+start_date: "2026-05-11"
+starting_balance: 5000
+
+# Pure Play + 2026 IPO Quantum Stocks
+universe:
+  - ticker: "IONQ"
+    name: "IonQ Inc"
+    ipo_date: "2021"
+    leverage: 1
+  - ticker: "QBTS"
+    name: "D-Wave Quantum"
+    ipo_date: "2021"
+    leverage: 1
+  - ticker: "RGTI"
+    name: "Rigetti Computing"
+    ipo_date: "2022"
+    leverage: 1
+  - ticker: "QUBT"
+    name: "Quantum Computing Inc"
+    ipo_date: "2018"
+    leverage: 1
+  - ticker: "XNDU"
+    name: "Xanadu Quantum"
+    ipo_date: "2026-03-27"
+    leverage: 1
+  - ticker: "INFQ"
+    name: "Infleqtion"
+    ipo_date: "2026-02-17"
+    leverage: 1
+  - ticker: "HQ"
+    name: "Horizon Quantum"
+    ipo_date: "2026-03-20"
+    leverage: 1
+
+# Trading parameters
+position_limit: 1
+position_size_pct: 1.0
+min_score: 2.0
+trailing_stop: 0.25  # 25% trailing stop for volatile quantum stocks
+min_hold_days: 0
+
+# Regime filter (use QQQ as market proxy)
+regime_filter: true
+qqq_ma_period: 50
+
+# Data files
+data_files:
+  performance: "data/quantum/performance.csv"
+  positions: "data/quantum/positions.csv"
+  trade_log: "data/quantum/trade_log.csv"
+  scores: "data/quantum/quantum_scores.csv"
+
+# Dashboard
+dashboard_url: "https://mrpink970.github.io/sector-research-system/docs/quantum/quantum_dashboard.html"
