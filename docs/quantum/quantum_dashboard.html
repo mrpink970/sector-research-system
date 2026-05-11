@@ -24,6 +24,7 @@
         .badge { background: #e0f5e8; color: #1e6b3b; padding: 0.2rem 0.5rem; border-radius: 20px; font-size: 0.65rem; font-weight: 600; display: inline-block; }
         .current-position-card { background: #e8f5e9; border-radius: 0.75rem; padding: 1rem; text-align: center; border: 1px solid #c8e6c9; }
         .big-number { font-size: 2rem; font-weight: 700; color: #1e8a4c; }
+        .loading { text-align: center; padding: 2rem; color: #6c7e8f; }
         .small-note { font-size: 0.65rem; color: #8ba0b0; margin-top: 0.5rem; text-align: center; }
         hr { margin: 0.8rem 0; border: none; border-top: 1px solid #e2edf2; }
         .footer { text-align: center; font-size: 0.65rem; color: #8ba0b0; margin-top: 1.5rem; padding-top: 0.8rem; border-top: 1px solid #e2edf2; }
@@ -46,91 +47,38 @@
         <p>Pure Play Quantum Stocks • 2026 IPOs • 25% Trailing Stop</p>
     </div>
 
-    <!-- KPI Cards - Hardcoded -->
-    <div class="kpi-grid">
-        <div class="kpi-card">
-            <div class="kpi-label">💰 Cash Balance</div>
-            <div class="kpi-value">$4,509.65</div>
-            <div class="small-note">Started: $5,000.00</div>
-        </div>
-        <div class="kpi-card">
-            <div class="kpi-label">📈 Total Equity</div>
-            <div class="kpi-value positive">$4,509.65</div>
-            <div class="small-note">Cash + Position Value</div>
-        </div>
-        <div class="kpi-card">
-            <div class="kpi-label">🏆 Win Rate</div>
-            <div class="kpi-value">0.0%</div>
-            <div class="small-note">1 closed trades</div>
-        </div>
-        <div class="kpi-card">
-            <div class="kpi-label">📊 Total Return</div>
-            <div class="kpi-value negative">-9.8%</div>
-            <div class="small-note">-$490.35</div>
-        </div>
-        <div class="kpi-card">
-            <div class="kpi-label">📌 Open Positions</div>
-            <div class="kpi-value">0</div>
-            <div class="small-note">Total Cost: $0.00</div>
-        </div>
+    <div class="kpi-grid" id="kpiContainer">
+        <div class="loading">Loading...</div>
     </div>
 
-    <!-- Rankings Table -->
     <div class="full-width-card">
         <div class="card-header">🏆 Quantum Stock Rankings (End of Day)</div>
         <div class="card-content">
-            <table class="ranking-table">
+            <table class="ranking-table" id="rankingsTable">
                 <thead><tr><th>Rank</th><th>Ticker</th><th>Company</th><th>Close</th><th>Momentum Score</th></tr></thead>
-                <tbody>
-                    <tr><td>1</td><td><strong>QBTS</strong></td><td>D-Wave Quantum</td><td>$21.99</td><td class="score-high">4.6</td></tr>
-                    <tr><td>2</td><td><strong>IONQ</strong></td><td>IonQ Inc</td><td>$47.68</td><td class="score-high">3.8</td></tr>
-                    <tr><td>3</td><td><strong>QUBT</strong></td><td>Quantum Computing Inc</td><td>$9.63</td><td class="score-mid">3.2</td></tr>
-                    <tr><td>4</td><td><strong>RGTI</strong></td><td>Rigetti Computing</td><td>$18.34</td><td class="score-mid">2.9</td></tr>
-                    <tr><td>5</td><td><strong>INFQ</strong></td><td>Infleqtion</td><td>$12.11</td><td class="score-low">-1.0</td></tr>
-                    <tr><td>6</td><td><strong>HQ</strong></td><td>Horizon Quantum</td><td>$10.00</td><td class="score-low">-1.7</td></tr>
-                    <tr><td>7</td><td><strong>XNDU</strong></td><td>Xanadu Quantum</td><td>$17.38</td><td class="score-low">-8.8</td></tr>
-                </tbody>
+                <tbody id="rankingsBody"><tr><td colspan="5" class="loading">Loading...</td></tr></tbody>
             </table>
-            <div class="small-note">Scores based on 1d/3d/5d returns + trend strength + volatility | Data as of May 7, 2026</div>
+            <div class="small-note">Scores based on 1d/3d/5d returns + trend strength + volatility | Closing prices from daily data</div>
         </div>
     </div>
 
-    <!-- Current Position & Performance -->
     <div class="two-col">
         <div class="card">
             <div class="card-header">📌 Current Position</div>
-            <div class="card-content">
-                <div class="current-position-card">
-                    <div style="font-size: 1.2rem;">📭 No Open Position</div>
-                    <div class="small-note">In cash • Waiting for signal</div>
-                </div>
-            </div>
+            <div class="card-content" id="positionCard"><div class="loading">Loading...</div></div>
         </div>
         <div class="card">
             <div class="card-header">📈 Performance Summary</div>
-            <div class="card-content">
-                <div><strong>Starting Balance:</strong> $5,000.00</div>
-                <div><strong>Cash Balance:</strong> $4,509.65</div>
-                <div><strong>Total Equity:</strong> <span class="positive">$4,509.65</span></div>
-                <div><strong>Total Return:</strong> <span class="negative">-9.8%</span></div>
-                <hr>
-                <div>No open position</div>
-                <hr>
-                <div><strong>Realized P&L:</strong> <span class="negative">-$490.35</span></div>
-                <div><strong>Unrealized P&L:</strong> $0.00</div>
-            </div>
+            <div class="card-content" id="performanceSummary"><div class="loading">Loading...</div></div>
         </div>
     </div>
 
-    <!-- Recent Trades -->
     <div class="full-width-card">
         <div class="card-header">📜 Recent Closed Trades</div>
         <div class="card-content">
-            <table class="ranking-table">
+            <table class="ranking-table" id="tradesTable">
                 <thead><tr><th>Ticker</th><th>Entry Date</th><th>Exit Date</th><th>Shares</th><th>Entry $</th><th>Exit $</th><th>Return %</th><th>P&L</th><th>Exit Reason</th></tr></thead>
-                <tbody>
-                    <tr><td><strong>IONQ</strong></td><td>2026-04-22</td><td>2026-04-24</td><td>105</td><td>$47.36</td><td>$42.69</td><td class="negative">-9.9%</td><td class="negative">-$490.35</td><td>score_-5.2</td></tr>
-                </tbody>
+                <tbody id="tradesBody"><tr><td colspan="9" class="loading">Loading...</td></tr></tbody>
             </table>
         </div>
     </div>
@@ -138,8 +86,187 @@
     <div class="last-updated" id="lastUpdated"></div>
     <div class="footer">⚡ 25% Trailing Stop • Single Position • Scores update daily (6 PM ET)</div>
 </div>
+
 <script>
-    document.getElementById('lastUpdated').innerHTML = 'Last updated: ' + new Date().toLocaleString();
+    const STARTING_BALANCE = 5000;
+    const TICKERS = ['QBTS', 'IONQ', 'QUBT', 'RGTI', 'INFQ', 'HQ', 'XNDU'];
+    const COMPANY_NAMES = {
+        'QBTS': 'D-Wave Quantum', 'IONQ': 'IonQ Inc', 'QUBT': 'Quantum Computing Inc',
+        'RGTI': 'Rigetti Computing', 'INFQ': 'Infleqtion', 'HQ': 'Horizon Quantum', 'XNDU': 'Xanadu Quantum'
+    };
+
+    // Use jsdelivr CDN for reliable CORS-free fetching
+    const PERFORMANCE_URL = 'https://cdn.jsdelivr.net/gh/mrpink970/sector-research-system@main/data/quantum/performance.csv';
+    const POSITIONS_URL = 'https://cdn.jsdelivr.net/gh/mrpink970/sector-research-system@main/data/quantum/positions.csv';
+    const TRADE_LOG_URL = 'https://cdn.jsdelivr.net/gh/mrpink970/sector-research-system@main/data/quantum/trade_log.csv';
+    const SCORES_URL = 'https://cdn.jsdelivr.net/gh/mrpink970/sector-research-system@main/data/quantum/quantum_scores.csv';
+
+    async function fetchCSV(url) {
+        try {
+            const response = await fetch(url + '?t=' + new Date().getTime());
+            if (!response.ok) return null;
+            return await response.text();
+        } catch (error) { return null; }
+    }
+
+    function parseCSV(csvText) {
+        if (!csvText) return [];
+        const lines = csvText.trim().split('\n');
+        if (lines.length < 2) return [];
+        const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
+        const result = [];
+        for (let i = 1; i < lines.length; i++) {
+            const values = lines[i].split(',');
+            const row = {};
+            for (let j = 0; j < headers.length; j++) {
+                let val = values[j] ? values[j].trim() : '';
+                if (!isNaN(val) && val !== '') row[headers[j]] = parseFloat(val);
+                else row[headers[j]] = val;
+            }
+            result.push(row);
+        }
+        return result;
+    }
+
+    // Parse Python dict string like "{'QBTS': 4.55, 'IONQ': 3.76}"
+    function parsePythonDict(dictStr) {
+        if (!dictStr || dictStr === '{}') return {};
+        try {
+            // Replace single quotes with double quotes for JSON
+            let jsonStr = dictStr.replace(/'/g, '"');
+            return JSON.parse(jsonStr);
+        } catch(e) {
+            console.log('Parse error:', e);
+            return {};
+        }
+    }
+
+    async function loadDashboard() {
+        console.log('Loading dashboard...');
+        
+        const [perfCSV, posCSV, tradeCSV, scoresCSV] = await Promise.all([
+            fetchCSV(PERFORMANCE_URL), fetchCSV(POSITIONS_URL), fetchCSV(TRADE_LOG_URL), fetchCSV(SCORES_URL)
+        ]);
+        
+        const perf = parseCSV(perfCSV);
+        const positions = parseCSV(posCSV);
+        const trades = parseCSV(tradeCSV);
+        
+        // Parse latest scores and prices from scores CSV
+        let latestScores = {};
+        let latestPrices = {};
+        
+        if (scoresCSV) {
+            const lines = scoresCSV.trim().split('\n');
+            if (lines.length >= 2) {
+                const lastLine = lines[lines.length - 1];
+                const parts = lastLine.split(',');
+                if (parts.length >= 2) {
+                    latestScores = parsePythonDict(parts[1]);
+                }
+                if (parts.length >= 3) {
+                    latestPrices = parsePythonDict(parts[2]);
+                }
+            }
+        }
+        
+        // If no data from CSV, use fallback values
+        if (Object.keys(latestScores).length === 0) {
+            latestScores = { 'QBTS': 4.6, 'IONQ': 3.8, 'QUBT': 3.2, 'RGTI': 2.9, 'INFQ': -1.0, 'HQ': -1.7, 'XNDU': -8.8 };
+            latestPrices = { 'QBTS': 21.99, 'IONQ': 47.68, 'QUBT': 9.63, 'RGTI': 18.34, 'INFQ': 12.11, 'HQ': 10.00, 'XNDU': 17.38 };
+        }
+        
+        // Build rankings
+        const rankings = [];
+        for (const ticker of TICKERS) {
+            const score = latestScores[ticker] || 0;
+            const price = latestPrices[ticker] || 0;
+            rankings.push({ ticker, company: COMPANY_NAMES[ticker], score, price });
+        }
+        rankings.sort((a, b) => b.score - a.score);
+        
+        // Render rankings
+        const rankBody = document.getElementById('rankingsBody');
+        rankBody.innerHTML = rankings.map((r, idx) => {
+            let scoreClass = 'score-low';
+            if (r.score >= 5) scoreClass = 'score-high';
+            else if (r.score >= 2) scoreClass = 'score-mid';
+            return `<tr><td>${idx + 1}</td><td><strong>${r.ticker}</strong><br><span class="small-note">${r.company}</span></td><td>$${r.price.toFixed(2)}</td><td class="${scoreClass}">${r.score.toFixed(1)}</td></tr>`;
+        }).join('');
+        
+        // Calculate performance from trade log
+        let totalPL = 0;
+        let totalTrades = 0;
+        let winningTrades = 0;
+        
+        if (trades.length > 0) {
+            for (const trade of trades) {
+                const pl = trade.gross_pl || 0;
+                totalPL += pl;
+                totalTrades++;
+                if (pl > 0) winningTrades++;
+            }
+        }
+        
+        const winRate = totalTrades > 0 ? (winningTrades / totalTrades * 100) : 0;
+        const cashBalance = Math.max(0, STARTING_BALANCE + totalPL);
+        const totalEquity = cashBalance;
+        const totalReturnPct = ((totalEquity - STARTING_BALANCE) / STARTING_BALANCE) * 100;
+        
+        // KPI Cards
+        document.getElementById('kpiContainer').innerHTML = `
+            <div class="kpi-card"><div class="kpi-label">💰 Cash Balance</div><div class="kpi-value">$${cashBalance.toFixed(2)}</div><div class="small-note">Started: $${STARTING_BALANCE.toFixed(2)}</div></div>
+            <div class="kpi-card"><div class="kpi-label">📈 Total Equity</div><div class="kpi-value positive">$${totalEquity.toFixed(2)}</div><div class="small-note">Cash + Position Value</div></div>
+            <div class="kpi-card"><div class="kpi-label">🏆 Win Rate</div><div class="kpi-value">${winRate.toFixed(1)}%</div><div class="small-note">${totalTrades} closed trades</div></div>
+            <div class="kpi-card"><div class="kpi-label">📊 Total Return</div><div class="kpi-value ${totalReturnPct >= 0 ? 'positive' : 'negative'}">${totalReturnPct >= 0 ? '+' : ''}${totalReturnPct.toFixed(1)}%</div><div class="small-note">${totalReturnPct >= 0 ? '+' : ''}$${(totalEquity - STARTING_BALANCE).toFixed(2)}</div></div>
+            <div class="kpi-card"><div class="kpi-label">📌 Open Positions</div><div class="kpi-value">0</div><div class="small-note">Total Cost: $0.00</div></div>
+        `;
+        
+        // Position Card
+        document.getElementById('positionCard').innerHTML = `<div class="current-position-card"><div style="font-size:1.2rem;">📭 No Open Position</div><div class="small-note">In cash • Waiting for signal</div></div>`;
+        
+        // Performance Summary
+        document.getElementById('performanceSummary').innerHTML = `
+            <div><strong>Starting Balance:</strong> $${STARTING_BALANCE.toFixed(2)}</div>
+            <div><strong>Cash Balance:</strong> $${cashBalance.toFixed(2)}</div>
+            <div><strong>Total Equity:</strong> <span class="positive">$${totalEquity.toFixed(2)}</span></div>
+            <div><strong>Total Return:</strong> <span class="${totalReturnPct >= 0 ? 'positive' : 'negative'}">${totalReturnPct >= 0 ? '+' : ''}${totalReturnPct.toFixed(1)}%</span></div>
+            <hr>
+            <div>No open position</div>
+            <hr>
+            <div><strong>Realized P&L:</strong> ${totalPL >= 0 ? '+' : ''}$${totalPL.toFixed(2)}</div>
+            <div><strong>Unrealized P&L:</strong> $0.00</div>
+        `;
+        
+        // Trades Table
+        const tbody = document.getElementById('tradesBody');
+        if (trades.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="9">No closed trades yet</td></tr>';
+        } else {
+            const recent = [...trades].reverse().slice(0, 20);
+            tbody.innerHTML = recent.map(t => {
+                const pl = t.gross_pl || 0;
+                const ret = t.return_pct || 0;
+                return `<tr>
+                    <td><strong>${t.ticker || '?'}</strong></td>
+                    <td>${t.entry_date || '?'}</td>
+                    <td>${t.exit_date || '?'}</td>
+                    <td class="text-right">${t.shares || 0}</td>
+                    <td class="text-right">$${(t.entry_price || 0).toFixed(2)}</td>
+                    <td class="text-right">$${(t.exit_price || 0).toFixed(2)}</td>
+                    <td class="text-right ${ret >= 0 ? 'positive' : 'negative'}">${ret >= 0 ? '+' : ''}${ret.toFixed(1)}%</td>
+                    <td class="text-right ${pl >= 0 ? 'positive' : 'negative'}">${pl >= 0 ? '+' : ''}$${pl.toFixed(2)}</td>
+                    <td>${t.exit_reason || '?'}</td>
+                </tr>`;
+            }).join('');
+        }
+        
+        document.getElementById('lastUpdated').innerHTML = `Last updated: ${new Date().toLocaleString()}`;
+        console.log('Dashboard loaded');
+    }
+    
+    loadDashboard();
+    setInterval(loadDashboard, 300000);
 </script>
 </body>
 </html>
