@@ -11,7 +11,6 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
-import numpy as np
 import pandas as pd
 import yaml
 import yfinance as yf
@@ -116,13 +115,22 @@ def main():
     min_score = config['min_score']
     trailing_stop_pct = config['trailing_stop']
     
-    # Validate tickers
     print(f"Universe: {', '.join(tickers)}")
+    print(f"Start balance: ${start_balance:,.2f}")
+    print(f"Position limit: {position_limit}")
+    print(f"Trailing stop: {trailing_stop_pct * 100:.0f}%")
     
     # Fetch data
     print("\n📥 Fetching market data...")
     df = fetch_market_data(tickers)
     print(f"✅ Data: {df.index[0].date()} to {df.index[-1].date()} ({len(df)} days)")
+    
+    # Print data availability
+    print("\n📊 Data availability:")
+    for ticker in tickers + ["QQQ"]:
+        available = len(df[ticker].dropna())
+        pct = (available / len(df)) * 100 if len(df) > 0 else 0
+        print(f"   {ticker}: {available} days ({pct:.0f}%)")
     
     # Calculate returns
     for ticker in tickers:
@@ -161,9 +169,15 @@ def main():
                 gross_pl = (exit_price - pos.entry_price) * pos.shares
                 ret_pct = ((exit_price / pos.entry_price) - 1) * 100
                 trade_log.append({
-                    'ticker': ticker, 'entry_date': pos.entry_date, 'exit_date': next_date.strftime("%Y-%m-%d"),
-                    'entry_price': pos.entry_price, 'exit_price': exit_price, 'shares': pos.shares,
-                    'return_pct': round(ret_pct, 2), 'gross_pl': round(gross_pl, 2), 'exit_reason': 'trailing_stop'
+                    'ticker': ticker,
+                    'entry_date': pos.entry_date,
+                    'exit_date': next_date.strftime("%Y-%m-%d"),
+                    'entry_price': pos.entry_price,
+                    'exit_price': exit_price,
+                    'shares': pos.shares,
+                    'return_pct': round(ret_pct, 2),
+                    'gross_pl': round(gross_pl, 2),
+                    'exit_reason': 'trailing_stop'
                 })
                 cash += gross_pl
                 continue
@@ -173,9 +187,15 @@ def main():
                 gross_pl = (exit_price - pos.entry_price) * pos.shares
                 ret_pct = ((exit_price / pos.entry_price) - 1) * 100
                 trade_log.append({
-                    'ticker': ticker, 'entry_date': pos.entry_date, 'exit_date': next_date.strftime("%Y-%m-%d"),
-                    'entry_price': pos.entry_price, 'exit_price': exit_price, 'shares': pos.shares,
-                    'return_pct': round(ret_pct, 2), 'gross_pl': round(gross_pl, 2), 'exit_reason': 'regime_cash'
+                    'ticker': ticker,
+                    'entry_date': pos.entry_date,
+                    'exit_date': next_date.strftime("%Y-%m-%d"),
+                    'entry_price': pos.entry_price,
+                    'exit_price': exit_price,
+                    'shares': pos.shares,
+                    'return_pct': round(ret_pct, 2),
+                    'gross_pl': round(gross_pl, 2),
+                    'exit_reason': 'regime_cash'
                 })
                 cash += gross_pl
                 continue
@@ -191,9 +211,15 @@ def main():
                 gross_pl = (exit_price - pos.entry_price) * pos.shares
                 ret_pct = ((exit_price / pos.entry_price) - 1) * 100
                 trade_log.append({
-                    'ticker': ticker, 'entry_date': pos.entry_date, 'exit_date': next_date.strftime("%Y-%m-%d"),
-                    'entry_price': pos.entry_price, 'exit_price': exit_price, 'shares': pos.shares,
-                    'return_pct': round(ret_pct, 2), 'gross_pl': round(gross_pl, 2), 'exit_reason': f'score_{current_score:.1f}'
+                    'ticker': ticker,
+                    'entry_date': pos.entry_date,
+                    'exit_date': next_date.strftime("%Y-%m-%d"),
+                    'entry_price': pos.entry_price,
+                    'exit_price': exit_price,
+                    'shares': pos.shares,
+                    'return_pct': round(ret_pct, 2),
+                    'gross_pl': round(gross_pl, 2),
+                    'exit_reason': f'score_{current_score:.1f}'
                 })
                 cash += gross_pl
                 continue
@@ -207,7 +233,7 @@ def main():
         if regime == "BULL" and len(positions) < position_limit:
             scores = {}
             for item in universe:
-                ticker = item['ticker']  # Use ticker from config directly
+                ticker = item['ticker']
                 available_days = len(df[ticker].dropna())
                 if available_days < 10:
                     scores[ticker] = -999
@@ -222,11 +248,19 @@ def main():
                 score_history[ticker] = smoothed
                 scores[ticker] = smoothed
             
-            # Store daily scores with correct tickers
-            current_prices = {ticker: round(float(df[ticker].iloc[i]), 2) for ticker in tickers}
+            # Store daily scores - convert to regular Python floats
+            current_prices = {}
+            for ticker in tickers:
+                val = df[ticker].iloc[i]
+                current_prices[ticker] = float(val) if not pd.isna(val) else 0.0
+            
+            clean_scores = {}
+            for ticker, val in scores.items():
+                clean_scores[ticker] = float(val) if not pd.isna(val) else -999.0
+            
             daily_scores.append({
                 'date': date.strftime("%Y-%m-%d"),
-                'scores': str(scores),
+                'scores': str(clean_scores),
                 'prices': str(current_prices)
             })
             
@@ -242,9 +276,14 @@ def main():
                         shares = int(cash / entry_price)
                         if shares > 0:
                             positions.append(Position(
-                                ticker=ticker, entry_date=next_date.strftime("%Y-%m-%d"), entry_price=entry_price,
-                                shares=shares, highest_price=entry_price, stop_pct=trailing_stop_pct,
-                                trailing_stop=entry_price * (1 - trailing_stop_pct), entry_score=score
+                                ticker=ticker,
+                                entry_date=next_date.strftime("%Y-%m-%d"),
+                                entry_price=entry_price,
+                                shares=shares,
+                                highest_price=entry_price,
+                                stop_pct=trailing_stop_pct,
+                                trailing_stop=entry_price * (1 - trailing_stop_pct),
+                                entry_score=score
                             ))
                             print(f"  📈 ENTRY: {ticker} @ ${entry_price:.2f} ({shares} shares, score: {score:.1f})")
                             cash -= entry_price * shares
@@ -257,18 +296,25 @@ def main():
     if daily_scores:
         scores_df = pd.DataFrame(daily_scores)
         scores_df.to_csv(data_dir / "quantum_scores.csv", index=False)
-        print(f"✅ Saved {len(daily_scores)} days of scores")
+        print(f"✅ Saved {len(daily_scores)} days of scores to quantum_scores.csv")
     
     if positions:
         pos_df = pd.DataFrame([{
-            'ticker': p.ticker, 'entry_date': p.entry_date, 'entry_price': p.entry_price,
-            'shares': p.shares, 'highest_price': p.highest_price, 'trailing_stop': p.trailing_stop, 'entry_score': p.entry_score
+            'ticker': p.ticker,
+            'entry_date': p.entry_date,
+            'entry_price': p.entry_price,
+            'shares': p.shares,
+            'highest_price': p.highest_price,
+            'trailing_stop': p.trailing_stop,
+            'entry_score': p.entry_score
         } for p in positions])
         pos_df.to_csv(data_dir / "positions.csv", index=False)
+        print(f"✅ Saved {len(positions)} open positions")
     
     if trade_log:
         trade_df = pd.DataFrame(trade_log)
         trade_df.to_csv(data_dir / "trade_log.csv", index=False)
+        print(f"✅ Saved {len(trade_log)} closed trades")
     
     if trade_log:
         total_pl = sum(t['gross_pl'] for t in trade_log)
@@ -281,9 +327,12 @@ def main():
         avg_loss = sum(t['return_pct'] for t in losers) / len(losers) if losers else 0
         
         perf_df = pd.DataFrame([{
-            'total_trades': len(trade_log), 'win_rate_pct': round(win_rate, 2),
-            'avg_win_pct': round(avg_win, 2), 'avg_loss_pct': round(avg_loss, 2),
-            'total_return_pct': round(total_return, 2), 'net_profit_dollars': round(total_pl, 2),
+            'total_trades': len(trade_log),
+            'win_rate_pct': round(win_rate, 2),
+            'avg_win_pct': round(avg_win, 2),
+            'avg_loss_pct': round(avg_loss, 2),
+            'total_return_pct': round(total_return, 2),
+            'net_profit_dollars': round(total_pl, 2),
             'final_balance': round(final_balance, 2)
         }])
         perf_df.to_csv(data_dir / "performance.csv", index=False)
@@ -291,10 +340,17 @@ def main():
         print(f"\n📊 QUANTUM SYSTEM RESULTS:")
         print(f"   Trades: {len(trade_log)}")
         print(f"   Win Rate: {win_rate:.1f}%")
+        print(f"   Avg Win: +{avg_win:.1f}%")
+        print(f"   Avg Loss: {avg_loss:.1f}%")
         print(f"   Total Return: {total_return:+.1f}%")
         print(f"   Final Balance: ${final_balance:,.2f}")
     else:
         print("\n📊 No trades executed")
+    
+    # Show current scores
+    if daily_scores and len(daily_scores) > 0:
+        latest = daily_scores[-1]['scores']
+        print(f"\n📈 Latest Scores: {latest}")
     
     print(f"\n✅ Quantum System complete. Data saved to data/quantum/")
 
