@@ -38,8 +38,8 @@ universe:
 # Trading parameters
 position_limit: 1
 position_size_pct: 1.0
-min_score: 2.0
-trailing_stop: 0.25  # 25% trailing stop for volatile quantum stocks
+min_score: 4.0
+trailing_stop: 0.25
 min_hold_days: 0
 
 # Regime filter (use QQQ as market proxy)
