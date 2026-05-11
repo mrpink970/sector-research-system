@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Quantum Computing System - DEBUG VERSION
+Quantum Computing System - Fixed
 """
 
 from __future__ import annotations
@@ -34,17 +34,29 @@ def load_config() -> dict:
 
 
 def fetch_market_data(tickers: List[str]) -> pd.DataFrame:
+    """Fetch daily OHLC data for all tickers plus QQQ"""
     all_tickers = list(set(tickers + ["QQQ"]))
-    start_date = (datetime.now() - timedelta(days=60)).strftime("%Y-%m-%d")
-    print(f"  Fetching data from {start_date} to {datetime.now().strftime('%Y-%m-%d')}")
-    data = yf.download(all_tickers, start=start_date, end=datetime.now().strftime("%Y-%m-%d"), group_by='ticker', progress=False)
+    start_date = (datetime.now() - timedelta(days=365)).strftime("%Y-%m-%d")
+    end_date = datetime.now().strftime("%Y-%m-%d")
+    
+    print(f"  Fetching {len(all_tickers)} tickers from {start_date} to {end_date}")
+    
+    data = yf.download(all_tickers, start=start_date, end=end_date, group_by='ticker', progress=False)
+    
+    if data.empty:
+        print("  WARNING: No data returned from Yahoo Finance")
+        return pd.DataFrame()
     
     prices = {}
     for ticker in all_tickers:
         if ticker in data.columns:
             prices[ticker] = data[ticker]['Close'].dropna()
         else:
-            prices[ticker] = data[ticker]['Close']
+            # Try single ticker format
+            if 'Close' in data.columns:
+                prices[ticker] = data['Close'].dropna()
+            else:
+                prices[ticker] = pd.Series()
     
     df = pd.DataFrame(prices)
     return df.dropna()
@@ -101,7 +113,7 @@ def get_regime(df: pd.DataFrame, idx: int) -> str:
 
 def main():
     print("=" * 60)
-    print("QUANTUM COMPUTING SYSTEM (DEBUG)")
+    print("QUANTUM COMPUTING SYSTEM")
     print("=" * 60)
     
     config = load_config()
@@ -121,13 +133,19 @@ def main():
     # Fetch data
     print("\n📥 Fetching market data...")
     df = fetch_market_data(tickers)
+    
+    if df.empty:
+        print("❌ No data fetched. Please try again later.")
+        return
+    
     print(f"✅ Data: {df.index[0].date()} to {df.index[-1].date()} ({len(df)} days)")
     
     # Calculate returns
     for ticker in tickers:
-        df[f'{ticker}_ret_1d'] = df[ticker].pct_change() * 100
-        df[f'{ticker}_ret_3d'] = df[ticker].pct_change(3) * 100
-        df[f'{ticker}_ret_5d'] = df[ticker].pct_change(5) * 100
+        if ticker in df.columns:
+            df[f'{ticker}_ret_1d'] = df[ticker].pct_change() * 100
+            df[f'{ticker}_ret_3d'] = df[ticker].pct_change(3) * 100
+            df[f'{ticker}_ret_5d'] = df[ticker].pct_change(5) * 100
     
     # Initialize
     cash = start_balance
@@ -137,19 +155,20 @@ def main():
     daily_scores = []
     
     min_idx = max(20, len(df) - 200)
-    print(f"\n🔄 Processing days {min_idx} to {len(df)-1}")
     
     for i in range(min_idx, len(df) - 1):
         date = df.index[i]
         next_date = df.index[i + 1]
         regime = get_regime(df, i)
         
-        print(f"\n  📅 Date: {date.date()}, Regime: {regime}, Positions: {len(positions)}")
-        
         # === EXITS ===
         survivors = []
         for pos in positions:
             ticker = pos.ticker
+            if ticker not in df.columns:
+                survivors.append(pos)
+                continue
+                
             current_price = df[ticker].iloc[i]
             
             if current_price > pos.highest_price:
@@ -159,7 +178,6 @@ def main():
             low_price = df[ticker].iloc[i]
             
             if low_price <= trailing_stop:
-                print(f"    EXIT: {ticker} - trailing stop")
                 exit_price = min(trailing_stop, df[ticker].iloc[i + 1])
                 gross_pl = (exit_price - pos.entry_price) * pos.shares
                 ret_pct = ((exit_price / pos.entry_price) - 1) * 100
@@ -172,7 +190,6 @@ def main():
                 continue
             
             if regime == "CASH":
-                print(f"    EXIT: {ticker} - regime cash")
                 exit_price = df[ticker].iloc[i + 1]
                 gross_pl = (exit_price - pos.entry_price) * pos.shares
                 ret_pct = ((exit_price / pos.entry_price) - 1) * 100
@@ -185,13 +202,12 @@ def main():
                 continue
             
             available_days = len(df[ticker].dropna())
-            ret_1d = df[f'{ticker}_ret_1d'].iloc[i]
-            ret_3d = df[f'{ticker}_ret_3d'].iloc[i] if available_days >= 3 else 0
-            ret_5d = df[f'{ticker}_ret_5d'].iloc[i] if available_days >= 5 else 0
+            ret_1d = df[f'{ticker}_ret_1d'].iloc[i] if f'{ticker}_ret_1d' in df.columns else 0
+            ret_3d = df[f'{ticker}_ret_3d'].iloc[i] if f'{ticker}_ret_3d' in df.columns else 0
+            ret_5d = df[f'{ticker}_ret_5d'].iloc[i] if f'{ticker}_ret_5d' in df.columns else 0
             current_score = calculate_score(ret_1d, ret_3d, ret_5d, available_days)
             
             if current_score < min_score:
-                print(f"    EXIT: {ticker} - score {current_score:.1f} < {min_score}")
                 exit_price = df[ticker].iloc[i + 1]
                 gross_pl = (exit_price - pos.entry_price) * pos.shares
                 ret_pct = ((exit_price / pos.entry_price) - 1) * 100
@@ -209,30 +225,49 @@ def main():
         positions = survivors
         
         # === ENTRIES ===
-        if len(positions) < position_limit:
+        if regime == "BULL" and len(positions) < position_limit:
             scores = {}
             for item in universe:
                 ticker = item['ticker']
-                available_days = len(df[ticker].dropna())
+                if ticker not in df.columns:
+                    scores[ticker] = -999
+                    continue
+                    
+                ticker_data = df[ticker].dropna()
+                available_days = len(ticker_data)
                 if available_days < 10:
                     scores[ticker] = -999
                     continue
                 
-                ret_1d = df[f'{ticker}_ret_1d'].iloc[i]
-                ret_3d = df[f'{ticker}_ret_3d'].iloc[i] if available_days >= 3 else 0
-                ret_5d = df[f'{ticker}_ret_5d'].iloc[i] if available_days >= 5 else 0
+                ret_1d = df[f'{ticker}_ret_1d'].iloc[i] if f'{ticker}_ret_1d' in df.columns else 0
+                ret_3d = df[f'{ticker}_ret_3d'].iloc[i] if f'{ticker}_ret_3d' in df.columns else 0
+                ret_5d = df[f'{ticker}_ret_5d'].iloc[i] if f'{ticker}_ret_5d' in df.columns else 0
                 raw_score = calculate_score(ret_1d, ret_3d, ret_5d, available_days)
                 prev = score_history.get(ticker, raw_score)
                 smoothed = prev * 0.80 + raw_score * 0.20
                 score_history[ticker] = smoothed
                 scores[ticker] = smoothed
             
-            # Print top scores
-            sorted_scores = sorted(scores.items(), key=lambda x: x[1], reverse=True)
-            print(f"    Top scores: {sorted_scores[:3]}")
+            # Store daily scores
+            current_prices = {}
+            for ticker in tickers:
+                if ticker in df.columns:
+                    val = df[ticker].iloc[i]
+                    current_prices[ticker] = float(val) if not pd.isna(val) else 0.0
             
-            # Check if any score meets threshold
+            clean_scores = {ticker: float(score) for ticker, score in scores.items()}
+            daily_scores.append({
+                'date': date.strftime("%Y-%m-%d"),
+                'scores': str(clean_scores),
+                'prices': str(current_prices)
+            })
+            
+            sorted_scores = sorted(scores.items(), key=lambda x: x[1], reverse=True)
+            open_tickers = [p.ticker for p in positions]
+            
             for ticker, score in sorted_scores:
+                if ticker in open_tickers:
+                    continue
                 if score >= min_score:
                     entry_price = df[ticker].iloc[i + 1]
                     if entry_price > 0:
@@ -243,27 +278,18 @@ def main():
                                 shares=shares, highest_price=entry_price, stop_pct=trailing_stop_pct,
                                 trailing_stop=entry_price * (1 - trailing_stop_pct), entry_score=score
                             ))
-                            print(f"    ✅ ENTRY: {ticker} @ ${entry_price:.2f} ({shares} shares, score: {score:.1f})")
+                            print(f"  📈 ENTRY: {ticker} @ ${entry_price:.2f} ({shares} shares, score: {score:.1f})")
                             cash -= entry_price * shares
                             break
-            
-            # Store daily scores
-            current_prices = {ticker: round(float(df[ticker].iloc[i]), 2) for ticker in tickers}
-            clean_scores = {ticker: float(score) for ticker, score in scores.items()}
-            daily_scores.append({
-                'date': date.strftime("%Y-%m-%d"),
-                'scores': str(clean_scores),
-                'prices': str(current_prices)
-            })
     
-    # Save results (same as before)
+    # Save results
     data_dir = Path("data/quantum")
     data_dir.mkdir(parents=True, exist_ok=True)
     
     if daily_scores:
         scores_df = pd.DataFrame(daily_scores)
         scores_df.to_csv(data_dir / "quantum_scores.csv", index=False)
-        print(f"\n✅ Saved {len(daily_scores)} days of scores")
+        print(f"✅ Saved {len(daily_scores)} days of scores")
     
     if positions:
         pos_df = pd.DataFrame([{
@@ -271,16 +297,28 @@ def main():
             'shares': p.shares, 'highest_price': p.highest_price, 'trailing_stop': p.trailing_stop, 'entry_score': p.entry_score
         } for p in positions])
         pos_df.to_csv(data_dir / "positions.csv", index=False)
+        print(f"✅ Saved {len(positions)} open positions")
     
     if trade_log:
         trade_df = pd.DataFrame(trade_log)
         trade_df.to_csv(data_dir / "trade_log.csv", index=False)
+        print(f"✅ Saved {len(trade_log)} closed trades")
     
-    # Summary
     if trade_log:
         total_pl = sum(t['gross_pl'] for t in trade_log)
         final_balance = start_balance + total_pl
-        print(f"\n📊 Final Balance: ${final_balance:.2f}")
+        total_return = (final_balance / start_balance - 1) * 100
+        winners = [t for t in trade_log if t['gross_pl'] > 0]
+        losers = [t for t in trade_log if t['gross_pl'] < 0]
+        win_rate = len(winners) / len(trade_log) * 100 if trade_log else 0
+        
+        print(f"\n📊 QUANTUM SYSTEM RESULTS:")
+        print(f"   Trades: {len(trade_log)}")
+        print(f"   Win Rate: {win_rate:.1f}%")
+        print(f"   Total Return: {total_return:+.1f}%")
+        print(f"   Final Balance: ${final_balance:,.2f}")
+    else:
+        print("\n📊 No trades executed")
     
     print(f"\n✅ Quantum System complete. Positions: {len(positions)} open")
 
