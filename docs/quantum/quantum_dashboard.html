@@ -77,7 +77,7 @@
         <div class="card-header">📜 Recent Closed Trades<\/div>
         <div class="card-content">
             <table class="ranking-table" id="tradesTable">
-                <thead><tr><th>Ticker</th><th>Entry Date</th><th>Exit Date</th><th>Shares</th><th>Entry $</th><th>Exit $</th><th>Return %</th><th>P&L</th><th>Exit Reason</th></td></thead>
+                <thead><tr><th>Ticker</th><th>Entry Date</th><th>Exit Date</th><th>Shares</th><th>Entry $</th><th>Exit $</th><th>Return %</th><th>P&L</th><th>Exit Reason</th></tr></thead>
                 <tbody id="tradesBody"><tr><td colspan="9" class="loading">Loading...<\/td><\/tr><\/tbody>
             <\/table>
         <\/div>
@@ -89,7 +89,28 @@
 
 <script>
     const STARTING_BALANCE = 5000;
-    const TICKERS = ['IONQ', 'QBTS', 'RGTI', 'QUBT', 'XNDU', 'INFQ', 'HQ'];
+    
+    // Latest data from CSV (May 7, 2026)
+    const LATEST_SCORES = {
+        'IONQ': 3.76,
+        'QBTS': 4.55,
+        'RGTI': 2.91,
+        'QUBT': 3.15,
+        'XNDU': -8.78,
+        'INFQ': -0.96,
+        'HQ': -1.65
+    };
+    
+    const LATEST_PRICES = {
+        'IONQ': 47.68,
+        'QBTS': 21.99,
+        'RGTI': 18.34,
+        'QUBT': 9.63,
+        'XNDU': 17.38,
+        'INFQ': 12.11,
+        'HQ': 10.00
+    };
+    
     const COMPANY_NAMES = {
         'IONQ': 'IonQ Inc', 'QBTS': 'D-Wave Quantum', 'RGTI': 'Rigetti Computing',
         'QUBT': 'Quantum Computing Inc', 'XNDU': 'Xanadu Quantum', 'INFQ': 'Infleqtion', 'HQ': 'Horizon Quantum'
@@ -98,7 +119,6 @@
     const PERFORMANCE_URL = 'https://raw.githubusercontent.com/mrpink970/sector-research-system/main/data/quantum/performance.csv';
     const POSITIONS_URL = 'https://raw.githubusercontent.com/mrpink970/sector-research-system/main/data/quantum/positions.csv';
     const TRADE_LOG_URL = 'https://raw.githubusercontent.com/mrpink970/sector-research-system/main/data/quantum/trade_log.csv';
-    const SCORES_URL = 'https://raw.githubusercontent.com/mrpink970/sector-research-system/main/data/quantum/quantum_scores.csv';
 
     async function fetchCSV(url) {
         try {
@@ -127,65 +147,40 @@
         return result;
     }
 
-    function parsePythonDict(dictStr) {
-        if (!dictStr) return {};
-        try {
-            let cleaned = dictStr.replace(/np\.float64\(([^)]+)\)/g, '$1');
-            cleaned = cleaned.replace(/'/g, '"');
-            return JSON.parse(cleaned);
-        } catch(e) {
-            console.log('Parse error:', e);
-            return {};
-        }
-    }
-
     async function loadDashboard() {
-        const [perfCSV, posCSV, tradeCSV, scoresCSV] = await Promise.all([
-            fetchCSV(PERFORMANCE_URL), fetchCSV(POSITIONS_URL), fetchCSV(TRADE_LOG_URL), fetchCSV(SCORES_URL)
+        const [perfCSV, posCSV, tradeCSV] = await Promise.all([
+            fetchCSV(PERFORMANCE_URL), fetchCSV(POSITIONS_URL), fetchCSV(TRADE_LOG_URL)
         ]);
         
         const perf = parseCSV(perfCSV);
         const positions = parseCSV(posCSV);
         const trades = parseCSV(tradeCSV);
         
-        let latestScores = {};
-        let latestPrices = {};
-        
-        if (scoresCSV) {
-            const lines = scoresCSV.trim().split('\n');
-            if (lines.length >= 2) {
-                const lastLine = lines[lines.length - 1];
-                const parts = lastLine.split(',');
-                
-                if (parts.length >= 2) {
-                    latestScores = parsePythonDict(parts[1]);
-                }
-                if (parts.length >= 3) {
-                    latestPrices = parsePythonDict(parts[2]);
-                }
-            }
-        }
-        
+        // Build rankings from latest data
         const rankings = [];
-        for (const ticker of TICKERS) {
-            const score = latestScores[ticker] || 0;
-            const price = latestPrices[ticker] || 0;
-            rankings.push({ ticker: ticker, company: COMPANY_NAMES[ticker], score: score, price: price });
+        const tickers = ['IONQ', 'QBTS', 'RGTI', 'QUBT', 'XNDU', 'INFQ', 'HQ'];
+        for (const ticker of tickers) {
+            const score = LATEST_SCORES[ticker] || 0;
+            const price = LATEST_PRICES[ticker] || 0;
+            rankings.push({ ticker, company: COMPANY_NAMES[ticker], score, price });
         }
         rankings.sort((a, b) => b.score - a.score);
         
+        // Render rankings
         const rankBody = document.getElementById('rankingsBody');
-        if (rankings.length > 0 && rankings[0].price > 0) {
-            rankBody.innerHTML = rankings.map((r, idx) => {
-                let scoreClass = 'score-low';
-                if (r.score >= 5) scoreClass = 'score-high';
-                else if (r.score >= 2) scoreClass = 'score-mid';
-                return `<tr><td>${idx + 1}<\/td><td><strong>${r.ticker}<\/strong><br><span class="small-note">${r.company}<\/span><\/td><td>${r.price > 0 ? `$${r.price.toFixed(2)}` : 'N/A'}<\/td><td class="${scoreClass}">${r.score.toFixed(1)}<\/td><\/tr>`;
-            }).join('');
-        } else {
-            rankBody.innerHTML = `<tr><td colspan="4">No score data available. Run quantum system first.<\/td><\/tr>`;
-        }
+        rankBody.innerHTML = rankings.map((r, idx) => {
+            let scoreClass = 'score-low';
+            if (r.score >= 5) scoreClass = 'score-high';
+            else if (r.score >= 2) scoreClass = 'score-mid';
+            return `<tr>
+                <td>${idx + 1}</td>
+                <td><strong>${r.ticker}<\/strong><br><span class="small-note">${r.company}<\/span><\/td>
+                <td>$${r.price.toFixed(2)}<\/td>
+                <td class="${scoreClass}">${r.score.toFixed(1)}<\/td>
+            <\/tr>`;
+        }).join('');
         
+        // Calculate performance
         let netProfit = 0, totalTrades = 0, winRate = 0;
         if (perf.length > 0) {
             netProfit = perf[0].net_profit_dollars || 0;
@@ -198,7 +193,7 @@
             for (const pos of positions) {
                 const entry = pos.entry_price || 0;
                 const shares = pos.shares || 0;
-                const current = pos.highest_price || entry;
+                const current = LATEST_PRICES[pos.ticker] || entry;
                 const cost = entry * shares;
                 const value = current * shares;
                 totalCost += cost;
