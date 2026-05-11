@@ -38,6 +38,7 @@
         .score-mid { color: #eab308; font-weight: 600; }
         .score-low { color: #ef4444; font-weight: 600; }
         .text-right { text-align: right; }
+        .debug { background: #f0f0f0; padding: 10px; margin: 10px 0; font-family: monospace; font-size: 12px; white-space: pre-wrap; word-break: break-all; }
     </style>
 </head>
 <body>
@@ -82,10 +83,18 @@
         <div class="card-content">
             <table class="ranking-table">
                 <thead><tr><th>Ticker</th><th>Entry Date</th><th>Exit Date</th><th>Shares</th><th>Entry $</th><th>Exit $</th><th>Return %</th><th>P&L</th><th>Exit Reason</th></tr></thead>
-                <tbody id="tradesBody"><tr><td colspan="9" class="loading">Loading...<\/td><\/tr><\/tbody>
+                <tbody id="tradesBody"></table><td colspan="9" class="loading">Loading...<\/td><\/tr><\/tbody>
             <\/table>
         <\/div>
     <\/div>
+
+    <!-- Debug section -->
+    <div class="full-width-card">
+        <div class="card-header">🔍 Debug - Trade Raw Data</div>
+        <div class="card-content">
+            <div class="debug" id="debugData">Loading debug...</div>
+        </div>
+    </div>
 
     <div class="last-updated" id="lastUpdated"><\/div>
     <div class="footer">⚡ 10% Trailing Stop • Single Position • Scores update daily (6 PM ET)<\/div>
@@ -134,8 +143,16 @@
         const trades = parseCSV(await fetchCSV(TRADE_URL));
         const perf = parseCSV(await fetchCSV(PERF_URL));
         
-        console.log('Trades found:', trades.length);
-        console.log('First trade:', trades[0]);
+        // Update debug with raw trade data
+        const debugDiv = document.getElementById('debugData');
+        debugDiv.innerHTML = `Trades found: ${trades.length}<br><br>`;
+        if (trades.length > 0) {
+            debugDiv.innerHTML += `First trade object:<br>${JSON.stringify(trades[0], null, 2)}<br><br>`;
+            debugDiv.innerHTML += `All trades:<br>${JSON.stringify(trades, null, 2)}`;
+        } else {
+            const tradeText = await fetchCSV(TRADE_URL);
+            debugDiv.innerHTML += `Raw trade CSV content:<br>${tradeText || 'No data'}`;
+        }
         
         // Parse scores and prices from the last line of scores CSV
         let latestScores = {};
@@ -270,7 +287,7 @@
             <div><strong>Unrealized P&L:</strong> ${unrealizedPL >= 0 ? '+' : ''}$${unrealizedPL.toFixed(2)}</div>
         `;
         
-        // Trades table - FIXED: properly map trade data
+        // Trades table
         const tbody = document.getElementById('tradesBody');
         if (trades.length === 0) {
             tbody.innerHTML = '<tr><td colspan="9">No closed trades yet<\/td><\/tr>';
@@ -289,7 +306,7 @@
                     <td class="text-right ${ret >= 0 ? 'positive' : 'negative'}">${ret >= 0 ? '+' : ''}${ret.toFixed(1)}%<\/td>
                     <td class="text-right ${pl >= 0 ? 'positive' : 'negative'}">${pl >= 0 ? '+' : ''}$${pl.toFixed(2)}<\/td>
                     <td>${t.exit_reason || '?'}<\/td>
-                </table>`;
+                </tr>`;
             }).join('');
         }
         
