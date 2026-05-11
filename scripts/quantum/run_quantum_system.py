@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Quantum Computing System - WORKING VERSION
+Quantum Computing System - WITH PRICES
 """
 
 from __future__ import annotations
@@ -32,7 +32,7 @@ def load_config() -> dict:
 
 
 def fetch_prices(tickers: List[str]) -> pd.DataFrame:
-    """Fetch closing prices - same method as working systems"""
+    """Fetch closing prices"""
     start = (datetime.now() - timedelta(days=90)).strftime("%Y-%m-%d")
     data = yf.download(tickers, start=start, progress=False)
     if data.empty:
@@ -41,16 +41,14 @@ def fetch_prices(tickers: List[str]) -> pd.DataFrame:
 
 
 def calculate_score(ret_1d: float, ret_3d: float, ret_5d: float) -> float:
-    """Momentum score - simpler and more reliable"""
+    """Momentum score"""
     score = (ret_1d * 0.30) + (ret_3d * 0.25) + (ret_5d * 0.20)
     
-    # Trend bonus
     if ret_1d > 0 and ret_3d > 0 and ret_5d > 0:
         score += 5 * 0.15
     elif ret_1d < 0 and ret_3d < 0 and ret_5d < 0:
         score -= 5 * 0.15
     
-    # Volatility adjustment
     vol = abs(ret_1d - ret_3d)
     score += max(0, 10 - vol) * 0.10
     
@@ -113,9 +111,21 @@ def main():
             for i in range(len(df))
         ]
     
-    # Save scores for dashboard
-    scores.to_csv("data/quantum/quantum_scores.csv")
-    print(f"✅ Saved scores")
+    # Save scores and prices together
+    scores_with_prices = []
+    for i in range(len(df)):
+        date = df.index[i]
+        price_dict = {ticker: round(df[ticker].iloc[i], 2) for ticker in tickers}
+        score_dict = {ticker: round(scores[ticker].iloc[i], 2) for ticker in tickers}
+        scores_with_prices.append({
+            'date': date.strftime("%Y-%m-%d"),
+            'scores': str(score_dict),
+            'prices': str(price_dict)
+        })
+    
+    scores_df = pd.DataFrame(scores_with_prices)
+    scores_df.to_csv("data/quantum/quantum_scores.csv", index=False)
+    print(f"✅ Saved scores and prices")
     
     # Run simulation
     cash = start_balance
