@@ -54,11 +54,15 @@
     <div class="full-width-card">
         <div class="card-header">🏆 Quantum Stock Rankings (End of Day)</div>
         <div class="card-content">
-            <table class="ranking-table" id="rankingsTable">
-                <thead><tr><th>Rank</th><th>Ticker</th><th>Company</th><th>Close</th><th>Momentum Score</th></tr></thead>
-                <tbody id="rankingsBody"><tr><td colspan="5" class="loading">Loading...</td></tr></tbody>
+            <table class="ranking-table">
+                <thead>
+                    <tr><th>Rank</th><th>Ticker</th><th>Close</th><th>Momentum Score</th></tr>
+                </thead>
+                <tbody id="rankingsBody">
+                    <tr><td colspan="4" class="loading">Loading...</td></tr>
+                </tbody>
             </table>
-            <div class="small-note">Scores based on 1d/3d/5d returns + trend strength + volatility | Closing prices from daily data</div>
+            <div class="small-note">Scores based on 1d/3d/5d returns + trend strength + volatility</div>
         </div>
     </div>
 
@@ -76,9 +80,13 @@
     <div class="full-width-card">
         <div class="card-header">📜 Recent Closed Trades</div>
         <div class="card-content">
-            <table class="ranking-table" id="tradesTable">
-                <thead><tr><th>Ticker</th><th>Entry Date</th><th>Exit Date</th><th>Shares</th><th>Entry $</th><th>Exit $</th><th>Return %</th><th>P&L</th><th>Exit Reason</th></tr></thead>
-                <tbody id="tradesBody"><tr><td colspan="9" class="loading">Loading...</td></tr></tbody>
+            <table class="ranking-table">
+                <thead>
+                    <tr><th>Ticker</th><th>Entry Date</th><th>Exit Date</th><th>Shares</th><th>Entry $</th><th>Exit $</th><th>Return %</th><th>P&L</th><th>Exit Reason</th></tr>
+                </thead>
+                <tbody id="tradesBody">
+                    <tr><td colspan="9" class="loading">Loading...</td></tr>
+                </tbody>
             </table>
         </div>
     </div>
@@ -95,7 +103,6 @@
         'RGTI': 'Rigetti Computing', 'INFQ': 'Infleqtion', 'HQ': 'Horizon Quantum', 'XNDU': 'Xanadu Quantum'
     };
 
-    // Use jsdelivr CDN for reliable CORS-free fetching
     const PERFORMANCE_URL = 'https://cdn.jsdelivr.net/gh/mrpink970/sector-research-system@main/data/quantum/performance.csv';
     const POSITIONS_URL = 'https://cdn.jsdelivr.net/gh/mrpink970/sector-research-system@main/data/quantum/positions.csv';
     const TRADE_LOG_URL = 'https://cdn.jsdelivr.net/gh/mrpink970/sector-research-system@main/data/quantum/trade_log.csv';
@@ -128,15 +135,12 @@
         return result;
     }
 
-    // Parse Python dict string like "{'QBTS': 4.55, 'IONQ': 3.76}"
     function parsePythonDict(dictStr) {
         if (!dictStr || dictStr === '{}') return {};
         try {
-            // Replace single quotes with double quotes for JSON
             let jsonStr = dictStr.replace(/'/g, '"');
             return JSON.parse(jsonStr);
         } catch(e) {
-            console.log('Parse error:', e);
             return {};
         }
     }
@@ -170,35 +174,31 @@
             }
         }
         
-        // If no data from CSV, use fallback values
+        // Fallback values if CSV not available
         if (Object.keys(latestScores).length === 0) {
             latestScores = { 'QBTS': 4.6, 'IONQ': 3.8, 'QUBT': 3.2, 'RGTI': 2.9, 'INFQ': -1.0, 'HQ': -1.7, 'XNDU': -8.8 };
             latestPrices = { 'QBTS': 21.99, 'IONQ': 47.68, 'QUBT': 9.63, 'RGTI': 18.34, 'INFQ': 12.11, 'HQ': 10.00, 'XNDU': 17.38 };
         }
         
-        // Build rankings
+        // Build rankings (no company column)
         const rankings = [];
         for (const ticker of TICKERS) {
             const score = latestScores[ticker] || 0;
             const price = latestPrices[ticker] || 0;
-            rankings.push({ ticker, company: COMPANY_NAMES[ticker], score, price });
+            rankings.push({ ticker, score, price });
         }
         rankings.sort((a, b) => b.score - a.score);
         
-        // Render rankings
         const rankBody = document.getElementById('rankingsBody');
         rankBody.innerHTML = rankings.map((r, idx) => {
             let scoreClass = 'score-low';
             if (r.score >= 5) scoreClass = 'score-high';
             else if (r.score >= 2) scoreClass = 'score-mid';
-            return `<tr><td>${idx + 1}</td><td><strong>${r.ticker}</strong><br><span class="small-note">${r.company}</span></td><td>$${r.price.toFixed(2)}</td><td class="${scoreClass}">${r.score.toFixed(1)}</td></tr>`;
+            return `<tr><td>${idx + 1}</td><td><strong>${r.ticker}</strong><br><span class="small-note">${COMPANY_NAMES[r.ticker]}</span></td><td>$${r.price.toFixed(2)}</td><td class="${scoreClass}">${r.score.toFixed(1)}</td></tr>`;
         }).join('');
         
-        // Calculate performance from trade log
-        let totalPL = 0;
-        let totalTrades = 0;
-        let winningTrades = 0;
-        
+        // Calculate performance
+        let totalPL = 0, totalTrades = 0, winningTrades = 0;
         if (trades.length > 0) {
             for (const trade of trades) {
                 const pl = trade.gross_pl || 0;
@@ -231,9 +231,7 @@
             <div><strong>Cash Balance:</strong> $${cashBalance.toFixed(2)}</div>
             <div><strong>Total Equity:</strong> <span class="positive">$${totalEquity.toFixed(2)}</span></div>
             <div><strong>Total Return:</strong> <span class="${totalReturnPct >= 0 ? 'positive' : 'negative'}">${totalReturnPct >= 0 ? '+' : ''}${totalReturnPct.toFixed(1)}%</span></div>
-            <hr>
-            <div>No open position</div>
-            <hr>
+            <hr><div>No open position</div><hr>
             <div><strong>Realized P&L:</strong> ${totalPL >= 0 ? '+' : ''}$${totalPL.toFixed(2)}</div>
             <div><strong>Unrealized P&L:</strong> $0.00</div>
         `;
@@ -262,7 +260,6 @@
         }
         
         document.getElementById('lastUpdated').innerHTML = `Last updated: ${new Date().toLocaleString()}`;
-        console.log('Dashboard loaded');
     }
     
     loadDashboard();
