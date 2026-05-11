@@ -41,17 +41,27 @@ def fetch_market_data(tickers: List[str]) -> pd.DataFrame:
     
     print(f"  Fetching {len(all_tickers)} tickers from {start_date} to {end_date}")
     
-    data = yf.download(all_tickers, start=start_date, end=end_date, progress=False)
+    # Download all tickers at once - simpler approach
+    data = yf.download(all_tickers, start=start_date, end=end_date, progress=False, auto_adjust=False)
     
     if data.empty:
         print("  WARNING: No data returned")
         return pd.DataFrame()
     
-    # Extract Close prices (handles both single and multiple tickers)
-    if isinstance(data.columns, pd.MultiIndex):
+    # If we got a MultiIndex DataFrame, extract Close prices
+    if 'Close' in data:
+        # Single ticker or simple format
+        df = data['Close'] if 'Close' in data else data
+    elif isinstance(data.columns, pd.MultiIndex):
         df = data['Close'].copy()
     else:
-        df = pd.DataFrame(data['Close']) if 'Close' in data else data
+        df = data
+    
+    # Convert to DataFrame if needed
+    if isinstance(df, pd.Series):
+        df = pd.DataFrame(df)
+    
+    print(f"  DEBUG: Data shape: {df.shape}, last date: {df.index[-1].date()}")
     
     return df.dropna()
 
