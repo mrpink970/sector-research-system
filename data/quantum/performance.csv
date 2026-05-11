@@ -1,2 +1,2 @@
-total_trades,win_rate_pct,avg_win_pct,avg_loss_pct,total_return_pct,net_profit_dollars,final_balance
-1,0.0,0,-9.86,-9.81,-490.35,4509.65
+total_trades,win_rate_pct,total_return_pct,net_profit_dollars,final_balance
+1,0,-15.77,-788.62,4211.38
