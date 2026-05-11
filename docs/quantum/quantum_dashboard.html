@@ -24,7 +24,6 @@
         .badge { background: #e0f5e8; color: #1e6b3b; padding: 0.2rem 0.5rem; border-radius: 20px; font-size: 0.65rem; font-weight: 600; display: inline-block; }
         .current-position-card { background: #e8f5e9; border-radius: 0.75rem; padding: 1rem; text-align: center; border: 1px solid #c8e6c9; }
         .big-number { font-size: 2rem; font-weight: 700; color: #1e8a4c; }
-        .loading { text-align: center; padding: 2rem; color: #6c7e8f; }
         .small-note { font-size: 0.65rem; color: #8ba0b0; margin-top: 0.5rem; text-align: center; }
         hr { margin: 0.8rem 0; border: none; border-top: 1px solid #e2edf2; }
         .footer { text-align: center; font-size: 0.65rem; color: #8ba0b0; margin-top: 1.5rem; padding-top: 0.8rem; border-top: 1px solid #e2edf2; }
@@ -47,16 +46,42 @@
         <p>Pure Play Quantum Stocks • 2026 IPOs • 25% Trailing Stop</p>
     </div>
 
-    <div class="kpi-grid" id="kpiContainer">
-        <div class="loading">Loading...</div>
+    <!-- KPI Cards - Hardcoded -->
+    <div class="kpi-grid">
+        <div class="kpi-card">
+            <div class="kpi-label">💰 Cash Balance</div>
+            <div class="kpi-value">$4,509.65</div>
+            <div class="small-note">Started: $5,000.00</div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-label">📈 Total Equity</div>
+            <div class="kpi-value positive">$4,509.65</div>
+            <div class="small-note">Cash + Position Value</div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-label">🏆 Win Rate</div>
+            <div class="kpi-value">0.0%</div>
+            <div class="small-note">1 closed trades</div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-label">📊 Total Return</div>
+            <div class="kpi-value negative">-9.8%</div>
+            <div class="small-note">-$490.35</div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-label">📌 Open Positions</div>
+            <div class="kpi-value">0</div>
+            <div class="small-note">Total Cost: $0.00</div>
+        </div>
     </div>
 
+    <!-- Rankings Table -->
     <div class="full-width-card">
         <div class="card-header">🏆 Quantum Stock Rankings (End of Day)</div>
         <div class="card-content">
-            <table class="ranking-table" id="rankingsTable">
-                <thead><tr><th>Rank</th><th>Ticker</th><th>Company</th><th>Close</th><th>Momentum Score</th></td></thead>
-                <tbody id="rankingsBody">
+            <table class="ranking-table">
+                <thead><tr><th>Rank</th><th>Ticker</th><th>Company</th><th>Close</th><th>Momentum Score</th></tr></thead>
+                <tbody>
                     <tr><td>1</td><td><strong>QBTS</strong></td><td>D-Wave Quantum</td><td>$21.99</td><td class="score-high">4.6</td></tr>
                     <tr><td>2</td><td><strong>IONQ</strong></td><td>IonQ Inc</td><td>$47.68</td><td class="score-high">3.8</td></tr>
                     <tr><td>3</td><td><strong>QUBT</strong></td><td>Quantum Computing Inc</td><td>$9.63</td><td class="score-mid">3.2</td></tr>
@@ -70,6 +95,7 @@
         </div>
     </div>
 
+    <!-- Current Position & Performance -->
     <div class="two-col">
         <div class="card">
             <div class="card-header">📌 Current Position</div>
@@ -82,7 +108,7 @@
         </div>
         <div class="card">
             <div class="card-header">📈 Performance Summary</div>
-            <div class="card-content" id="performanceSummary">
+            <div class="card-content">
                 <div><strong>Starting Balance:</strong> $5,000.00</div>
                 <div><strong>Cash Balance:</strong> $4,509.65</div>
                 <div><strong>Total Equity:</strong> <span class="positive">$4,509.65</span></div>
@@ -96,6 +122,7 @@
         </div>
     </div>
 
+    <!-- Recent Trades -->
     <div class="full-width-card">
         <div class="card-header">📜 Recent Closed Trades</div>
         <div class="card-content">
@@ -108,7 +135,7 @@
         </div>
     </div>
 
-    <div class="last-updated" id="lastUpdated">Last updated: May 11, 2026</div>
+    <div class="last-updated" id="lastUpdated"></div>
     <div class="footer">⚡ 25% Trailing Stop • Single Position • Scores update daily (6 PM ET)</div>
 </div>
 <script>
