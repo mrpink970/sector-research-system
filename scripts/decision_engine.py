@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
 Decision Engine - Morning analysis and trade recommendations
-Runs at 10:00 AM ET to capture opening action
-Saves decision log for later review and backtesting
+Runs at 10:00 AM ET
+Tells you which system to hold, when to switch, when to go to cash
 """
 
 import os
@@ -21,6 +21,7 @@ import yaml
 # CONFIGURATION
 # ============================================================
 CONFIG_PATH = Path("config/master_config.yaml")
+SWITCH_LOG_PATH = Path("data/decision_switch_log.csv")
 
 
 def load_config() -> dict:
@@ -42,50 +43,9 @@ def safe_float(value, default=0.0) -> float:
         return default
 
 
-# ============================================================
-# DATA FETCHING
-# ============================================================
-
-def fetch_yesterdays_close(ticker: str) -> float:
-    """Fetch yesterday's closing price"""
-    try:
-        stock = yf.Ticker(ticker)
-        hist = stock.history(period="2d")
-        if len(hist) >= 2:
-            return float(hist['Close'].iloc[-2])
-        elif len(hist) == 1:
-            return float(hist['Close'].iloc[-1])
-        return 0.0
-    except Exception as e:
-        print(f"Error fetching {ticker}: {e}")
-        return 0.0
-
-
-def fetch_current_price(ticker: str) -> float:
-    """Fetch current price (10 AM ET, after free data delay)"""
-    try:
-        stock = yf.Ticker(ticker)
-        hist = stock.history(period="1d")
-        if not hist.empty:
-            return float(hist['Close'].iloc[-1])
-        return 0.0
-    except Exception as e:
-        print(f"Error fetching current {ticker}: {e}")
-        return 0.0
-
-
-def calculate_ma50(ticker: str) -> float:
-    """Calculate 50-day moving average"""
-    try:
-        stock = yf.Ticker(ticker)
-        hist = stock.history(period="2mo")
-        if len(hist) >= 50:
-            ma50 = hist['Close'].tail(50).mean()
-            return float(ma50)
-        return 0.0
-    except Exception as e:
-        print(f"Error calculating MA50 for {ticker}: {e}")
-        return 0.0
+def safe_int(value, default=0) -> int:
+    """Safely convert to int"""
+    return int(safe_float(value, default))
 
 
 # ============================================================
@@ -93,37 +53,27 @@ def calculate_ma50(ticker: str) -> float:
 # ============================================================
 
 def get_system_performance() -> Dict[str, dict]:
-    """Read performance data from all three systems"""
+    """Read performance data from all systems and calculate 0-100 scores"""
     systems = {}
     
-    # Sector system
-    perf_path = Path("data/paper_performance.csv")
-    if perf_path.exists():
-        try:
-            df = pd.read_csv(perf_path)
-            if not df.empty:
-                row = df.iloc[0]
-                systems['sector'] = {
-                    'name': 'Sector System',
-                    'return': safe_float(row.get('total_return_pct', 0)),
-                    'win_rate': safe_float(row.get('win_rate_pct', 0)),
-                    'trades': int(safe_float(row.get('total_trades', 0))),
-                }
-        except Exception:
-            pass
-    
-    # 2 ETF system
+    # 1. 2 ETF System
     perf_path = Path("data/4_etf/etf_paper_performance.csv")
+    pos_path = Path("data/4_etf/etf_paper_positions.csv")
+    
     if perf_path.exists():
         try:
             df = pd.read_csv(perf_path)
             if not df.empty:
                 row = df.iloc[0]
                 total_pl = safe_float(row.get('total_gross_pl', 0))
+                win_rate = safe_float(row.get('win_rate', 0)) * 100
+                trades = safe_int(row.get('total_trades', 0))
+                
+                # Calculate return from balance
                 start_balance = 5000
                 total_equity = start_balance + total_pl
-                # Get open position value from positions file
-                pos_path = Path("data/4_etf/etf_paper_positions.csv")
+                
+                # Get open position value if exists
                 if pos_path.exists():
                     pos_df = pd.read_csv(pos_path)
                     if not pos_df.empty:
@@ -134,17 +84,44 @@ def get_system_performance() -> Dict[str, dict]:
                             total_equity += (highest - entry) * shares
                 
                 total_return = (total_equity / start_balance - 1) * 100
+                
+                # Max drawdown (estimate if not available)
+                max_dd = 1.6  # From your dashboard
+                
                 systems['two_etf'] = {
-                    'name': '2 ETF Bull',
+                    'name': '2 ETF System',
                     'return': total_return,
-                    'win_rate': safe_float(row.get('win_rate', 0)) * 100,
-                    'trades': int(safe_float(row.get('total_trades', 0))),
+                    'win_rate': win_rate,
+                    'trades': trades,
+                    'max_dd': max_dd,
+                    'current_holding': 'SOXL',
                 }
-        except Exception:
-            pass
+        except Exception as e:
+            print(f"Error reading 2 ETF system: {e}")
     
-    # Stock system
+    # 2. Sector System
+    perf_path = Path("data/paper_performance.csv")
+    pos_path = Path("data/paper_positions.csv")
+    
+    if perf_path.exists():
+        try:
+            df = pd.read_csv(perf_path)
+            if not df.empty:
+                row = df.iloc[0]
+                systems['sector'] = {
+                    'name': 'Sector System',
+                    'return': safe_float(row.get('total_return_pct', 0)),
+                    'win_rate': safe_float(row.get('win_rate_pct', 0)),
+                    'trades': safe_int(row.get('total_trades', 0)),
+                    'max_dd': safe_float(row.get('max_drawdown_pct', 0)),
+                    'current_holding': 'SOXL',
+                }
+        except Exception as e:
+            print(f"Error reading Sector system: {e}")
+    
+    # 3. Stock System
     perf_path = Path("data/stocks/stock_performance.csv")
+    
     if perf_path.exists():
         try:
             df = pd.read_csv(perf_path)
@@ -154,7 +131,6 @@ def get_system_performance() -> Dict[str, dict]:
                 total_return = (total_balance / start_balance - 1) * 100
                 total_trades = df['total_trades'].sum() if 'total_trades' in df.columns else 0
                 
-                # Weighted win rate
                 if 'total_trades' in df.columns and 'win_rate' in df.columns:
                     total_trades_sum = df['total_trades'].sum()
                     if total_trades_sum > 0:
@@ -169,112 +145,204 @@ def get_system_performance() -> Dict[str, dict]:
                     'return': total_return,
                     'win_rate': win_rate,
                     'trades': int(total_trades),
+                    'max_dd': 7.8,  # From your dashboard
+                    'current_holding': 'VARIOUS',
                 }
-        except Exception:
-            pass
+        except Exception as e:
+            print(f"Error reading Stock system: {e}")
+    
+    # 4. AI System
+    perf_path = Path("data/ai/performance.csv")
+    pos_path = Path("data/ai/positions.csv")
+    
+    if perf_path.exists():
+        try:
+            df = pd.read_csv(perf_path)
+            if not df.empty:
+                row = df.iloc[0]
+                current_holding = 'N/A'
+                if pos_path.exists():
+                    pos_df = pd.read_csv(pos_path)
+                    if not pos_df.empty and 'ticker' in pos_df.columns:
+                        current_holding = pos_df.iloc[0]['ticker']
+                
+                systems['ai'] = {
+                    'name': 'AI System',
+                    'return': safe_float(row.get('total_return_pct', 0)),
+                    'win_rate': safe_float(row.get('win_rate_pct', 0)),
+                    'trades': safe_int(row.get('total_trades', 0)),
+                    'max_dd': 0,
+                    'current_holding': current_holding,
+                }
+        except Exception as e:
+            print(f"Error reading AI system: {e}")
     
     return systems
 
 
-# ============================================================
-# ANALYSIS
-# ============================================================
-
-def get_regime(qqq_current: float, qqq_ma50: float) -> str:
-    """Determine market regime"""
-    if qqq_current > qqq_ma50:
-        return "BULL"
-    return "CASH"
-
-
-def generate_recommendations(
-    qqq_change: float,
-    soxl_change: float,
-    tqqq_change: float,
-    regime: str,
-    systems: Dict
-) -> List[str]:
-    """Generate trading recommendations"""
-    recommendations = []
+def calculate_system_scores(systems: Dict[str, dict]) -> Dict[str, dict]:
+    """
+    Calculate 0-100 scores for each system based on:
+    - Return (40% weight)
+    - Win rate (25% weight)
+    - Drawdown (25% weight - lower is better)
+    - Trade count (10% weight - more trades = more confidence)
+    """
+    if not systems:
+        return {}
     
-    # Market direction
-    if qqq_change > 1.0:
-        recommendations.append(f"📈 QQQ is up {qqq_change:.1f}% pre-market → bullish bias")
-    elif qqq_change < -1.0:
-        recommendations.append(f"📉 QQQ is down {qqq_change:.1f}% pre-market → bearish bias")
+    # Find min/max for normalization
+    returns = [s['return'] for s in systems.values()]
+    win_rates = [s['win_rate'] for s in systems.values()]
+    drawdowns = [s['max_dd'] for s in systems.values()]
+    trade_counts = [s['trades'] for s in systems.values()]
+    
+    # Add absolute min/max for consistency
+    min_return = min(returns) if returns else 0
+    max_return = max(returns) if returns else 100
+    min_win_rate = min(win_rates) if win_rates else 0
+    max_win_rate = max(win_rates) if win_rates else 100
+    min_dd = min(drawdowns) if drawdowns else 0
+    max_dd = max(drawdowns) if drawdowns else 10
+    max_trades = max(trade_counts) if trade_counts else 1
+    
+    scores = {}
+    for name, data in systems.items():
+        # Normalize return (0-100)
+        if max_return > min_return:
+            return_score = (data['return'] - min_return) / (max_return - min_return) * 100
+        else:
+            return_score = 50
+        
+        # Normalize win rate (0-100)
+        if max_win_rate > min_win_rate:
+            win_rate_score = (data['win_rate'] - min_win_rate) / (max_win_rate - min_win_rate) * 100
+        else:
+            win_rate_score = 50
+        
+        # Drawdown score (lower drawdown = higher score)
+        if max_dd > min_dd:
+            dd_score = (1 - (data['max_dd'] - min_dd) / (max_dd - min_dd)) * 100
+        else:
+            dd_score = 50
+        
+        # Trade count score (more trades = higher score, but diminishing returns)
+        trade_score = min(100, (data['trades'] / max_trades) * 100) if max_trades > 0 else 50
+        
+        # Weighted total
+        total_score = (return_score * 0.40) + (win_rate_score * 0.25) + (dd_score * 0.25) + (trade_score * 0.10)
+        
+        scores[name] = {
+            'name': data['name'],
+            'score': round(total_score, 1),
+            'return': round(data['return'], 1),
+            'win_rate': round(data['win_rate'], 1),
+            'max_dd': round(data['max_dd'], 1),
+            'trades': data['trades'],
+            'current_holding': data.get('current_holding', 'N/A'),
+            'return_raw': data['return'],
+            'win_rate_raw': data['win_rate'],
+        }
+    
+    return scores
+
+
+def load_previous_switch_log() -> Tuple[Optional[str], Optional[datetime]]:
+    """Load last switch decision from log"""
+    if not SWITCH_LOG_PATH.exists():
+        return None, None
+    
+    try:
+        df = pd.read_csv(SWITCH_LOG_PATH)
+        if df.empty:
+            return None, None
+        
+        last_row = df.iloc[-1]
+        return last_row.get('recommended_system'), pd.to_datetime(last_row.get('date'))
+    except Exception:
+        return None, None
+
+
+def save_switch_recommendation(recommendation: str, current_system: str, scores: Dict) -> None:
+    """Save switch recommendation to log"""
+    new_row = pd.DataFrame([{
+        'date': datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        'recommended_system': recommendation,
+        'current_leader': current_system,
+        'top_score': max(scores.values(), key=lambda x: x['score'])['score'] if scores else 0,
+    }])
+    
+    if SWITCH_LOG_PATH.exists():
+        existing = pd.read_csv(SWITCH_LOG_PATH)
+        updated = pd.concat([existing, new_row], ignore_index=True)
     else:
-        recommendations.append(f"➡️ QQQ is flat ({qqq_change:+.1f}%) → wait for confirmation")
+        updated = new_row
     
-    # Sector strength (semis vs tech)
-    if soxl_change > tqqq_change:
-        recommendations.append(f"🔌 Semiconductors leading ({soxl_change:+.1f}%) → favor SOXL")
-    else:
-        recommendations.append(f"💻 Tech leading ({tqqq_change:+.1f}%) → favor TQQQ")
+    updated.to_csv(SWITCH_LOG_PATH, index=False)
+
+
+def get_business_days_since(last_date: datetime) -> int:
+    """Count business days (Mon-Fri) between now and last_date"""
+    if last_date is None:
+        return 999  # Unlimited if never switched
     
-    # Current regime
-    if regime == "BULL":
-        recommendations.append("✅ Regime is BULL (QQQ > MA50) → entries allowed")
-    else:
-        recommendations.append("⚠️ Regime is CASH (QQQ < MA50) → no new entries")
+    current = datetime.now()
+    days = 0
+    current_date = last_date.replace(hour=0, minute=0, second=0)
+    end_date = current.replace(hour=0, minute=0, second=0)
     
-    # System ranking
-    if systems:
-        sorted_systems = sorted(systems.items(), key=lambda x: x[1]['return'], reverse=True)
-        best = sorted_systems[0][1]
-        recommendations.append(f"🏆 Best performing system: {best['name']} (+{best['return']:.1f}%)")
+    while current_date < end_date:
+        current_date += timedelta(days=1)
+        if current_date.weekday() < 5:  # Monday=0, Friday=4
+            days += 1
     
-    return recommendations
+    return days
+
+
+def get_regime() -> str:
+    """Determine current market regime"""
+    try:
+        qqq = yf.Ticker("QQQ")
+        hist = qqq.history(period="3mo")
+        if len(hist) >= 50:
+            current_price = hist['Close'].iloc[-1]
+            ma50 = hist['Close'].rolling(50).mean().iloc[-1]
+            ma20 = hist['Close'].rolling(20).mean().iloc[-1]
+            ma20_slope = ma20 > hist['Close'].rolling(20).mean().shift(1).iloc[-1]
+            
+            if current_price > ma50 and ma20_slope:
+                return "BULL"
+        return "CASH"
+    except Exception:
+        return "UNKNOWN"
 
 
 # ============================================================
-# DECISION LOGGING
+# DATA FETCHING
 # ============================================================
 
-def save_decision_log(
-    timestamp: str,
-    qqq_price: float,
-    qqq_change: float,
-    soxl_price: float,
-    soxl_change: float,
-    tqqq_price: float,
-    tqqq_change: float,
-    regime: str,
-    recommendations: List[str],
-    systems: Dict
-) -> None:
-    """Save decision log for later review and backtesting"""
-    
-    log_path = Path("data/decision_log.csv")
-    
-    # Create row
-    new_row = {
-        'timestamp': timestamp,
-        'qqq_price': round(qqq_price, 2),
-        'qqq_change_pct': round(qqq_change, 2),
-        'soxl_price': round(soxl_price, 2),
-        'soxl_change_pct': round(soxl_change, 2),
-        'tqqq_price': round(tqqq_price, 2),
-        'tqqq_change_pct': round(tqqq_change, 2),
-        'regime': regime,
-        'recommendations': " | ".join(recommendations),
-        'sector_return_pct': round(systems.get('sector', {}).get('return', 0), 2),
-        'two_etf_return_pct': round(systems.get('two_etf', {}).get('return', 0), 2),
-        'stock_return_pct': round(systems.get('stock', {}).get('return', 0), 2),
-        'sector_win_rate': round(systems.get('sector', {}).get('win_rate', 0), 2),
-        'two_etf_win_rate': round(systems.get('two_etf', {}).get('win_rate', 0), 2),
-        'stock_win_rate': round(systems.get('stock', {}).get('win_rate', 0), 2),
-    }
-    
-    # Append to CSV
-    new_df = pd.DataFrame([new_row])
-    if log_path.exists():
-        existing_df = pd.read_csv(log_path)
-        updated_df = pd.concat([existing_df, new_df], ignore_index=True)
-    else:
-        updated_df = new_df
-    
-    updated_df.to_csv(log_path, index=False)
-    print(f"✅ Decision logged to {log_path}")
+def fetch_yesterdays_close(ticker: str) -> float:
+    """Fetch yesterday's closing price"""
+    try:
+        stock = yf.Ticker(ticker)
+        hist = stock.history(period="2d")
+        if len(hist) >= 2:
+            return float(hist['Close'].iloc[-2])
+        return 0.0
+    except Exception:
+        return 0.0
+
+
+def fetch_current_price(ticker: str) -> float:
+    """Fetch current price"""
+    try:
+        stock = yf.Ticker(ticker)
+        hist = stock.history(period="1d")
+        if not hist.empty:
+            return float(hist['Close'].iloc[-1])
+        return 0.0
+    except Exception:
+        return 0.0
 
 
 # ============================================================
@@ -282,20 +350,18 @@ def save_decision_log(
 # ============================================================
 
 def send_email(
-    qqq_current: float,
-    qqq_close: float,
-    qqq_change: float,
-    soxl_current: float,
-    soxl_close: float,
-    soxl_change: float,
-    tqqq_current: float,
-    tqqq_close: float,
-    tqqq_change: float,
+    scores: Dict[str, dict],
+    top_system: str,
+    top_score: float,
+    second_system: str,
+    second_score: float,
+    gap: float,
+    days_since_switch: int,
     regime: str,
     recommendations: List[str],
     recipients: List[str]
 ) -> bool:
-    """Send decision engine email"""
+    """Send decision engine email with full analysis"""
     mail_username = os.environ.get("MAIL_USERNAME")
     mail_password = os.environ.get("MAIL_PASSWORD")
     
@@ -305,30 +371,63 @@ def send_email(
     
     date_str = datetime.now().strftime("%Y-%m-%d %H:%M")
     
-    # Build recommendations text
+    # Build rankings table
+    ranking_lines = []
+    for i, (name, data) in enumerate(sorted(scores.items(), key=lambda x: x[1]['score'], reverse=True), 1):
+        leader_marker = " ← CURRENT LEADER" if name == top_system else ""
+        ranking_lines.append(f"  {i}. {data['name']:15} {data['score']:3.0f}{leader_marker}")
+    
+    ranking_text = "\n".join(ranking_lines)
+    
+    # Build scores detail
+    scores_detail = []
+    for name, data in scores.items():
+        scores_detail.append(f"  {data['name']:15} Score: {data['score']:.0f}  |  Return: +{data['return']:.0f}%  |  Win: {data['win_rate']:.0f}%")
+    scores_text = "\n".join(scores_detail)
+    
+    # Build recommendation
     rec_text = "\n".join([f"  {r}" for r in recommendations])
     
     body = f"""
 ═══════════════════════════════════════════════════════════
-  DECISION ENGINE - {date_str} ET
+  ⚠️ FOR TRADING ONLY — NOT INVESTING ⚠️
+  These are short-term trading signals. Not investment advice.
 ═══════════════════════════════════════════════════════════
 
-📊 PRE-MARKET / OPENING ACTION
+  DECISION ENGINE - {date_str} ET
 
-  QQQ:   ${qqq_current:.2f} (vs close ${qqq_close:.2f}) → {qqq_change:+.2f}%
-  SOXL:  ${soxl_current:.2f} (vs close ${soxl_close:.2f}) → {soxl_change:+.2f}%
-  TQQQ:  ${tqqq_current:.2f} (vs close ${tqqq_close:.2f}) → {tqqq_change:+.2f}%
+═══════════════════════════════════════════════════════════
 
-🎯 MARKET REGIME
+📊 SYSTEM RANKINGS (0-100 Scale)
 
-  Current: {regime} (QQQ vs MA50)
+{ranking_text}
 
-💡 RECOMMENDATIONS
+📈 DETAILED SCORES
+
+{scores_text}
+
+🔄 SWITCH ANALYSIS
+
+  Current leader: {top_system} (Score: {top_score:.0f})
+  2nd place: {second_system} (Score: {second_score:.0f})
+  Gap: {gap:.0f} points (switch requires 10+ points)
+  Days since last switch: {days_since_switch} (requires 5+ business days)
+
+💰 CASH CHECK
+
+  Top score: {top_score:.0f}
+  Threshold for trading: 50
+  Regime: {regime}
+  
+  {'✅ STAY ACTIVE - Top score above 50' if top_score >= 50 else '🔴 GO TO CASH - Top score below 50'}
+
+🎯 RECOMMENDATION
 
 {rec_text}
 
 ═══════════════════════════════════════════════════════════
-  Actionable before 11:00 AM ET
+  Previous recommendation: {'Hold ' + top_system if top_score >= 50 else 'Go to cash'}
+  {'No action needed' if top_score >= 50 else 'Exit all positions to cash'}
 ═══════════════════════════════════════════════════════════
 """
     
@@ -359,7 +458,7 @@ def main():
     print("DECISION ENGINE - Morning Analysis")
     print("=" * 60)
     
-    # Load config for recipients
+    # Load config
     try:
         config = load_config()
         recipients = config.get('email_recipients', [])
@@ -368,62 +467,88 @@ def main():
         print(f"⚠️ Could not load config: {e}")
         recipients = ["mrpink970@gmail.com"]
     
-    # Fetch current prices
-    print("\n📊 Fetching market data...")
+    # Get system performance and scores
+    systems_raw = get_system_performance()
+    scores = calculate_system_scores(systems_raw)
     
-    qqq_ma50 = calculate_ma50("QQQ")
+    if not scores:
+        print("⚠️ No system data available")
+        return
     
-    qqq_close = fetch_yesterdays_close("QQQ")
-    qqq_current = fetch_current_price("QQQ")
-    qqq_change = ((qqq_current - qqq_close) / qqq_close * 100) if qqq_close > 0 else 0
+    # Sort by score
+    sorted_scores = sorted(scores.items(), key=lambda x: x[1]['score'], reverse=True)
+    top_system, top_data = sorted_scores[0]
+    top_score = top_data['score']
     
-    soxl_close = fetch_yesterdays_close("SOXL")
-    soxl_current = fetch_current_price("SOXL")
-    soxl_change = ((soxl_current - soxl_close) / soxl_close * 100) if soxl_close > 0 else 0
+    second_system, second_data = sorted_scores[1] if len(sorted_scores) > 1 else (top_system, top_data)
+    second_score = second_data['score']
+    gap = top_score - second_score
     
-    tqqq_close = fetch_yesterdays_close("TQQQ")
-    tqqq_current = fetch_current_price("TQQQ")
-    tqqq_change = ((tqqq_current - tqqq_close) / tqqq_close * 100) if tqqq_close > 0 else 0
+    # Get regime
+    regime = get_regime()
     
-    # Get system performance
-    systems = get_system_performance()
-    
-    # Determine regime
-    regime = get_regime(qqq_current, qqq_ma50)
+    # Load switch history
+    last_switch_system, last_switch_date = load_previous_switch_log()
+    days_since_switch = get_business_days_since(last_switch_date) if last_switch_date else 999
     
     # Generate recommendations
-    recommendations = generate_recommendations(
-        qqq_change, soxl_change, tqqq_change, regime, systems
-    )
+    recommendations = []
+    
+    # Cash check
+    if top_score < 50:
+        recommendations.append("🔴 GO TO CASH - Top system score is below 50")
+        recommendations.append("   Exit all positions. Wait for scores to recover.")
+        action = "CASH"
+    elif regime == "CASH":
+        recommendations.append("🔴 GO TO CASH - Market regime is CASH (QQQ < MA50)")
+        recommendations.append("   Exit all positions. Re-enter when regime turns BULL.")
+        action = "CASH"
+    else:
+        # Check if switch is warranted
+        if gap >= 10 and days_since_switch >= 5:
+            recommendations.append(f"🔄 SWITCH: Move from {top_system} to {second_system}")
+            recommendations.append(f"   Gap: {gap:.0f} points (10+ threshold met)")
+            recommendations.append(f"   Days since last switch: {days_since_switch} (5+ business days)")
+            recommendations.append(f"   ACTION: Exit {top_data['current_holding']}, enter {second_data['current_holding']}")
+            action = "SWITCH"
+            # Save this switch recommendation
+            save_switch_recommendation(second_system, top_system, scores)
+        else:
+            # Hold current leader
+            if gap >= 10:
+                gap_note = f"Gap is {gap:.0f} points (meets threshold), but only {days_since_switch} business days since last switch. Wait {(5 - days_since_switch)} more days."
+            elif days_since_switch < 5:
+                gap_note = f"Only {days_since_switch} business days since last switch. Wait {(5 - days_since_switch)} more days before considering switch."
+            else:
+                gap_note = f"Gap is only {gap:.0f} points (requires 10+ to switch)."
+            
+            recommendations.append(f"✅ HOLD: {top_system}")
+            recommendations.append(f"   Current leader with score {top_score:.0f}")
+            recommendations.append(f"   2nd place: {second_system} ({second_score:.0f})")
+            recommendations.append(f"   {gap_note}")
+            action = "HOLD"
     
     # Print summary
-    print(f"\n   QQQ:  {qqq_change:+.2f}% ({regime})")
-    print(f"   SOXL: {soxl_change:+.2f}%")
-    print(f"   TQQQ: {tqqq_change:+.2f}%")
-    print(f"\n   Systems active: {len(systems)}")
+    print(f"\n📊 SYSTEM RANKINGS:")
+    for name, data in sorted_scores:
+        print(f"   {data['name']}: {data['score']:.0f} (Return: +{data['return']:.0f}%, Win: {data['win_rate']:.0f}%)")
     
-    # Save decision log
-    print("\n💾 Saving decision log...")
-    save_decision_log(
-        timestamp=datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-        qqq_price=qqq_current,
-        qqq_change=qqq_change,
-        soxl_price=soxl_current,
-        soxl_change=soxl_change,
-        tqqq_price=tqqq_current,
-        tqqq_change=tqqq_change,
-        regime=regime,
-        recommendations=recommendations,
-        systems=systems
-    )
+    print(f"\n🎯 RECOMMENDATION: {action}")
+    print(f"   Top score: {top_score:.0f} | Regime: {regime}")
+    print(f"   Gap to 2nd: {gap:.0f} points | Days since switch: {days_since_switch}")
     
     # Send email
-    print("\n📧 Sending decision email...")
     send_email(
-        qqq_current, qqq_close, qqq_change,
-        soxl_current, soxl_close, soxl_change,
-        tqqq_current, tqqq_close, tqqq_change,
-        regime, recommendations, recipients
+        scores=scores,
+        top_system=top_data['name'],
+        top_score=top_score,
+        second_system=second_data['name'],
+        second_score=second_score,
+        gap=gap,
+        days_since_switch=days_since_switch,
+        regime=regime,
+        recommendations=recommendations,
+        recipients=recipients
     )
     
     print("\n" + "=" * 60)
