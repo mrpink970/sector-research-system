@@ -40,7 +40,7 @@ universe:
     stop_type: "stepped"
 
 # Trading parameters
-position_limit: 2
+position_limit: 1
 position_size_pct: 1.0  # 100% of cash per position
 min_score: 2.0
 min_hold_days: 0
