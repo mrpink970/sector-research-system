@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Quantum Computing System - Fixed
+Quantum Computing System - With Debug
 """
 
 from __future__ import annotations
@@ -36,7 +36,7 @@ def load_config() -> dict:
 def fetch_market_data(tickers: List[str]) -> pd.DataFrame:
     """Fetch daily OHLC data for all tickers plus QQQ"""
     all_tickers = list(set(tickers + ["QQQ"]))
-    start_date = (datetime.now() - timedelta(days=365)).strftime("%Y-%m-%d")
+    start_date = (datetime.now() - timedelta(days=60)).strftime("%Y-%m-%d")
     end_date = datetime.now().strftime("%Y-%m-%d")
     
     print(f"  Fetching {len(all_tickers)} tickers from {start_date} to {end_date}")
@@ -52,7 +52,6 @@ def fetch_market_data(tickers: List[str]) -> pd.DataFrame:
         if ticker in data.columns:
             prices[ticker] = data[ticker]['Close'].dropna()
         else:
-            # Try single ticker format
             if 'Close' in data.columns:
                 prices[ticker] = data['Close'].dropna()
             else:
@@ -113,7 +112,7 @@ def get_regime(df: pd.DataFrame, idx: int) -> str:
 
 def main():
     print("=" * 60)
-    print("QUANTUM COMPUTING SYSTEM")
+    print("QUANTUM COMPUTING SYSTEM (DEBUG)")
     print("=" * 60)
     
     config = load_config()
@@ -156,10 +155,15 @@ def main():
     
     min_idx = max(20, len(df) - 200)
     
+    print(f"\n🔄 Processing {len(df)} days from index {min_idx} to {len(df)-1}")
+    print("=" * 60)
+    
     for i in range(min_idx, len(df) - 1):
         date = df.index[i]
         next_date = df.index[i + 1]
         regime = get_regime(df, i)
+        
+        print(f"\n📅 Date: {date.date()}, Regime: {regime}, Positions: {len(positions)}")
         
         # === EXITS ===
         survivors = []
@@ -187,6 +191,7 @@ def main():
                     'return_pct': round(ret_pct, 2), 'gross_pl': round(gross_pl, 2), 'exit_reason': 'trailing_stop'
                 })
                 cash += gross_pl
+                print(f"    EXIT: {ticker} @ ${exit_price:.2f} (stop)")
                 continue
             
             if regime == "CASH":
@@ -199,6 +204,7 @@ def main():
                     'return_pct': round(ret_pct, 2), 'gross_pl': round(gross_pl, 2), 'exit_reason': 'regime_cash'
                 })
                 cash += gross_pl
+                print(f"    EXIT: {ticker} @ ${exit_price:.2f} (regime cash)")
                 continue
             
             available_days = len(df[ticker].dropna())
@@ -217,6 +223,7 @@ def main():
                     'return_pct': round(ret_pct, 2), 'gross_pl': round(gross_pl, 2), 'exit_reason': f'score_{current_score:.1f}'
                 })
                 cash += gross_pl
+                print(f"    EXIT: {ticker} @ ${exit_price:.2f} (score {current_score:.1f})")
                 continue
             
             pos.trailing_stop = trailing_stop
@@ -265,6 +272,10 @@ def main():
             sorted_scores = sorted(scores.items(), key=lambda x: x[1], reverse=True)
             open_tickers = [p.ticker for p in positions]
             
+            # DEBUG: Print top 3 scores
+            top_3 = sorted_scores[:3]
+            print(f"    Top scores: {[(t, round(s,1)) for t, s in top_3]}")
+            
             for ticker, score in sorted_scores:
                 if ticker in open_tickers:
                     continue
@@ -278,7 +289,7 @@ def main():
                                 shares=shares, highest_price=entry_price, stop_pct=trailing_stop_pct,
                                 trailing_stop=entry_price * (1 - trailing_stop_pct), entry_score=score
                             ))
-                            print(f"  📈 ENTRY: {ticker} @ ${entry_price:.2f} ({shares} shares, score: {score:.1f})")
+                            print(f"    ✅ ENTRY: {ticker} @ ${entry_price:.2f} ({shares} shares, score: {score:.1f})")
                             cash -= entry_price * shares
                             break
     
@@ -289,7 +300,7 @@ def main():
     if daily_scores:
         scores_df = pd.DataFrame(daily_scores)
         scores_df.to_csv(data_dir / "quantum_scores.csv", index=False)
-        print(f"✅ Saved {len(daily_scores)} days of scores")
+        print(f"\n✅ Saved {len(daily_scores)} days of scores")
     
     if positions:
         pos_df = pd.DataFrame([{
