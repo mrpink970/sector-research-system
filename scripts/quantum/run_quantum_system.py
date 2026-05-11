@@ -144,7 +144,7 @@ def main():
     positions: List[Position] = []
     trade_log = []
     score_history = {}
-    daily_scores = []  # Store daily scores for dashboard
+    daily_scores = []  # Store daily scores and prices for dashboard
     
     # Determine minimum index
     min_idx = max(20, len(df) - 200)
@@ -265,10 +265,12 @@ def main():
                 score_history[ticker] = smoothed
                 scores[ticker] = smoothed
             
-            # Store daily scores for dashboard
+            # Store daily scores and prices for dashboard
+            current_prices = {ticker: round(df[ticker].iloc[i], 2) for ticker in tickers}
             daily_scores.append({
                 'date': date.strftime("%Y-%m-%d"),
-                'scores': scores.copy()
+                'scores': str(scores),
+                'prices': str(current_prices)
             })
             
             # Sort and pick best
@@ -301,10 +303,11 @@ def main():
     data_dir = Path("data/quantum")
     data_dir.mkdir(parents=True, exist_ok=True)
     
-    # Save daily scores for dashboard
+    # Save daily scores with prices
     if daily_scores:
         scores_df = pd.DataFrame(daily_scores)
         scores_df.to_csv(data_dir / "quantum_scores.csv", index=False)
+        print(f"✅ Saved {len(daily_scores)} days of scores to quantum_scores.csv")
     
     # Positions
     if positions:
@@ -318,11 +321,13 @@ def main():
             'entry_score': p.entry_score
         } for p in positions])
         pos_df.to_csv(data_dir / "positions.csv", index=False)
+        print(f"✅ Saved {len(positions)} open positions")
     
     # Trade log
     if trade_log:
         trade_df = pd.DataFrame(trade_log)
         trade_df.to_csv(data_dir / "trade_log.csv", index=False)
+        print(f"✅ Saved {len(trade_log)} closed trades")
     
     # Performance
     if trade_log:
@@ -360,10 +365,14 @@ def main():
     # Show current scores
     if daily_scores and len(daily_scores) > 0:
         latest = daily_scores[-1]['scores']
-        print(f"\n📈 Latest Scores:")
-        for ticker, score in sorted(latest.items(), key=lambda x: x[1], reverse=True):
-            if score > -999:
-                print(f"   {ticker}: {score:.1f}")
+        try:
+            latest_dict = eval(latest)
+            print(f"\n📈 Latest Scores:")
+            for ticker, score in sorted(latest_dict.items(), key=lambda x: x[1], reverse=True):
+                if score > -999:
+                    print(f"   {ticker}: {score:.1f}")
+        except:
+            pass
     
     print(f"\n✅ Quantum System complete. Data saved to data/quantum/")
     print(f"   Positions: {len(positions)} open")
