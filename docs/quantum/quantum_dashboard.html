@@ -47,53 +47,53 @@
         <p>Pure Play Quantum Stocks • 2026 IPOs • 25% Trailing Stop</p>
     </div>
 
-    <div class="kpi-grid" id="kpiContainer">
-        <div class="loading">Loading...</div>
+    <div class="kpi-grid">
+        <div class="kpi-card"><div class="kpi-label">💰 Cash Balance</div><div class="kpi-value" id="cashBalance">$5,000.00</div><div class="small-note">Started: $5,000.00</div></div>
+        <div class="kpi-card"><div class="kpi-label">📈 Total Equity</div><div class="kpi-value positive" id="totalEquity">$5,000.00</div><div class="small-note">Cash + Position Value</div></div>
+        <div class="kpi-card"><div class="kpi-label">🏆 Win Rate</div><div class="kpi-value" id="winRate">0.0%</div><div class="small-note" id="tradeCount">0 trades</div></div>
+        <div class="kpi-card"><div class="kpi-label">📊 Total Return</div><div class="kpi-value" id="totalReturn">0.0%</div><div class="small-note" id="returnAmount">$0</div></div>
+        <div class="kpi-card"><div class="kpi-label">📌 Open Positions</div><div class="kpi-value" id="openCount">0</div><div class="small-note" id="totalCost">Total Cost: $0</div></div>
     </div>
 
     <div class="full-width-card">
         <div class="card-header">🏆 Quantum Stock Rankings (End of Day)</div>
         <div class="card-content">
             <table class="ranking-table">
-                <thead><tr><th>Rank</th><th>Ticker</th><th>Company</th><th>Close</th><th>Momentum Score</th></tr></thead>
-                <tbody id="rankingsBody"><tr><td colspan="5" class="loading">Loading...<\/td><\/tr><\/tbody>
-            <\/table>
-            <div class="small-note">Scores based on 1d/3d/5d returns + trend strength + volatility<\/div>
-        <\/div>
-    <\/div>
+                <thead><tr><th>Rank</th><th>Ticker</th><th>Close</th><th>Momentum Score</th></tr></thead>
+                <tbody id="rankingsBody"><tr><td colspan="4" class="loading">Loading...</td></tr></tbody>
+            </table>
+            <div class="small-note">Scores based on 1d/3d/5d returns + trend strength + volatility</div>
+        </div>
+    </div>
 
     <div class="two-col">
         <div class="card">
-            <div class="card-header">📌 Current Position<\/div>
-            <div class="card-content" id="positionCard"><div class="loading">Loading...<\/div><\/div>
-        <\/div>
+            <div class="card-header">📌 Current Position</div>
+            <div class="card-content" id="positionCard"><div class="loading">Loading...</div></div>
+        </div>
         <div class="card">
-            <div class="card-header">📈 Performance Summary<\/div>
-            <div class="card-content" id="performanceSummary"><div class="loading">Loading...<\/div><\/div>
-        <\/div>
-    <\/div>
+            <div class="card-header">📈 Performance Summary</div>
+            <div class="card-content" id="performanceSummary"><div class="loading">Loading...</div></div>
+        </div>
+    </div>
 
     <div class="full-width-card">
-        <div class="card-header">📜 Recent Closed Trades<\/div>
+        <div class="card-header">📜 Recent Closed Trades</div>
         <div class="card-content">
             <table class="ranking-table">
-                <thead><tr><th>Ticker</th><th>Entry Date</th><th>Exit Date</th><th>Shares</th><th>Entry $</th><th>Exit $</th><th>Return %</th><th>P&L</th><th>Exit Reason</th><tr></thead>
-                <tbody id="tradesBody"><tr><td colspan="9" class="loading">Loading...<\/td><\/tr><\/tbody>
-            <\/table>
-        <\/div>
-    <\/div>
+                <thead><tr><th>Ticker</th><th>Entry Date</th><th>Exit Date</th><th>Return %</th><th>P&L</th><th>Exit Reason</th></tr></thead>
+                <tbody id="tradesBody"><tr><td colspan="6" class="loading">Loading...</td></tr></tbody>
+            </table>
+        </div>
+    </div>
 
-    <div class="last-updated" id="lastUpdated"><\/div>
-    <div class="footer">⚡ 25% Trailing Stop • Single Position • Scores update daily (6 PM ET)<\/div>
-<\/div>
+    <div class="last-updated" id="lastUpdated"></div>
+    <div class="footer">⚡ 25% Trailing Stop • Single Position • Scores update daily (6 PM ET)</div>
+</div>
 
 <script>
     const STARTING_BALANCE = 5000;
     const TICKERS = ['QBTS', 'IONQ', 'QUBT', 'RGTI', 'INFQ', 'HQ', 'XNDU'];
-    const COMPANY_NAMES = {
-        'QBTS': 'D-Wave Quantum', 'IONQ': 'IonQ Inc', 'QUBT': 'Quantum Computing Inc',
-        'RGTI': 'Rigetti Computing', 'INFQ': 'Infleqtion', 'HQ': 'Horizon Quantum', 'XNDU': 'Xanadu Quantum'
-    };
 
     const SCORES_URL = 'https://raw.githubusercontent.com/mrpink970/sector-research-system/main/data/quantum/quantum_scores.csv';
     const POSITIONS_URL = 'https://raw.githubusercontent.com/mrpink970/sector-research-system/main/data/quantum/positions.csv';
@@ -127,29 +127,33 @@
         return result;
     }
 
-    function parseDict(dictStr) {
-        if (!dictStr) return {};
-        try {
-            let cleaned = dictStr.replace(/'/g, '"');
-            return JSON.parse(cleaned);
-        } catch(e) { return {}; }
-    }
-
     async function loadDashboard() {
+        // Get data from APIs
         const [scoresCSV, positionsCSV, tradesCSV, perfCSV] = await Promise.all([
             fetchCSV(SCORES_URL), fetchCSV(POSITIONS_URL), fetchCSV(TRADE_URL), fetchCSV(PERF_URL)
         ]);
         
-        // Parse scores and prices
+        // Parse scores - the CSV has columns: date, scores, prices
         let latestScores = {};
         let latestPrices = {};
         if (scoresCSV) {
             const lines = scoresCSV.trim().split('\n');
             if (lines.length >= 2) {
                 const lastLine = lines[lines.length - 1];
-                const parts = lastLine.split(',');
-                if (parts.length >= 2) latestScores = parseDict(parts[1]);
-                if (parts.length >= 3) latestPrices = parseDict(parts[2]);
+                const firstComma = lastLine.indexOf(',');
+                const secondComma = lastLine.indexOf(',', firstComma + 1);
+                if (firstComma > 0) {
+                    const scoresStr = lastLine.substring(firstComma + 1, secondComma > 0 ? secondComma : undefined);
+                    const pricesStr = secondComma > 0 ? lastLine.substring(secondComma + 1) : '';
+                    try {
+                        let cleanScores = scoresStr.replace(/'/g, '"');
+                        latestScores = JSON.parse(cleanScores);
+                    } catch(e) {}
+                    try {
+                        let cleanPrices = pricesStr.replace(/'/g, '"');
+                        latestPrices = JSON.parse(cleanPrices);
+                    } catch(e) {}
+                }
             }
         }
         
@@ -158,26 +162,18 @@
         for (const ticker of TICKERS) {
             const score = latestScores[ticker] || 0;
             const price = latestPrices[ticker] || 0;
-            rankings.push({ ticker, company: COMPANY_NAMES[ticker], score, price });
+            rankings.push({ ticker, score, price });
         }
         rankings.sort((a, b) => b.score - a.score);
         
+        // Update rankings table
         const rankBody = document.getElementById('rankingsBody');
-        if (rankings.length > 0) {
-            rankBody.innerHTML = rankings.map((r, idx) => {
-                let scoreClass = 'score-low';
-                if (r.score >= 5) scoreClass = 'score-high';
-                else if (r.score >= 2) scoreClass = 'score-mid';
-                return `<tr>
-                    <td>${idx + 1}</td>
-                    <td><strong>${r.ticker}</strong><br><span class="small-note">${r.company}</span></td>
-                    <td>${r.price > 0 ? `$${r.price.toFixed(2)}` : 'N/A'}</td>
-                    <td class="${scoreClass}">${r.score.toFixed(1)}</td>
-                </tr>`;
-            }).join('');
-        } else {
-            rankBody.innerHTML = '<tr><td colspan="5">No data yet. Run quantum system first.<\/td><\/tr>';
-        }
+        rankBody.innerHTML = rankings.map((r, idx) => {
+            let scoreClass = 'score-low';
+            if (r.score >= 5) scoreClass = 'score-high';
+            else if (r.score >= 2) scoreClass = 'score-mid';
+            return `<tr><td>${idx + 1}</td><td><strong>${r.ticker}</strong></td><td>${r.price > 0 ? `$${r.price.toFixed(2)}` : 'N/A'}</td><td class="${scoreClass}">${r.score.toFixed(1)}</td></tr>`;
+        }).join('');
         
         // Parse positions
         const positions = parseCSV(positionsCSV);
@@ -187,16 +183,13 @@
             for (const pos of positions) {
                 const entry = pos.entry_price || 0;
                 const shares = pos.shares || 0;
-                const current = pos.highest_price || entry;
                 const cost = entry * shares;
                 totalCost += cost;
                 openPositions.push({
                     ticker: pos.ticker,
                     entry_date: pos.entry_date,
                     entry_price: entry,
-                    current_price: current,
-                    shares: shares,
-                    pnl_pct: entry > 0 ? ((current - entry) / entry * 100) : 0
+                    shares: shares
                 });
             }
         }
@@ -208,7 +201,7 @@
             totalPL = trades.reduce((sum, t) => sum + (t.gross_pl || 0), 0);
         }
         
-        // Performance
+        // Get win rate from performance
         let winRate = 0;
         if (perfCSV) {
             const perf = parseCSV(perfCSV);
@@ -216,28 +209,27 @@
         }
         
         const cashBalance = STARTING_BALANCE + totalPL - totalCost;
-        const currentValue = openPositions.length > 0 ? openPositions[0].shares * openPositions[0].current_price : 0;
-        const totalEquity = cashBalance + currentValue;
+        const totalEquity = cashBalance;
         const totalReturnPct = ((totalEquity - STARTING_BALANCE) / STARTING_BALANCE) * 100;
         
-        // KPI Cards
-        document.getElementById('kpiContainer').innerHTML = `
-            <div class="kpi-card"><div class="kpi-label">💰 Cash Balance</div><div class="kpi-value">$${cashBalance.toFixed(2)}</div><div class="small-note">Started: $${STARTING_BALANCE.toFixed(2)}</div></div>
-            <div class="kpi-card"><div class="kpi-label">📈 Total Equity</div><div class="kpi-value positive">$${totalEquity.toFixed(2)}</div><div class="small-note">Cash + Position Value</div></div>
-            <div class="kpi-card"><div class="kpi-label">🏆 Win Rate</div><div class="kpi-value">${winRate.toFixed(1)}%</div><div class="small-note">${trades.length} closed trades</div></div>
-            <div class="kpi-card"><div class="kpi-label">📊 Total Return</div><div class="kpi-value ${totalReturnPct >= 0 ? 'positive' : 'negative'}">${totalReturnPct >= 0 ? '+' : ''}${totalReturnPct.toFixed(1)}%</div><div class="small-note">${totalReturnPct >= 0 ? '+' : ''}$${(totalEquity - STARTING_BALANCE).toFixed(2)}</div></div>
-            <div class="kpi-card"><div class="kpi-label">📌 Open Positions</div><div class="kpi-value">${openPositions.length}</div><div class="small-note">Total Cost: $${totalCost.toFixed(2)}</div></div>
-        `;
+        // Update KPI cards
+        document.getElementById('cashBalance').innerHTML = `$${cashBalance.toFixed(2)}`;
+        document.getElementById('totalEquity').innerHTML = `$${totalEquity.toFixed(2)}`;
+        document.getElementById('winRate').innerHTML = `${winRate.toFixed(1)}%`;
+        document.getElementById('tradeCount').innerHTML = `${trades.length} closed trades`;
+        document.getElementById('totalReturn').innerHTML = `${totalReturnPct >= 0 ? '+' : ''}${totalReturnPct.toFixed(1)}%`;
+        document.getElementById('returnAmount').innerHTML = `${totalReturnPct >= 0 ? '+' : ''}$${(totalEquity - STARTING_BALANCE).toFixed(2)}`;
+        document.getElementById('openCount').innerHTML = `${openPositions.length}`;
+        document.getElementById('totalCost').innerHTML = `Total Cost: $${totalCost.toFixed(2)}`;
         
-        // Position Card
+        // Position card
         if (openPositions.length > 0) {
             const pos = openPositions[0];
             document.getElementById('positionCard').innerHTML = `
                 <div class="current-position-card">
                     <div><span class="badge">${pos.ticker}</span></div>
-                    <div class="big-number">${pos.pnl_pct >= 0 ? '+' : ''}${pos.pnl_pct.toFixed(1)}%</div>
-                    <div>Entry: $${pos.entry_price.toFixed(2)} | Current: $${pos.current_price.toFixed(2)}</div>
-                    <div>Shares: ${pos.shares} | Total Cost: $${(pos.entry_price * pos.shares).toFixed(2)}</div>
+                    <div>Entry: $${pos.entry_price.toFixed(2)}</div>
+                    <div>Shares: ${pos.shares}</div>
                     <div class="small-note">Entry Date: ${pos.entry_date || 'N/A'}</div>
                 </div>
             `;
@@ -245,7 +237,7 @@
             document.getElementById('positionCard').innerHTML = `<div class="current-position-card"><div style="font-size:1.2rem;">📭 No Open Position</div><div class="small-note">In cash • Waiting for signal</div></div>`;
         }
         
-        // Performance Summary
+        // Performance summary
         document.getElementById('performanceSummary').innerHTML = `
             <div><strong>Starting Balance:</strong> $${STARTING_BALANCE.toFixed(2)}</div>
             <div><strong>Cash Balance:</strong> $${cashBalance.toFixed(2)}</div>
@@ -257,10 +249,10 @@
             <div><strong>Realized P&L:</strong> ${totalPL >= 0 ? '+' : ''}$${totalPL.toFixed(2)}</div>
         `;
         
-        // Trades Table
+        // Trades table
         const tbody = document.getElementById('tradesBody');
         if (trades.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="9">No closed trades yet<\/td><\/tr>';
+            tbody.innerHTML = '<tr><td colspan="6">No closed trades yet</td></tr>';
         } else {
             const recent = [...trades].reverse().slice(0, 20);
             tbody.innerHTML = recent.map(t => `
@@ -268,13 +260,11 @@
                     <td><strong>${t.ticker || '?'}</strong></td>
                     <td>${t.entry_date || '?'}</td>
                     <td>${t.exit_date || '?'}</td>
-                    <td class="text-right">${t.shares || 0}</td>
-                    <td class="text-right">$${(t.entry_price || 0).toFixed(2)}</td>
-                    <td class="text-right">$${(t.exit_price || 0).toFixed(2)}</td>
-                    <td class="text-right ${(t.return_pct || 0) >= 0 ? 'positive' : 'negative'}">${(t.return_pct || 0) >= 0 ? '+' : ''}${(t.return_pct || 0).toFixed(1)}%</td>
-                    <td class="text-right ${(t.gross_pl || 0) >= 0 ? 'positive' : 'negative'}">${(t.gross_pl || 0) >= 0 ? '+' : ''}$${(t.gross_pl || 0).toFixed(2)}<\/td>
-                    <td>${t.exit_reason || '?'}<\/td>
-                </tr>`).join('');
+                    <td class="${(t.return_pct || 0) >= 0 ? 'positive' : 'negative'}">${(t.return_pct || 0) >= 0 ? '+' : ''}${(t.return_pct || 0).toFixed(1)}%</td>
+                    <td class="${(t.gross_pl || 0) >= 0 ? 'positive' : 'negative'}">${(t.gross_pl || 0) >= 0 ? '+' : ''}$${(t.gross_pl || 0).toFixed(2)}</td>
+                    <td>${t.exit_reason || '?'}</td>
+                </tr>
+            `).join('');
         }
         
         document.getElementById('lastUpdated').innerHTML = `Last updated: ${new Date().toLocaleString()}`;
