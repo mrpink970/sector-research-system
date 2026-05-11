@@ -44,7 +44,7 @@
 <div class="dashboard">
     <div class="header">
         <h1>🔬 Quantum Computing System</h1>
-        <p>Pure Play Quantum Stocks • 2026 IPOs • 25% Trailing Stop</p>
+        <p>Pure Play Quantum Stocks • 2026 IPOs • 10% Trailing Stop</p>
     </div>
 
     <div class="kpi-grid">
@@ -88,7 +88,7 @@
     <\/div>
 
     <div class="last-updated" id="lastUpdated"><\/div>
-    <div class="footer">⚡ 25% Trailing Stop • Single Position • Scores update daily (6 PM ET)<\/div>
+    <div class="footer">⚡ 10% Trailing Stop • Single Position • Scores update daily (6 PM ET)<\/div>
 <\/div>
 
 <script>
@@ -133,6 +133,9 @@
         const positions = parseCSV(await fetchCSV(POSITIONS_URL));
         const trades = parseCSV(await fetchCSV(TRADE_URL));
         const perf = parseCSV(await fetchCSV(PERF_URL));
+        
+        console.log('Trades found:', trades.length);
+        console.log('First trade:', trades[0]);
         
         // Parse scores and prices from the last line of scores CSV
         let latestScores = {};
@@ -182,8 +185,11 @@
         let totalPL = 0;
         let winningTrades = 0;
         if (trades.length > 0) {
-            totalPL = trades.reduce((sum, t) => sum + (t.gross_pl || 0), 0);
-            winningTrades = trades.filter(t => (t.gross_pl || 0) > 0).length;
+            for (const t of trades) {
+                const pl = t.gross_pl || 0;
+                totalPL += pl;
+                if (pl > 0) winningTrades++;
+            }
         }
         
         // Calculate open positions
@@ -264,25 +270,27 @@
             <div><strong>Unrealized P&L:</strong> ${unrealizedPL >= 0 ? '+' : ''}$${unrealizedPL.toFixed(2)}</div>
         `;
         
-        // Trades table
+        // Trades table - FIXED: properly map trade data
         const tbody = document.getElementById('tradesBody');
         if (trades.length === 0) {
             tbody.innerHTML = '<tr><td colspan="9">No closed trades yet<\/td><\/tr>';
         } else {
             const recent = [...trades].reverse().slice(0, 20);
-            tbody.innerHTML = recent.map(t => `
-                <tr>
+            tbody.innerHTML = recent.map(t => {
+                const ret = t.return_pct || 0;
+                const pl = t.gross_pl || 0;
+                return `<tr>
                     <td><strong>${t.ticker || '?'}</strong></td>
                     <td>${t.entry_date || '?'}</td>
                     <td>${t.exit_date || '?'}</td>
-                    <td class="text-right">${t.shares || 0}</td>
+                    <td class="text-right">${t.shares || 0}<\/td>
                     <td class="text-right">$${(t.entry_price || 0).toFixed(2)}<\/td>
                     <td class="text-right">$${(t.exit_price || 0).toFixed(2)}<\/td>
-                    <td class="text-right ${(t.return_pct || 0) >= 0 ? 'positive' : 'negative'}">${(t.return_pct || 0) >= 0 ? '+' : ''}${(t.return_pct || 0).toFixed(1)}%<\/td>
-                    <td class="text-right ${(t.gross_pl || 0) >= 0 ? 'positive' : 'negative'}">${(t.gross_pl || 0) >= 0 ? '+' : ''}$${(t.gross_pl || 0).toFixed(2)}<\/td>
+                    <td class="text-right ${ret >= 0 ? 'positive' : 'negative'}">${ret >= 0 ? '+' : ''}${ret.toFixed(1)}%<\/td>
+                    <td class="text-right ${pl >= 0 ? 'positive' : 'negative'}">${pl >= 0 ? '+' : ''}$${pl.toFixed(2)}<\/td>
                     <td>${t.exit_reason || '?'}<\/td>
-                </tr>
-            `).join('');
+                </table>`;
+            }).join('');
         }
         
         document.getElementById('lastUpdated').innerHTML = `Last updated: ${new Date().toLocaleString()} | Data as of: ${lastDate}`;
