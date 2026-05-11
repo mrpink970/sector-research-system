@@ -11,6 +11,7 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
+import numpy as np
 import pandas as pd
 import yaml
 import yfinance as yf
@@ -265,11 +266,13 @@ def main():
                 score_history[ticker] = smoothed
                 scores[ticker] = smoothed
             
-            # Store daily scores and prices for dashboard
-            current_prices = {ticker: round(df[ticker].iloc[i], 2) for ticker in tickers}
+            # Store daily scores and prices for dashboard (convert numpy types)
+            current_prices = {ticker: round(float(df[ticker].iloc[i]), 2) for ticker in tickers}
+            clean_scores = {ticker: float(score) for ticker, score in scores.items()}
+            
             daily_scores.append({
                 'date': date.strftime("%Y-%m-%d"),
-                'scores': str(scores),
+                'scores': str(clean_scores),
                 'prices': str(current_prices)
             })
             
@@ -303,8 +306,12 @@ def main():
     data_dir = Path("data/quantum")
     data_dir.mkdir(parents=True, exist_ok=True)
     
-    # Save daily scores with prices
+    # Save daily scores with prices (convert any remaining numpy types)
     if daily_scores:
+        for ds in daily_scores:
+            # Ensure everything is string for CSV
+            ds['scores'] = str(ds['scores'])
+            ds['prices'] = str(ds['prices'])
         scores_df = pd.DataFrame(daily_scores)
         scores_df.to_csv(data_dir / "quantum_scores.csv", index=False)
         print(f"✅ Saved {len(daily_scores)} days of scores to quantum_scores.csv")
