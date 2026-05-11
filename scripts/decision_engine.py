@@ -318,34 +318,6 @@ def get_regime() -> str:
 
 
 # ============================================================
-# DATA FETCHING
-# ============================================================
-
-def fetch_yesterdays_close(ticker: str) -> float:
-    """Fetch yesterday's closing price"""
-    try:
-        stock = yf.Ticker(ticker)
-        hist = stock.history(period="2d")
-        if len(hist) >= 2:
-            return float(hist['Close'].iloc[-2])
-        return 0.0
-    except Exception:
-        return 0.0
-
-
-def fetch_current_price(ticker: str) -> float:
-    """Fetch current price"""
-    try:
-        stock = yf.Ticker(ticker)
-        hist = stock.history(period="1d")
-        if not hist.empty:
-            return float(hist['Close'].iloc[-1])
-        return 0.0
-    except Exception:
-        return 0.0
-
-
-# ============================================================
 # EMAIL
 # ============================================================
 
@@ -410,8 +382,8 @@ def send_email(
 
   Current leader: {top_system} (Score: {top_score:.0f})
   2nd place: {second_system} (Score: {second_score:.0f})
-  Gap: {gap:.0f} points (switch requires 10+ points)
-  Days since last switch: {days_since_switch} (requires 5+ business days)
+  Gap: {gap:.0f} points (switch requires 10+ points to consider changing)
+  Days since last switch: {days_since_switch} (requires 5+ business days to switch again)
 
 💰 CASH CHECK
 
@@ -426,8 +398,8 @@ def send_email(
 {rec_text}
 
 ═══════════════════════════════════════════════════════════
-  Previous recommendation: {'Hold ' + top_system if top_score >= 50 else 'Go to cash'}
-  {'No action needed' if top_score >= 50 else 'Exit all positions to cash'}
+  Action: {'Hold ' + top_system if top_score >= 50 else 'Go to cash'}
+  {'No trade needed' if top_score >= 50 else 'Exit all positions to cash'}
 ═══════════════════════════════════════════════════════════
 """
     
@@ -504,29 +476,25 @@ def main():
         recommendations.append("   Exit all positions. Re-enter when regime turns BULL.")
         action = "CASH"
     else:
-        # Check if switch is warranted
-        if gap >= 10 and days_since_switch >= 5:
-            recommendations.append(f"🔄 SWITCH: Move from {top_system} to {second_system}")
-            recommendations.append(f"   Gap: {gap:.0f} points (10+ threshold met)")
-            recommendations.append(f"   Days since last switch: {days_since_switch} (5+ business days)")
-            recommendations.append(f"   ACTION: Exit {top_data['current_holding']}, enter {second_data['current_holding']}")
-            action = "SWITCH"
-            # Save this switch recommendation
-            save_switch_recommendation(second_system, top_system, scores)
+        # Hold the top-scoring system (it's the leader)
+        # No switch needed because top_system is already the best
+        
+        recommendations.append(f"✅ HOLD: {top_data['name']} (Score: {top_score:.0f})")
+        recommendations.append(f"   2nd place: {second_system} ({second_score:.0f})")
+        
+        if gap >= 10:
+            recommendations.append(f"   Gap is {gap:.0f} points — {top_data['name']} has strong lead.")
         else:
-            # Hold current leader
-            if gap >= 10:
-                gap_note = f"Gap is {gap:.0f} points (meets threshold), but only {days_since_switch} business days since last switch. Wait {(5 - days_since_switch)} more days."
-            elif days_since_switch < 5:
-                gap_note = f"Only {days_since_switch} business days since last switch. Wait {(5 - days_since_switch)} more days before considering switch."
-            else:
-                gap_note = f"Gap is only {gap:.0f} points (requires 10+ to switch)."
-            
-            recommendations.append(f"✅ HOLD: {top_system}")
-            recommendations.append(f"   Current leader with score {top_score:.0f}")
-            recommendations.append(f"   2nd place: {second_system} ({second_score:.0f})")
-            recommendations.append(f"   {gap_note}")
-            action = "HOLD"
+            recommendations.append(f"   Gap is {gap:.0f} points — race is close.")
+        
+        if days_since_switch < 5 and last_switch_date:
+            recommendations.append(f"   Only {days_since_switch} business days since last switch.")
+            recommendations.append(f"   Wait {(5 - days_since_switch)} more days before considering any change.")
+        
+        action = f"HOLD {top_data['name']}"
+        
+        # Log the recommendation (not a switch, just tracking)
+        # save_switch_recommendation(top_data['name'], top_system, scores)
     
     # Print summary
     print(f"\n📊 SYSTEM RANKINGS:")
