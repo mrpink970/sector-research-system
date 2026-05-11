@@ -1,2 +1,0 @@
-ticker,entry_date,exit_date,entry_price,exit_price,shares,return_pct,gross_pl,exit_reason
-RGTI,2026-02-19,2026-03-30,16.600000381469727,13.979999542236328,301,-15.78,-788.62,trailing_stop
