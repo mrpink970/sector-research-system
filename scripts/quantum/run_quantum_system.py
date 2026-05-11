@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Quantum Computing System - WITH PRICES
+Quantum Computing System - FINAL WORKING VERSION
 """
 
 from __future__ import annotations
@@ -111,12 +111,23 @@ def main():
             for i in range(len(df))
         ]
     
-    # Save scores and prices together
+    # Save scores and prices - convert numpy types
     scores_with_prices = []
     for i in range(len(df)):
         date = df.index[i]
-        price_dict = {ticker: round(df[ticker].iloc[i], 2) for ticker in tickers}
-        score_dict = {ticker: round(scores[ticker].iloc[i], 2) for ticker in tickers}
+        
+        # Convert to regular Python float and round to 2 decimals
+        price_dict = {}
+        for ticker in tickers:
+            val = df[ticker].iloc[i]
+            if pd.notna(val):
+                price_dict[ticker] = round(float(val), 2)
+        
+        score_dict = {}
+        for ticker in tickers:
+            val = scores[ticker].iloc[i]
+            score_dict[ticker] = round(float(val), 2)
+        
         scores_with_prices.append({
             'date': date.strftime("%Y-%m-%d"),
             'scores': str(score_dict),
@@ -155,8 +166,8 @@ def main():
                     'ticker': ticker,
                     'entry_date': position['entry_date'],
                     'exit_date': next_day.strftime("%Y-%m-%d"),
-                    'entry_price': position['entry_price'],
-                    'exit_price': exit_price,
+                    'entry_price': round(position['entry_price'], 2),
+                    'exit_price': round(exit_price, 2),
                     'shares': position['shares'],
                     'return_pct': round(ret, 2),
                     'gross_pl': round(pl, 2),
@@ -170,12 +181,12 @@ def main():
         
         # Entry logic
         if not position and regime == "BULL":
-            today_scores = {ticker: scores[ticker].iloc[i] for ticker in tickers}
+            today_scores = {ticker: float(scores[ticker].iloc[i]) for ticker in tickers}
             best = max(today_scores, key=today_scores.get)
             best_score = today_scores[best]
             
             if best_score >= min_score:
-                entry_price = df[best].iloc[i + 1]
+                entry_price = float(df[best].iloc[i + 1])
                 shares = int(cash / entry_price)
                 if shares > 0:
                     position = {
@@ -218,11 +229,11 @@ def main():
         pos_df = pd.DataFrame([{
             'ticker': position['ticker'],
             'entry_date': position['entry_date'],
-            'entry_price': position['entry_price'],
+            'entry_price': round(position['entry_price'], 2),
             'shares': position['shares'],
-            'highest_price': position['highest_price'],
-            'trailing_stop': position['highest_price'] * (1 - trailing_stop_pct),
-            'entry_score': position['entry_score']
+            'highest_price': round(position['highest_price'], 2),
+            'trailing_stop': round(position['highest_price'] * (1 - trailing_stop_pct), 2),
+            'entry_score': round(position['entry_score'], 2)
         }])
         pos_df.to_csv(data_dir / "positions.csv", index=False)
     
