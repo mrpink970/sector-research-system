@@ -52,13 +52,13 @@
     </div>
 
     <div class="full-width-card">
-        <div class="card-header">🏆 Quantum Stock Rankings</div>
+        <div class="card-header">🏆 Quantum Stock Rankings (End of Day)</div>
         <div class="card-content">
             <table class="ranking-table" id="rankingsTable">
-                <thead><tr><th>Rank</th><th>Ticker</th><th>Momentum Score</th></tr></thead>
-                <tbody id="rankingsBody"><tr><td colspan="3" class="loading">Loading...</td></tr></tbody>
+                <thead><tr><th>Rank</th><th>Ticker</th><th>Company</th><th>Close</th><th>Momentum Score</th></tr></thead>
+                <tbody id="rankingsBody"><tr><td colspan="5" class="loading">Loading...</td></tr></tbody>
             </table>
-            <div class="small-note">Scores based on 1d/3d/5d returns + trend strength + volatility adjustment</div>
+            <div class="small-note">Scores based on 1d/3d/5d returns + trend strength + volatility | Closing prices from daily data</div>
         </div>
     </div>
 
@@ -84,7 +84,7 @@
     </div>
 
     <div class="last-updated" id="lastUpdated">--</div>
-    <div class="footer">⚡ 25% Trailing Stop • Single Position • Scores update daily</div>
+    <div class="footer">⚡ 25% Trailing Stop • Single Position • Scores update daily (6 PM ET)</div>
 </div>
 
 <script>
@@ -136,8 +136,9 @@
         const positions = parseCSV(posCSV);
         const trades = parseCSV(tradeCSV);
         
-        // Parse latest scores from scores CSV
+        // Parse latest scores and prices from scores CSV
         let latestScores = {};
+        let latestPrices = {};
         if (scoresCSV) {
             const lines = scoresCSV.trim().split('\n');
             if (lines.length > 1) {
@@ -145,10 +146,16 @@
                 const parts = lastLine.split(',');
                 if (parts.length >= 2) {
                     try {
-                        // Format: date,{"IONQ": 5.2, "QBTS": 3.1, ...}
-                        const scoresStr = parts.slice(1).join(',').replace(/'/g, '"');
+                        // Try to parse scores
+                        const scoresStr = parts[1].replace(/'/g, '"');
                         latestScores = JSON.parse(scoresStr);
-                    } catch(e) { console.log('Score parse error:', e); }
+                    } catch(e) {}
+                }
+                if (parts.length >= 3) {
+                    try {
+                        const pricesStr = parts[2].replace(/'/g, '"');
+                        latestPrices = JSON.parse(pricesStr);
+                    } catch(e) {}
                 }
             }
         }
@@ -157,7 +164,8 @@
         const rankings = [];
         for (const ticker of TICKERS) {
             const score = latestScores[ticker] || 0;
-            rankings.push({ ticker: ticker, company: COMPANY_NAMES[ticker], score: score });
+            const price = latestPrices[ticker] || 0;
+            rankings.push({ ticker: ticker, company: COMPANY_NAMES[ticker], score: score, price: price });
         }
         rankings.sort((a, b) => b.score - a.score);
         
@@ -167,7 +175,12 @@
             let scoreClass = 'score-low';
             if (r.score >= 5) scoreClass = 'score-high';
             else if (r.score >= 2) scoreClass = 'score-mid';
-            return `<tr><td>${idx + 1}</td><td><strong>${r.ticker}</strong><br><span class="small-note">${r.company}</span></td><td class="${scoreClass}">${r.score.toFixed(1)}</td></tr>`;
+            return `<tr>
+                <td>${idx + 1}</td>
+                <td><strong>${r.ticker}</strong><br><span class="small-note">${r.company}</span></td>
+                <td>${r.price > 0 ? `$${r.price.toFixed(2)}` : 'N/A'}</td>
+                <td class="${scoreClass}">${r.score.toFixed(1)}</td>
+            </tr>`;
         }).join('');
         
         // Calculate totals
@@ -200,7 +213,7 @@
             }
         }
         
-        const cashBalance = STARTING_BALANCE + netProfit - totalCost;
+        const cashBalance = Math.max(0, STARTING_BALANCE + netProfit - totalCost);
         const totalEquity = cashBalance + totalValue;
         const totalReturnPct = ((totalEquity - STARTING_BALANCE) / STARTING_BALANCE) * 100;
         
