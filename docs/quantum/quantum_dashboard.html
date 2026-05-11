@@ -1,58 +1,118 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Quantum System - Test</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quantum System Dashboard</title>
     <style>
-        body { font-family: Arial; padding: 20px; background: #f0f4f8; }
-        .card { background: white; border-radius: 12px; padding: 20px; margin-bottom: 20px; }
-        table { width: 100%; border-collapse: collapse; }
-        th, td { padding: 10px; text-align: left; border-bottom: 1px solid #ddd; }
-        .positive { color: green; }
-        .negative { color: red; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: #f0f4f8; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; padding: 1.5rem; color: #1a2a3a; }
+        .dashboard { max-width: 1400px; margin: 0 auto; }
+        .header { margin-bottom: 1.5rem; }
+        .header h1 { font-size: 1.6rem; font-weight: 700; color: #1a4d7a; }
+        .header p { color: #5a6e7c; margin-top: 0.2rem; border-left: 3px solid #2c7fb8; padding-left: 1rem; }
+        .kpi-grid { display: flex; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.5rem; }
+        .kpi-card { background: white; border-radius: 1rem; padding: 1rem 1.2rem; flex: 1 1 160px; box-shadow: 0 2px 6px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; }
+        .kpi-label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1px; color: #6c7e8f; margin-bottom: 0.4rem; }
+        .kpi-value { font-size: 1.6rem; font-weight: 700; color: #1a4d7a; }
+        .positive { color: #1e8a4c; }
+        .negative { color: #c2412c; }
+        .two-col { display: flex; flex-wrap: wrap; gap: 1.2rem; margin-bottom: 1.2rem; }
+        .card { background: white; border-radius: 1rem; border: 1px solid #e2e8f0; overflow: hidden; flex: 1; min-width: 280px; }
+        .card-header { padding: 0.8rem 1rem; font-weight: 600; font-size: 0.95rem; border-bottom: 1px solid #edf2f7; background: #fafcfd; color: #2c5a7a; }
+        .card-content { padding: 1rem; }
+        .badge { background: #e0f5e8; color: #1e6b3b; padding: 0.2rem 0.5rem; border-radius: 20px; font-size: 0.65rem; font-weight: 600; display: inline-block; }
+        .current-position-card { background: #e8f5e9; border-radius: 0.75rem; padding: 1rem; text-align: center; border: 1px solid #c8e6c9; }
+        .big-number { font-size: 2rem; font-weight: 700; color: #1e8a4c; }
+        .loading { text-align: center; padding: 2rem; color: #6c7e8f; }
+        .small-note { font-size: 0.65rem; color: #8ba0b0; margin-top: 0.5rem; text-align: center; }
+        hr { margin: 0.8rem 0; border: none; border-top: 1px solid #e2edf2; }
+        .footer { text-align: center; font-size: 0.65rem; color: #8ba0b0; margin-top: 1.5rem; padding-top: 0.8rem; border-top: 1px solid #e2edf2; }
+        .last-updated { font-size: 0.65rem; color: #8ba0b0; text-align: right; margin-top: 0.5rem; }
+        .full-width-card { background: white; border-radius: 1rem; border: 1px solid #e2e8f0; overflow: auto; margin-bottom: 1.2rem; }
+        .full-width-card .card-content { overflow-x: auto; }
+        .ranking-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+        .ranking-table th, .ranking-table td { padding: 0.6rem 0.5rem; text-align: left; border-bottom: 1px solid #e2edf2; }
+        .ranking-table th { background: #f9fafb; font-weight: 600; color: #4a627a; }
+        .score-high { color: #1e8a4c; font-weight: 700; }
+        .score-mid { color: #eab308; font-weight: 600; }
+        .score-low { color: #ef4444; font-weight: 600; }
+        .text-right { text-align: right; }
     </style>
 </head>
 <body>
-<div style="max-width: 1000px; margin: 0 auto;">
-    <div class="card">
-        <h1>🔬 Quantum Computing System - TEST</h1>
-        <p>If you can see this, the dashboard file is updating.</p>
-        <p><strong>Current time:</strong> <span id="time"></span></p>
+<div class="dashboard">
+    <div class="header">
+        <h1>🔬 Quantum Computing System</h1>
+        <p>Pure Play Quantum Stocks • 2026 IPOs • 25% Trailing Stop</p>
     </div>
 
-    <div class="card">
-        <h2>🏆 Quantum Stock Rankings (May 7, 2026)</h2>
-        <table>
-            <thead>
-                <tr><th>Rank</th><th>Ticker</th><th>Company</th><th>Close</th><th>Score</th></tr>
-            </thead>
-            <tbody>
-                <tr><td>1</td><td><strong>QBTS</strong></td><td>D-Wave Quantum</td><td>$21.99</td><td class="positive">4.6</td></tr>
-                <tr><td>2</td><td><strong>IONQ</strong></td><td>IonQ Inc</td><td>$47.68</td><td class="positive">3.8</td></tr>
-                <tr><td>3</td><td><strong>QUBT</strong></td><td>Quantum Computing Inc</td><td>$9.63</td><td class="positive">3.2</td></tr>
-                <tr><td>4</td><td><strong>RGTI</strong></td><td>Rigetti Computing</td><td>$18.34</td><td class="positive">2.9</td></tr>
-                <tr><td>5</td><td><strong>INFQ</strong></td><td>Infleqtion</td><td>$12.11</td><td class="negative">-1.0</td></tr>
-                <tr><td>6</td><td><strong>HQ</strong></td><td>Horizon Quantum</td><td>$10.00</td><td class="negative">-1.7</td></tr>
-                <tr><td>7</td><td><strong>XNDU</strong></td><td>Xanadu Quantum</td><td>$17.38</td><td class="negative">-8.8</td></tr>
-            </tbody>
-        </table>
-        <p>System recommends: <strong>QBTS</strong> (highest score: 4.6)</p>
+    <div class="kpi-grid" id="kpiContainer">
+        <div class="loading">Loading...</div>
     </div>
 
-    <div class="card">
-        <h2>📊 System Status</h2>
-        <p><strong>Cash Balance:</strong> $4,509.65</p>
-        <p><strong>Total Return:</strong> -9.8%</p>
-        <p><strong>Open Positions:</strong> 0</p>
-        <p><strong>Closed Trades:</strong> 1 (IONQ: -9.9%)</p>
+    <div class="full-width-card">
+        <div class="card-header">🏆 Quantum Stock Rankings (End of Day)</div>
+        <div class="card-content">
+            <table class="ranking-table" id="rankingsTable">
+                <thead><tr><th>Rank</th><th>Ticker</th><th>Company</th><th>Close</th><th>Momentum Score</th></td></thead>
+                <tbody id="rankingsBody">
+                    <tr><td>1</td><td><strong>QBTS</strong></td><td>D-Wave Quantum</td><td>$21.99</td><td class="score-high">4.6</td></tr>
+                    <tr><td>2</td><td><strong>IONQ</strong></td><td>IonQ Inc</td><td>$47.68</td><td class="score-high">3.8</td></tr>
+                    <tr><td>3</td><td><strong>QUBT</strong></td><td>Quantum Computing Inc</td><td>$9.63</td><td class="score-mid">3.2</td></tr>
+                    <tr><td>4</td><td><strong>RGTI</strong></td><td>Rigetti Computing</td><td>$18.34</td><td class="score-mid">2.9</td></tr>
+                    <tr><td>5</td><td><strong>INFQ</strong></td><td>Infleqtion</td><td>$12.11</td><td class="score-low">-1.0</td></tr>
+                    <tr><td>6</td><td><strong>HQ</strong></td><td>Horizon Quantum</td><td>$10.00</td><td class="score-low">-1.7</td></tr>
+                    <tr><td>7</td><td><strong>XNDU</strong></td><td>Xanadu Quantum</td><td>$17.38</td><td class="score-low">-8.8</td></tr>
+                </tbody>
+            </table>
+            <div class="small-note">Scores based on 1d/3d/5d returns + trend strength + volatility | Data as of May 7, 2026</div>
+        </div>
     </div>
 
-    <div class="card">
-        <p><strong>Last updated:</strong> May 11, 2026 4:00 PM ET</p>
-        <p>⚡ 25% Trailing Stop • Single Position</p>
+    <div class="two-col">
+        <div class="card">
+            <div class="card-header">📌 Current Position</div>
+            <div class="card-content">
+                <div class="current-position-card">
+                    <div style="font-size: 1.2rem;">📭 No Open Position</div>
+                    <div class="small-note">In cash • Waiting for signal</div>
+                </div>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-header">📈 Performance Summary</div>
+            <div class="card-content" id="performanceSummary">
+                <div><strong>Starting Balance:</strong> $5,000.00</div>
+                <div><strong>Cash Balance:</strong> $4,509.65</div>
+                <div><strong>Total Equity:</strong> <span class="positive">$4,509.65</span></div>
+                <div><strong>Total Return:</strong> <span class="negative">-9.8%</span></div>
+                <hr>
+                <div>No open position</div>
+                <hr>
+                <div><strong>Realized P&L:</strong> <span class="negative">-$490.35</span></div>
+                <div><strong>Unrealized P&L:</strong> $0.00</div>
+            </div>
+        </div>
     </div>
+
+    <div class="full-width-card">
+        <div class="card-header">📜 Recent Closed Trades</div>
+        <div class="card-content">
+            <table class="ranking-table">
+                <thead><tr><th>Ticker</th><th>Entry Date</th><th>Exit Date</th><th>Shares</th><th>Entry $</th><th>Exit $</th><th>Return %</th><th>P&L</th><th>Exit Reason</th></tr></thead>
+                <tbody>
+                    <tr><td><strong>IONQ</strong></td><td>2026-04-22</td><td>2026-04-24</td><td>105</td><td>$47.36</td><td>$42.69</td><td class="negative">-9.9%</td><td class="negative">-$490.35</td><td>score_-5.2</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="last-updated" id="lastUpdated">Last updated: May 11, 2026</div>
+    <div class="footer">⚡ 25% Trailing Stop • Single Position • Scores update daily (6 PM ET)</div>
 </div>
 <script>
-    document.getElementById('time').innerHTML = new Date().toLocaleString();
+    document.getElementById('lastUpdated').innerHTML = 'Last updated: ' + new Date().toLocaleString();
 </script>
 </body>
 </html>
