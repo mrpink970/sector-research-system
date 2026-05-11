@@ -1,13 +1,441 @@
-// Calculate total cost of open positions
-let totalPositionCost = 0;
-if (positions.length > 0) {
-    for (const pos of positions) {
-        const entryPrice = pos.entry_price || 0;
-        const shares = pos.shares || 0;
-        totalPositionCost += entryPrice * shares;
-    }
-}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI System Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
-// Cash balance = starting + realized - cost of open positions
-const cashBalance = Math.max(0, STARTING_BALANCE + netProfit - totalPositionCost);
-const totalEquity = cashBalance + totalValue;
+        body {
+            background: #f0f4f8;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            padding: 1.5rem;
+            color: #1a2a3a;
+        }
+
+        .dashboard {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header {
+            margin-bottom: 1.5rem;
+        }
+
+        .header h1 {
+            font-size: 1.6rem;
+            font-weight: 700;
+            color: #1a4d7a;
+        }
+
+        .header p {
+            color: #5a6e7c;
+            margin-top: 0.2rem;
+            border-left: 3px solid #2c7fb8;
+            padding-left: 1rem;
+        }
+
+        .kpi-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .kpi-card {
+            background: white;
+            border-radius: 1rem;
+            padding: 1rem 1.2rem;
+            flex: 1 1 160px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+            border: 1px solid #e2e8f0;
+        }
+
+        .kpi-label {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #6c7e8f;
+            margin-bottom: 0.4rem;
+        }
+
+        .kpi-value {
+            font-size: 1.6rem;
+            font-weight: 700;
+            color: #1a4d7a;
+        }
+
+        .positive {
+            color: #1e8a4c;
+        }
+
+        .negative {
+            color: #c2412c;
+        }
+
+        .two-col {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1.2rem;
+            margin-bottom: 1.2rem;
+        }
+
+        .card {
+            background: white;
+            border-radius: 1rem;
+            border: 1px solid #e2e8f0;
+            overflow: hidden;
+            flex: 1;
+            min-width: 280px;
+        }
+
+        .card-header {
+            padding: 0.8rem 1rem;
+            font-weight: 600;
+            font-size: 0.95rem;
+            border-bottom: 1px solid #edf2f7;
+            background: #fafcfd;
+            color: #2c5a7a;
+        }
+
+        .card-content {
+            padding: 1rem;
+        }
+
+        .badge-bull {
+            background: #e0f5e8;
+            color: #1e6b3b;
+            padding: 0.2rem 0.5rem;
+            border-radius: 20px;
+            font-size: 0.65rem;
+            font-weight: 600;
+            display: inline-block;
+        }
+
+        .current-position-card {
+            background: #e8f5e9;
+            border-radius: 0.75rem;
+            padding: 1rem;
+            text-align: center;
+            border: 1px solid #c8e6c9;
+            margin-bottom: 12px;
+        }
+
+        .big-number {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #1e8a4c;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 2rem;
+            color: #6c7e8f;
+        }
+
+        .small-note {
+            font-size: 0.65rem;
+            color: #8ba0b0;
+            margin-top: 0.5rem;
+            text-align: center;
+        }
+
+        hr {
+            margin: 0.8rem 0;
+            border: none;
+            border-top: 1px solid #e2edf2;
+        }
+
+        .footer {
+            text-align: center;
+            font-size: 0.65rem;
+            color: #8ba0b0;
+            margin-top: 1.5rem;
+            padding-top: 0.8rem;
+            border-top: 1px solid #e2edf2;
+        }
+
+        .last-updated {
+            font-size: 0.65rem;
+            color: #8ba0b0;
+            text-align: right;
+            margin-top: 0.5rem;
+        }
+        
+        .full-width-card {
+            background: white;
+            border-radius: 1rem;
+            border: 1px solid #e2e8f0;
+            overflow: auto;
+            margin-bottom: 1.2rem;
+        }
+        
+        .full-width-card .card-content {
+            overflow-x: auto;
+        }
+        
+        .data-table-wide {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.75rem;
+            min-width: 800px;
+        }
+        
+        .data-table-wide th {
+            text-align: left;
+            padding: 0.6rem 0.5rem;
+            font-weight: 600;
+            color: #4a627a;
+            border-bottom: 1px solid #e2edf2;
+            background: #fafcfd;
+        }
+        
+        .data-table-wide td {
+            padding: 0.6rem 0.5rem;
+            border-bottom: 1px solid #f0f4f8;
+        }
+        
+        .text-right {
+            text-align: right;
+        }
+    </style>
+</head>
+<body>
+<div class="dashboard">
+    <div class="header">
+        <h1>🤖 AI System Dashboard</h1>
+        <p>AI Hardware Focus • Single Position • 12% Trailing Stop</p>
+    </div>
+
+    <div class="kpi-grid" id="kpiContainer">
+        <div class="loading">Loading...</div>
+    </div>
+
+    <div class="two-col">
+        <div class="card">
+            <div class="card-header">📌 Open Position</div>
+            <div class="card-content" id="positionCard">
+                <div class="loading">Loading...</div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">📈 Performance Summary</div>
+            <div class="card-content" id="performanceSummary">
+                <div class="loading">Loading...</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="full-width-card">
+        <div class="card-header">📜 Recent Closed Trades</div>
+        <div class="card-content">
+            <table class="data-table-wide" id="tradesTable">
+                <thead>
+                    <tr>
+                        <th>Ticker</th>
+                        <th>Entry Date</th>
+                        <th>Exit Date</th>
+                        <th class="text-right">Shares</th>
+                        <th class="text-right">Entry $</th>
+                        <th class="text-right">Exit $</th>
+                        <th class="text-right">Return %</th>
+                        <th class="text-right">P&L</th>
+                        <th>Exit Reason</th>
+                    </tr>
+                </thead>
+                <tbody id="tradesBody">
+                    <tr><td colspan="9" class="loading">Loading...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="last-updated" id="lastUpdated">--</div>
+    <div class="footer">
+        ⚡ AI Hardware Focus • 12% Trailing Stop • Single Position
+    </div>
+</div>
+
+<script>
+    const STARTING_BALANCE = 5000;
+    
+    const PERFORMANCE_URL = 'https://raw.githubusercontent.com/mrpink970/sector-research-system/main/data/ai/performance.csv';
+    const POSITIONS_URL = 'https://raw.githubusercontent.com/mrpink970/sector-research-system/main/data/ai/positions.csv';
+    const TRADE_LOG_URL = 'https://raw.githubusercontent.com/mrpink970/sector-research-system/main/data/ai/trade_log.csv';
+
+    async function fetchCSV(url) {
+        try {
+            const response = await fetch(url + '?t=' + new Date().getTime());
+            if (!response.ok) return null;
+            return await response.text();
+        } catch (error) {
+            console.error('Fetch error:', url, error);
+            return null;
+        }
+    }
+
+    function parseCSV(csvText) {
+        if (!csvText) return [];
+        const lines = csvText.trim().split('\n');
+        if (lines.length < 2) return [];
+        
+        const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
+        const result = [];
+        
+        for (let i = 1; i < lines.length; i++) {
+            const values = lines[i].split(',');
+            const row = {};
+            for (let j = 0; j < headers.length; j++) {
+                let val = values[j] ? values[j].trim() : '';
+                if (!isNaN(val) && val !== '') {
+                    row[headers[j]] = parseFloat(val);
+                } else {
+                    row[headers[j]] = val;
+                }
+            }
+            result.push(row);
+        }
+        return result;
+    }
+
+    function formatCurrency(value) {
+        if (value === undefined || value === null) return '$0.00';
+        const num = parseFloat(value);
+        if (isNaN(num)) return '$0.00';
+        return '$' + num.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    }
+
+    function formatPercent(value) {
+        if (value === undefined || value === null) return '0%';
+        const num = parseFloat(value);
+        if (isNaN(num)) return '0%';
+        const sign = num >= 0 ? '+' : '';
+        return sign + num.toFixed(1) + '%';
+    }
+
+    async function loadDashboard() {
+        const [perfCSV, posCSV, tradeCSV] = await Promise.all([
+            fetchCSV(PERFORMANCE_URL),
+            fetchCSV(POSITIONS_URL),
+            fetchCSV(TRADE_LOG_URL)
+        ]);
+        
+        const perf = parseCSV(perfCSV);
+        const positions = parseCSV(posCSV);
+        const trades = parseCSV(tradeCSV);
+        
+        let netProfit = 0;
+        let totalTrades = 0;
+        let winRate = 0;
+        
+        if (perf.length > 0) {
+            netProfit = perf[0].net_profit_dollars || 0;
+            totalTrades = perf[0].total_trades || 0;
+            winRate = perf[0].win_rate_pct || 0;
+        }
+        
+        let openPositions = [];
+        let totalCost = 0;
+        let totalValue = 0;
+        
+        if (positions.length > 0) {
+            for (const pos of positions) {
+                const entry = pos.entry_price || 0;
+                const shares = pos.shares || 0;
+                const current = pos.highest_price || entry;
+                const cost = entry * shares;
+                const value = current * shares;
+                totalCost += cost;
+                totalValue += value;
+                openPositions.push({
+                    ticker: pos.ticker || '?',
+                    entry_date: pos.entry_date || '?',
+                    entry_price: entry,
+                    current_price: current,
+                    shares: shares,
+                    pnl: value - cost,
+                    pnl_pct: entry > 0 ? ((current - entry) / entry * 100) : 0
+                });
+            }
+        }
+        
+        const cashBalance = Math.max(0, STARTING_BALANCE + netProfit - totalCost);
+        const totalEquity = cashBalance + totalValue;
+        const totalReturnPct = ((totalEquity - STARTING_BALANCE) / STARTING_BALANCE) * 100;
+        
+        // KPI Cards
+        document.getElementById('kpiContainer').innerHTML = `
+            <div class="kpi-card"><div class="kpi-label">💰 Cash Balance</div><div class="kpi-value">${formatCurrency(cashBalance)}</div><div class="small-note">Started: ${formatCurrency(STARTING_BALANCE)}</div></div>
+            <div class="kpi-card"><div class="kpi-label">📈 Total Equity</div><div class="kpi-value positive">${formatCurrency(totalEquity)}</div><div class="small-note">Cash + Position Value</div></div>
+            <div class="kpi-card"><div class="kpi-label">🏆 Win Rate</div><div class="kpi-value">${winRate.toFixed(1)}%</div><div class="small-note">${totalTrades} closed trades</div></div>
+            <div class="kpi-card"><div class="kpi-label">📊 Total Return</div><div class="kpi-value ${totalReturnPct >= 0 ? 'positive' : 'negative'}">${formatPercent(totalReturnPct)}</div><div class="small-note">${totalReturnPct >= 0 ? '+' : ''}${formatCurrency(totalEquity - STARTING_BALANCE)}</div></div>
+            <div class="kpi-card"><div class="kpi-label">📌 Open Positions</div><div class="kpi-value">${openPositions.length}</div><div class="small-note">Total Cost: ${formatCurrency(totalCost)}</div></div>
+        `;
+        
+        // Open Position Card
+        if (openPositions.length > 0) {
+            const pos = openPositions[0];
+            const pnlClass = pos.pnl >= 0 ? 'positive' : 'negative';
+            document.getElementById('positionCard').innerHTML = `
+                <div class="current-position-card">
+                    <div><span class="badge-bull">${pos.ticker}</span></div>
+                    <div class="big-number">${formatPercent(pos.pnl_pct)}</div>
+                    <div>Entry: ${formatCurrency(pos.entry_price)} | Current: ${formatCurrency(pos.current_price)}</div>
+                    <div>Shares: ${pos.shares} | Total Cost: ${formatCurrency(pos.entry_price * pos.shares)}</div>
+                    <div>Unrealized: <span class="${pnlClass}">${pos.pnl >= 0 ? '+' : ''}${formatCurrency(pos.pnl)}</span></div>
+                    <div class="small-note">Entry Date: ${pos.entry_date}</div>
+                </div>
+            `;
+        } else {
+            document.getElementById('positionCard').innerHTML = `<div class="current-position-card"><div style="font-size:1.2rem;">📭 No Open Position</div><div class="small-note">In cash • Waiting for signal</div></div>`;
+        }
+        
+        // Performance Summary
+        document.getElementById('performanceSummary').innerHTML = `
+            <div><strong>Starting Balance:</strong> ${formatCurrency(STARTING_BALANCE)}</div>
+            <div><strong>Cash Balance:</strong> ${formatCurrency(cashBalance)}</div>
+            <div><strong>Total Equity:</strong> <span class="positive">${formatCurrency(totalEquity)}</span></div>
+            <div><strong>Total Return:</strong> <span class="${totalReturnPct >= 0 ? 'positive' : 'negative'}">${formatPercent(totalReturnPct)}</span></div>
+            <hr>
+            ${openPositions.length > 0 ? `<div><strong>${openPositions[0].ticker}:</strong> ${openPositions[0].shares} shares @ ${formatCurrency(openPositions[0].entry_price)}</div><div>Unrealized: <span class="${openPositions[0].pnl >= 0 ? 'positive' : 'negative'}">${openPositions[0].pnl >= 0 ? '+' : ''}${formatCurrency(openPositions[0].pnl)} (${formatPercent(openPositions[0].pnl_pct)})</span></div>` : '<div>No open position</div>'}
+            <hr>
+            <div><strong>Realized P&L:</strong> ${netProfit >= 0 ? '+' : ''}${formatCurrency(netProfit)}</div>
+            <div><strong>Unrealized P&L:</strong> ${totalValue - totalCost >= 0 ? '+' : ''}${formatCurrency(totalValue - totalCost)}</div>
+        `;
+        
+        // Trades Table
+        const tbody = document.getElementById('tradesBody');
+        if (trades.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="9">No closed trades yet</td></tr>';
+        } else {
+            const recent = [...trades].reverse().slice(0, 20);
+            tbody.innerHTML = recent.map(t => {
+                const plClass = (t.gross_pl || 0) >= 0 ? 'positive' : 'negative';
+                return `<tr>
+                    <td><strong>${t.ticker || '?'}</strong></td>
+                    <td>${t.entry_date || '?'}</td>
+                    <td>${t.exit_date || '?'}</td>
+                    <td class="text-right">${t.shares || 0}</td>
+                    <td class="text-right">${formatCurrency(t.entry_price)}</td>
+                    <td class="text-right">${formatCurrency(t.exit_price)}</td>
+                    <td class="text-right ${(t.return_pct || 0) >= 0 ? 'positive' : 'negative'}">${formatPercent(t.return_pct)}</td>
+                    <td class="text-right ${plClass}">${(t.gross_pl || 0) >= 0 ? '+' : ''}${formatCurrency(t.gross_pl)}</td>
+                    <td>${t.exit_reason || '?'}</td>
+                </tr>`;
+            }).join('');
+        }
+        
+        document.getElementById('lastUpdated').innerHTML = `Last updated: ${new Date().toLocaleString()}`;
+    }
+    
+    loadDashboard();
+    setInterval(loadDashboard, 300000);
+</script>
+</body>
+</html>
