@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Quantum Computing Dashboard</title>
+    <title>Quantum System Dashboard</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { background: #f0f4f8; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; padding: 1.5rem; color: #1a2a3a; }
@@ -18,7 +18,7 @@
         .positive { color: #1e8a4c; }
         .negative { color: #c2412c; }
         .two-col { display: flex; flex-wrap: wrap; gap: 1.2rem; margin-bottom: 1.2rem; }
-        .card { background: white; border-radius: 1rem; border: 1px solid #e2e8f0; overflow: hidden; flex: 1; min-width: 300px; }
+        .card { background: white; border-radius: 1rem; border: 1px solid #e2e8f0; overflow: hidden; flex: 1; min-width: 280px; }
         .card-header { padding: 0.8rem 1rem; font-weight: 600; font-size: 0.95rem; border-bottom: 1px solid #edf2f7; background: #fafcfd; color: #2c5a7a; }
         .card-content { padding: 1rem; }
         .badge { background: #e0f5e8; color: #1e6b3b; padding: 0.2rem 0.5rem; border-radius: 20px; font-size: 0.65rem; font-weight: 600; display: inline-block; }
@@ -38,8 +38,6 @@
         .score-mid { color: #eab308; font-weight: 600; }
         .score-low { color: #ef4444; font-weight: 600; }
         .text-right { text-align: right; }
-        .price-up { color: #1e8a4c; }
-        .price-down { color: #ef4444; }
     </style>
 </head>
 <body>
@@ -57,12 +55,8 @@
         <div class="card-header">🏆 Quantum Stock Rankings</div>
         <div class="card-content">
             <table class="ranking-table" id="rankingsTable">
-                <thead>
-                    <tr><th>Rank</th><th>Ticker</th><th>Company</th><th>Price</th><th>1D %</th><th>3D %</th><th>5D %</th><th>Momentum Score</th></tr>
-                </thead>
-                <tbody id="rankingsBody">
-                    <tr><td colspan="8" class="loading">Loading...</td></tr>
-                </tbody>
+                <thead><tr><th>Rank</th><th>Ticker</th><th>Momentum Score</th></tr></thead>
+                <tbody id="rankingsBody"><tr><td colspan="3" class="loading">Loading...</td></tr></tbody>
             </table>
             <div class="small-note">Scores based on 1d/3d/5d returns + trend strength + volatility adjustment</div>
         </div>
@@ -71,15 +65,11 @@
     <div class="two-col">
         <div class="card">
             <div class="card-header">📌 Current Position</div>
-            <div class="card-content" id="positionCard">
-                <div class="loading">Loading...</div>
-            </div>
+            <div class="card-content" id="positionCard"><div class="loading">Loading...</div></div>
         </div>
         <div class="card">
             <div class="card-header">📈 Performance Summary</div>
-            <div class="card-content" id="performanceSummary">
-                <div class="loading">Loading...</div>
-            </div>
+            <div class="card-content" id="performanceSummary"><div class="loading">Loading...</div></div>
         </div>
     </div>
 
@@ -94,7 +84,7 @@
     </div>
 
     <div class="last-updated" id="lastUpdated">--</div>
-    <div class="footer">⚡ Quantum Computing • 25% Trailing Stop • Single Position</div>
+    <div class="footer">⚡ 25% Trailing Stop • Single Position • Scores update daily</div>
 </div>
 
 <script>
@@ -137,26 +127,6 @@
         return result;
     }
 
-    async function fetchCurrentPrices() {
-        const prices = {};
-        for (const ticker of TICKERS) {
-            try {
-                const url = `https://query1.finance.yahoo.com/v8/finance/chart/${ticker}`;
-                const response = await fetch(url);
-                const data = await response.json();
-                const result = data.chart.result[0];
-                const quote = result.indicators.quote[0];
-                const close = quote.close[quote.close.length - 1];
-                const open = quote.open[quote.open.length - 1];
-                const change = ((close - open) / open * 100).toFixed(2);
-                prices[ticker] = { price: close.toFixed(2), change: change };
-            } catch (e) {
-                prices[ticker] = { price: 'N/A', change: 0 };
-            }
-        }
-        return prices;
-    }
-
     async function loadDashboard() {
         const [perfCSV, posCSV, tradeCSV, scoresCSV] = await Promise.all([
             fetchCSV(PERFORMANCE_URL), fetchCSV(POSITIONS_URL), fetchCSV(TRADE_LOG_URL), fetchCSV(SCORES_URL)
@@ -165,56 +135,42 @@
         const perf = parseCSV(perfCSV);
         const positions = parseCSV(posCSV);
         const trades = parseCSV(tradeCSV);
-        const scoresData = parseCSV(scoresCSV);
         
-        // Get latest scores
+        // Parse latest scores from scores CSV
         let latestScores = {};
-        if (scoresData.length > 0) {
-            const latest = scoresData[scoresData.length - 1];
-            if (latest.scores) {
-                try {
-                    latestScores = JSON.parse(latest.scores.replace(/'/g, '"'));
-                } catch(e) {}
+        if (scoresCSV) {
+            const lines = scoresCSV.trim().split('\n');
+            if (lines.length > 1) {
+                const lastLine = lines[lines.length - 1];
+                const parts = lastLine.split(',');
+                if (parts.length >= 2) {
+                    try {
+                        // Format: date,{"IONQ": 5.2, "QBTS": 3.1, ...}
+                        const scoresStr = parts.slice(1).join(',').replace(/'/g, '"');
+                        latestScores = JSON.parse(scoresStr);
+                    } catch(e) { console.log('Score parse error:', e); }
+                }
             }
         }
         
-        // Fetch current prices
-        const currentPrices = await fetchCurrentPrices();
-        
-        // Build rankings with current prices
+        // Build rankings
         const rankings = [];
         for (const ticker of TICKERS) {
             const score = latestScores[ticker] || 0;
-            const priceData = currentPrices[ticker];
-            rankings.push({
-                ticker: ticker,
-                company: COMPANY_NAMES[ticker],
-                price: priceData.price,
-                change: parseFloat(priceData.change),
-                score: score
-            });
+            rankings.push({ ticker: ticker, company: COMPANY_NAMES[ticker], score: score });
         }
         rankings.sort((a, b) => b.score - a.score);
         
-        // Render rankings table
+        // Render rankings
         const rankBody = document.getElementById('rankingsBody');
         rankBody.innerHTML = rankings.map((r, idx) => {
-            const changeClass = r.change >= 0 ? 'price-up' : 'price-down';
             let scoreClass = 'score-low';
             if (r.score >= 5) scoreClass = 'score-high';
             else if (r.score >= 2) scoreClass = 'score-mid';
-            return `<tr>
-                <td>${idx + 1}</td>
-                <td><strong>${r.ticker}</strong></td>
-                <td>${r.company}</td>
-                <td>$${r.price}</td>
-                <td class="${changeClass}">${r.change >= 0 ? '+' : ''}${r.change}%</td>
-                <td>--</td><td>--</td>
-                <td class="${scoreClass}">${r.score.toFixed(1)}</td>
-            </tr>`;
+            return `<tr><td>${idx + 1}</td><td><strong>${r.ticker}</strong><br><span class="small-note">${r.company}</span></td><td class="${scoreClass}">${r.score.toFixed(1)}</td></tr>`;
         }).join('');
         
-        // Calculate position data
+        // Calculate totals
         let netProfit = 0, totalTrades = 0, winRate = 0;
         if (perf.length > 0) {
             netProfit = perf[0].net_profit_dollars || 0;
@@ -227,7 +183,7 @@
             for (const pos of positions) {
                 const entry = pos.entry_price || 0;
                 const shares = pos.shares || 0;
-                const current = currentPrices[pos.ticker] ? parseFloat(currentPrices[pos.ticker].price) : entry;
+                const current = pos.highest_price || entry;
                 const cost = entry * shares;
                 const value = current * shares;
                 totalCost += cost;
@@ -244,7 +200,7 @@
             }
         }
         
-        const cashBalance = Math.max(0, STARTING_BALANCE + netProfit - totalCost);
+        const cashBalance = STARTING_BALANCE + netProfit - totalCost;
         const totalEquity = cashBalance + totalValue;
         const totalReturnPct = ((totalEquity - STARTING_BALANCE) / STARTING_BALANCE) * 100;
         
