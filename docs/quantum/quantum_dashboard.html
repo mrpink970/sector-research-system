@@ -1,265 +1,58 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Quantum System Dashboard</title>
+    <title>Quantum System - Test</title>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { background: #f0f4f8; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; padding: 1.5rem; color: #1a2a3a; }
-        .dashboard { max-width: 1400px; margin: 0 auto; }
-        .header { margin-bottom: 1.5rem; }
-        .header h1 { font-size: 1.6rem; font-weight: 700; color: #1a4d7a; }
-        .header p { color: #5a6e7c; margin-top: 0.2rem; border-left: 3px solid #2c7fb8; padding-left: 1rem; }
-        .kpi-grid { display: flex; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.5rem; }
-        .kpi-card { background: white; border-radius: 1rem; padding: 1rem 1.2rem; flex: 1 1 160px; box-shadow: 0 2px 6px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; }
-        .kpi-label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1px; color: #6c7e8f; margin-bottom: 0.4rem; }
-        .kpi-value { font-size: 1.6rem; font-weight: 700; color: #1a4d7a; }
-        .positive { color: #1e8a4c; }
-        .negative { color: #c2412c; }
-        .two-col { display: flex; flex-wrap: wrap; gap: 1.2rem; margin-bottom: 1.2rem; }
-        .card { background: white; border-radius: 1rem; border: 1px solid #e2e8f0; overflow: hidden; flex: 1; min-width: 280px; }
-        .card-header { padding: 0.8rem 1rem; font-weight: 600; font-size: 0.95rem; border-bottom: 1px solid #edf2f7; background: #fafcfd; color: #2c5a7a; }
-        .card-content { padding: 1rem; }
-        .badge { background: #e0f5e8; color: #1e6b3b; padding: 0.2rem 0.5rem; border-radius: 20px; font-size: 0.65rem; font-weight: 600; display: inline-block; }
-        .current-position-card { background: #e8f5e9; border-radius: 0.75rem; padding: 1rem; text-align: center; border: 1px solid #c8e6c9; }
-        .big-number { font-size: 2rem; font-weight: 700; color: #1e8a4c; }
-        .loading { text-align: center; padding: 2rem; color: #6c7e8f; }
-        .small-note { font-size: 0.65rem; color: #8ba0b0; margin-top: 0.5rem; text-align: center; }
-        hr { margin: 0.8rem 0; border: none; border-top: 1px solid #e2edf2; }
-        .footer { text-align: center; font-size: 0.65rem; color: #8ba0b0; margin-top: 1.5rem; padding-top: 0.8rem; border-top: 1px solid #e2edf2; }
-        .last-updated { font-size: 0.65rem; color: #8ba0b0; text-align: right; margin-top: 0.5rem; }
-        .full-width-card { background: white; border-radius: 1rem; border: 1px solid #e2e8f0; overflow: auto; margin-bottom: 1.2rem; }
-        .full-width-card .card-content { overflow-x: auto; }
-        .ranking-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
-        .ranking-table th, .ranking-table td { padding: 0.6rem 0.5rem; text-align: left; border-bottom: 1px solid #e2edf2; }
-        .ranking-table th { background: #f9fafb; font-weight: 600; color: #4a627a; }
-        .score-high { color: #1e8a4c; font-weight: 700; }
-        .score-mid { color: #eab308; font-weight: 600; }
-        .score-low { color: #ef4444; font-weight: 600; }
-        .text-right { text-align: right; }
+        body { font-family: Arial; padding: 20px; background: #f0f4f8; }
+        .card { background: white; border-radius: 12px; padding: 20px; margin-bottom: 20px; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 10px; text-align: left; border-bottom: 1px solid #ddd; }
+        .positive { color: green; }
+        .negative { color: red; }
     </style>
 </head>
 <body>
-<div class="dashboard">
-    <div class="header">
-        <h1>🔬 Quantum Computing System</h1>
-        <p>Pure Play Quantum Stocks • 2026 IPOs • 25% Trailing Stop</p>
+<div style="max-width: 1000px; margin: 0 auto;">
+    <div class="card">
+        <h1>🔬 Quantum Computing System - TEST</h1>
+        <p>If you can see this, the dashboard file is updating.</p>
+        <p><strong>Current time:</strong> <span id="time"></span></p>
     </div>
 
-    <div class="kpi-grid" id="kpiContainer">
-        <div class="loading">Loading...</div>
+    <div class="card">
+        <h2>🏆 Quantum Stock Rankings (May 7, 2026)</h2>
+        <table>
+            <thead>
+                <tr><th>Rank</th><th>Ticker</th><th>Company</th><th>Close</th><th>Score</th></tr>
+            </thead>
+            <tbody>
+                <tr><td>1</td><td><strong>QBTS</strong></td><td>D-Wave Quantum</td><td>$21.99</td><td class="positive">4.6</td></tr>
+                <tr><td>2</td><td><strong>IONQ</strong></td><td>IonQ Inc</td><td>$47.68</td><td class="positive">3.8</td></tr>
+                <tr><td>3</td><td><strong>QUBT</strong></td><td>Quantum Computing Inc</td><td>$9.63</td><td class="positive">3.2</td></tr>
+                <tr><td>4</td><td><strong>RGTI</strong></td><td>Rigetti Computing</td><td>$18.34</td><td class="positive">2.9</td></tr>
+                <tr><td>5</td><td><strong>INFQ</strong></td><td>Infleqtion</td><td>$12.11</td><td class="negative">-1.0</td></tr>
+                <tr><td>6</td><td><strong>HQ</strong></td><td>Horizon Quantum</td><td>$10.00</td><td class="negative">-1.7</td></tr>
+                <tr><td>7</td><td><strong>XNDU</strong></td><td>Xanadu Quantum</td><td>$17.38</td><td class="negative">-8.8</td></tr>
+            </tbody>
+        </table>
+        <p>System recommends: <strong>QBTS</strong> (highest score: 4.6)</p>
     </div>
 
-    <div class="full-width-card">
-        <div class="card-header">🏆 Quantum Stock Rankings (End of Day)</div>
-        <div class="card-content">
-            <table class="ranking-table" id="rankingsTable">
-                <thead><tr><th>Rank</th><th>Ticker</th><th>Company</th><th>Close</th><th>Momentum Score</th></tr></thead>
-                <tbody id="rankingsBody"><tr><td colspan="5" class="loading">Loading...<\/td><\/tr><\/tbody>
-            <\/table>
-            <div class="small-note">Scores based on 1d/3d/5d returns + trend strength + volatility | Closing prices from daily data<\/div>
-        <\/div>
-    <\/div>
+    <div class="card">
+        <h2>📊 System Status</h2>
+        <p><strong>Cash Balance:</strong> $4,509.65</p>
+        <p><strong>Total Return:</strong> -9.8%</p>
+        <p><strong>Open Positions:</strong> 0</p>
+        <p><strong>Closed Trades:</strong> 1 (IONQ: -9.9%)</p>
+    </div>
 
-    <div class="two-col">
-        <div class="card">
-            <div class="card-header">📌 Current Position<\/div>
-            <div class="card-content" id="positionCard"><div class="loading">Loading...<\/div><\/div>
-        <\/div>
-        <div class="card">
-            <div class="card-header">📈 Performance Summary<\/div>
-            <div class="card-content" id="performanceSummary"><div class="loading">Loading...<\/div><\/div>
-        <\/div>
-    <\/div>
-
-    <div class="full-width-card">
-        <div class="card-header">📜 Recent Closed Trades<\/div>
-        <div class="card-content">
-            <table class="ranking-table" id="tradesTable">
-                <thead><tr><th>Ticker</th><th>Entry Date</th><th>Exit Date</th><th>Shares</th><th>Entry $</th><th>Exit $</th><th>Return %</th><th>P&L</th><th>Exit Reason</th></tr></thead>
-                <tbody id="tradesBody"><tr><td colspan="9" class="loading">Loading...<\/td><\/tr><\/tbody>
-            <\/table>
-        <\/div>
-    <\/div>
-
-    <div class="last-updated" id="lastUpdated">--<\/div>
-    <div class="footer">⚡ 25% Trailing Stop • Single Position • Scores update daily (6 PM ET)<\/div>
-<\/div>
-
+    <div class="card">
+        <p><strong>Last updated:</strong> May 11, 2026 4:00 PM ET</p>
+        <p>⚡ 25% Trailing Stop • Single Position</p>
+    </div>
+</div>
 <script>
-    const STARTING_BALANCE = 5000;
-    
-    // Latest data from CSV (May 7, 2026)
-    const LATEST_SCORES = {
-        'IONQ': 3.76,
-        'QBTS': 4.55,
-        'RGTI': 2.91,
-        'QUBT': 3.15,
-        'XNDU': -8.78,
-        'INFQ': -0.96,
-        'HQ': -1.65
-    };
-    
-    const LATEST_PRICES = {
-        'IONQ': 47.68,
-        'QBTS': 21.99,
-        'RGTI': 18.34,
-        'QUBT': 9.63,
-        'XNDU': 17.38,
-        'INFQ': 12.11,
-        'HQ': 10.00
-    };
-    
-    const COMPANY_NAMES = {
-        'IONQ': 'IonQ Inc', 'QBTS': 'D-Wave Quantum', 'RGTI': 'Rigetti Computing',
-        'QUBT': 'Quantum Computing Inc', 'XNDU': 'Xanadu Quantum', 'INFQ': 'Infleqtion', 'HQ': 'Horizon Quantum'
-    };
-
-    const PERFORMANCE_URL = 'https://raw.githubusercontent.com/mrpink970/sector-research-system/main/data/quantum/performance.csv';
-    const POSITIONS_URL = 'https://raw.githubusercontent.com/mrpink970/sector-research-system/main/data/quantum/positions.csv';
-    const TRADE_LOG_URL = 'https://raw.githubusercontent.com/mrpink970/sector-research-system/main/data/quantum/trade_log.csv';
-
-    async function fetchCSV(url) {
-        try {
-            const response = await fetch(url + '?t=' + new Date().getTime());
-            if (!response.ok) return null;
-            return await response.text();
-        } catch (error) { return null; }
-    }
-
-    function parseCSV(csvText) {
-        if (!csvText) return [];
-        const lines = csvText.trim().split('\n');
-        if (lines.length < 2) return [];
-        const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
-        const result = [];
-        for (let i = 1; i < lines.length; i++) {
-            const values = lines[i].split(',');
-            const row = {};
-            for (let j = 0; j < headers.length; j++) {
-                let val = values[j] ? values[j].trim() : '';
-                if (!isNaN(val) && val !== '') row[headers[j]] = parseFloat(val);
-                else row[headers[j]] = val;
-            }
-            result.push(row);
-        }
-        return result;
-    }
-
-    async function loadDashboard() {
-        const [perfCSV, posCSV, tradeCSV] = await Promise.all([
-            fetchCSV(PERFORMANCE_URL), fetchCSV(POSITIONS_URL), fetchCSV(TRADE_LOG_URL)
-        ]);
-        
-        const perf = parseCSV(perfCSV);
-        const positions = parseCSV(posCSV);
-        const trades = parseCSV(tradeCSV);
-        
-        // Build rankings from latest data
-        const rankings = [];
-        const tickers = ['IONQ', 'QBTS', 'RGTI', 'QUBT', 'XNDU', 'INFQ', 'HQ'];
-        for (const ticker of tickers) {
-            const score = LATEST_SCORES[ticker] || 0;
-            const price = LATEST_PRICES[ticker] || 0;
-            rankings.push({ ticker, company: COMPANY_NAMES[ticker], score, price });
-        }
-        rankings.sort((a, b) => b.score - a.score);
-        
-        // Render rankings
-        const rankBody = document.getElementById('rankingsBody');
-        rankBody.innerHTML = rankings.map((r, idx) => {
-            let scoreClass = 'score-low';
-            if (r.score >= 5) scoreClass = 'score-high';
-            else if (r.score >= 2) scoreClass = 'score-mid';
-            return `<tr>
-                <td>${idx + 1}</td>
-                <td><strong>${r.ticker}<\/strong><br><span class="small-note">${r.company}<\/span><\/td>
-                <td>$${r.price.toFixed(2)}<\/td>
-                <td class="${scoreClass}">${r.score.toFixed(1)}<\/td>
-            <\/tr>`;
-        }).join('');
-        
-        // Calculate performance
-        let netProfit = 0, totalTrades = 0, winRate = 0;
-        if (perf.length > 0) {
-            netProfit = perf[0].net_profit_dollars || 0;
-            totalTrades = perf[0].total_trades || 0;
-            winRate = perf[0].win_rate_pct || 0;
-        }
-        
-        let openPositions = [], totalCost = 0, totalValue = 0;
-        if (positions.length > 0) {
-            for (const pos of positions) {
-                const entry = pos.entry_price || 0;
-                const shares = pos.shares || 0;
-                const current = LATEST_PRICES[pos.ticker] || entry;
-                const cost = entry * shares;
-                const value = current * shares;
-                totalCost += cost;
-                totalValue += value;
-                openPositions.push({
-                    ticker: pos.ticker, entry_date: pos.entry_date, entry_price: entry,
-                    current_price: current, shares: shares, pnl: value - cost,
-                    pnl_pct: entry > 0 ? ((current - entry) / entry * 100) : 0
-                });
-            }
-        }
-        
-        const cashBalance = Math.max(0, STARTING_BALANCE + netProfit - totalCost);
-        const totalEquity = cashBalance + totalValue;
-        const totalReturnPct = ((totalEquity - STARTING_BALANCE) / STARTING_BALANCE) * 100;
-        
-        document.getElementById('kpiContainer').innerHTML = `
-            <div class="kpi-card"><div class="kpi-label">💰 Cash Balance<\/div><div class="kpi-value">$${cashBalance.toFixed(2)}<\/div><div class="small-note">Started: $${STARTING_BALANCE.toFixed(2)}<\/div><\/div>
-            <div class="kpi-card"><div class="kpi-label">📈 Total Equity<\/div><div class="kpi-value positive">$${totalEquity.toFixed(2)}<\/div><div class="small-note">Cash + Position Value<\/div><\/div>
-            <div class="kpi-card"><div class="kpi-label">🏆 Win Rate<\/div><div class="kpi-value">${winRate.toFixed(1)}%<\/div><div class="small-note">${totalTrades} closed trades<\/div><\/div>
-            <div class="kpi-card"><div class="kpi-label">📊 Total Return<\/div><div class="kpi-value ${totalReturnPct >= 0 ? 'positive' : 'negative'}">${totalReturnPct >= 0 ? '+' : ''}${totalReturnPct.toFixed(1)}%<\/div><div class="small-note">${totalReturnPct >= 0 ? '+' : ''}$${(totalEquity - STARTING_BALANCE).toFixed(2)}<\/div><\/div>
-            <div class="kpi-card"><div class="kpi-label">📌 Open Positions<\/div><div class="kpi-value">${openPositions.length}<\/div><div class="small-note">Total Cost: $${totalCost.toFixed(2)}<\/div><\/div>
-        `;
-        
-        if (openPositions.length > 0) {
-            const pos = openPositions[0];
-            document.getElementById('positionCard').innerHTML = `<div class="current-position-card"><div><span class="badge">${pos.ticker}<\/span><\/div><div class="big-number">${pos.pnl_pct >= 0 ? '+' : ''}${pos.pnl_pct.toFixed(1)}%<\/div><div>Entry: $${pos.entry_price.toFixed(2)} | Current: $${pos.current_price.toFixed(2)}<\/div><div>Shares: ${pos.shares} | Total Cost: $${(pos.entry_price * pos.shares).toFixed(2)}<\/div><div>Unrealized: <span class="${pos.pnl >= 0 ? 'positive' : 'negative'}">${pos.pnl >= 0 ? '+' : ''}$${pos.pnl.toFixed(2)}<\/span><\/div><div class="small-note">Entry Date: ${pos.entry_date || 'N/A'}<\/div><\/div>`;
-        } else {
-            document.getElementById('positionCard').innerHTML = `<div class="current-position-card"><div style="font-size:1.2rem;">📭 No Open Position<\/div><div class="small-note">In cash • Waiting for signal<\/div><\/div>`;
-        }
-        
-        document.getElementById('performanceSummary').innerHTML = `
-            <div><strong>Starting Balance:<\/strong> $${STARTING_BALANCE.toFixed(2)}<\/div>
-            <div><strong>Cash Balance:<\/strong> $${cashBalance.toFixed(2)}<\/div>
-            <div><strong>Total Equity:<\/strong> <span class="positive">$${totalEquity.toFixed(2)}<\/span><\/div>
-            <div><strong>Total Return:<\/strong> <span class="${totalReturnPct >= 0 ? 'positive' : 'negative'}">${totalReturnPct >= 0 ? '+' : ''}${totalReturnPct.toFixed(1)}%<\/span><\/div>
-            <hr>
-            ${openPositions.length > 0 ? `<div><strong>${openPositions[0].ticker}:<\/strong> ${openPositions[0].shares} shares @ $${openPositions[0].entry_price.toFixed(2)}<\/div><div>Unrealized: <span class="${openPositions[0].pnl >= 0 ? 'positive' : 'negative'}">${openPositions[0].pnl >= 0 ? '+' : ''}$${openPositions[0].pnl.toFixed(2)} (${openPositions[0].pnl_pct >= 0 ? '+' : ''}${openPositions[0].pnl_pct.toFixed(1)}%)<\/span><\/div>` : '<div>No open position<\/div>'}
-            <hr>
-            <div><strong>Realized P&L:<\/strong> ${netProfit >= 0 ? '+' : ''}$${netProfit.toFixed(2)}<\/div>
-            <div><strong>Unrealized P&L:<\/strong> ${totalValue - totalCost >= 0 ? '+' : ''}$${(totalValue - totalCost).toFixed(2)}<\/div>
-        `;
-        
-        const tbody = document.getElementById('tradesBody');
-        if (trades.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="9">No closed trades yet<\/td><\/tr>';
-        } else {
-            const recent = [...trades].reverse().slice(0, 20);
-            tbody.innerHTML = recent.map(t => `<tr>
-                <td><strong>${t.ticker || '?'}<\/strong><\/td>
-                <td>${t.entry_date || '?'}<\/td>
-                <td>${t.exit_date || '?'}<\/td>
-                <td class="text-right">${t.shares || 0}<\/td>
-                <td class="text-right">$${(t.entry_price || 0).toFixed(2)}<\/td>
-                <td class="text-right">$${(t.exit_price || 0).toFixed(2)}<\/td>
-                <td class="text-right ${(t.return_pct || 0) >= 0 ? 'positive' : 'negative'}">${(t.return_pct || 0) >= 0 ? '+' : ''}${(t.return_pct || 0).toFixed(1)}%<\/td>
-                <td class="text-right ${(t.gross_pl || 0) >= 0 ? 'positive' : 'negative'}">${(t.gross_pl || 0) >= 0 ? '+' : ''}$${(t.gross_pl || 0).toFixed(2)}<\/td>
-                <td>${t.exit_reason || '?'}<\/td>
-            </tr>`).join('');
-        }
-        
-        document.getElementById('lastUpdated').innerHTML = `Last updated: ${new Date().toLocaleString()}`;
-    }
-    
-    loadDashboard();
-    setInterval(loadDashboard, 300000);
-<\/script>
-<\/body>
-<\/html>
+    document.getElementById('time').innerHTML = new Date().toLocaleString();
+</script>
+</body>
+</html>
