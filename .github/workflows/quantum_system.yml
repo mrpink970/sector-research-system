@@ -1,0 +1,36 @@
+name: Quantum System
+
+on:
+  schedule:
+    - cron: '0 22 * * 1-5'   # 6:00 PM ET
+  workflow_dispatch:
+
+jobs:
+  run_quantum_system:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      
+      - name: Install dependencies
+        run: pip install pandas yfinance pyyaml
+      
+      - name: Create data directory
+        run: mkdir -p data/quantum
+      
+      - name: Run Quantum System
+        run: python scripts/quantum/run_quantum_system.py
+      
+      - name: Commit and push updates
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/quantum/
+          git diff --staged --quiet || git commit -m "Quantum system update $(date '+%Y-%m-%d %H:%M')"
+          git push
