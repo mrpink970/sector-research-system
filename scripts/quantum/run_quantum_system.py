@@ -7,7 +7,6 @@ from pathlib import Path
 from datetime import datetime, timedelta
 import pandas as pd
 import yfinance as yf
-import time
 
 DATA_DIR = Path("data/quantum")
 DATA_DIR.mkdir(parents=True, exist_ok=True)
@@ -24,7 +23,7 @@ MIN_SCORE = 4.0
 TRAILING_STOP_PCT = 0.10
 MIN_DATA_DAYS = 20
 
-def calculate_score(ret_1d: float, ret_3d: float, ret_5d: float) -> float:
+def calculate_score(ret_1d, ret_3d, ret_5d):
     score = (ret_1d * 0.30) + (ret_3d * 0.25) + (ret_5d * 0.20)
     if ret_1d > 0 and ret_3d > 0 and ret_5d > 0:
         score += 0.75
@@ -34,38 +33,18 @@ def calculate_score(ret_1d: float, ret_3d: float, ret_5d: float) -> float:
     score += max(0, 10 - vol) * 0.10
     return round(score, 2)
 
-def get_qqq_regime() -> bool:
-    try:
-        qqq = yf.Ticker("QQQ")
-        hist = qqq.history(period="3mo", auto_adjust=True)
-        if len(hist) < 50:
-            return True
-        return hist['Close'].iloc[-1] > hist['Close'].rolling(50).mean().iloc[-1]
-    except:
-        return True
-
 def main():
     print("🔬 QUANTUM COMPUTING PAPER TRADING SYSTEM")
     print("=" * 60)
     
-    print(f"Starting Balance: ${STARTING_BALANCE:,.0f}")
-    
     # Fetch data
     print("\n📥 Fetching latest prices...")
-    try:
-        data = yf.download(TICKERS, period="6mo", progress=False, auto_adjust=True)
-        if isinstance(data.columns, pd.MultiIndex):
-            closes = data['Close'][TICKERS]
-        else:
-            closes = data[TICKERS]
-    except:
-        print("⚠️ yfinance failed, using cached data if available")
-        closes = pd.read_csv(PRICES_PATH, index_col='date', parse_dates=True) if PRICES_PATH.exists() else pd.DataFrame()
-
-    if closes.empty:
-        print("❌ No price data")
-        return
-
+    data = yf.download(TICKERS, period="6mo", progress=False)
+    if isinstance(data.columns, pd.MultiIndex):
+        closes = data['Close'][TICKERS]
+    else:
+        closes = data[TICKERS]
+    
     print(f"✅ Data up to {closes.index[-1].date()}")
     
     # Scores
@@ -83,10 +62,6 @@ def main():
 
     closes.round(2).to_csv(PRICES_PATH)
     scores_df.round(2).to_csv(SCORES_PATH)
-    print("✅ Saved prices.csv + scores.csv")
-
-    regime_ok = get_qqq_regime()
-    print(f"📊 QQQ Regime: {'BULL' if regime_ok else 'BEAR'}")
 
     today = closes.index[-1].strftime("%Y-%m-%d")
     current_prices = closes.iloc[-1]
@@ -109,13 +84,10 @@ def main():
             reason = "trailing_stop" if curr <= highest * (1 - TRAILING_STOP_PCT) else "low_score"
             pl = (curr - float(pos['entry_price'])) * int(pos['shares'])
             print(f"🚪 EXIT {ticker} | {reason} | P&L: ${pl:.2f}")
-            # append to trade_log...
-            new_row = pd.DataFrame([{
-                "ticker": ticker, "entry_date": pos['entry_date'], "exit_date": today,
+            new_row = pd.DataFrame([{"ticker": ticker, "entry_date": pos['entry_date'], "exit_date": today,
                 "entry_price": round(float(pos['entry_price']),2), "exit_price": round(curr,2),
                 "shares": int(pos['shares']), "return_pct": round((curr/float(pos['entry_price'])-1)*100,2),
-                "gross_pl": round(pl,2), "exit_reason": reason
-            }])
+                "gross_pl": round(pl,2), "exit_reason": reason}])
             trade_log = pd.concat([trade_log, new_row], ignore_index=True)
             trade_log.to_csv(TRADE_LOG_PATH, index=False)
             positions = pd.DataFrame(columns=positions.columns)
@@ -123,10 +95,11 @@ def main():
             pos['highest_price'] = highest
             positions.iloc[0] = pos
             positions.to_csv(POSITIONS_PATH, index=False)
-            print(f"📍 Holding {ticker} | Score: {latest_scores[ticker]}")
+            print(f"📍 Holding {ticker}")
 
     # ENTRY
-    if positions.empty and regime_ok:
+    entered = False
+    if positions.empty:
         valid = {t: latest_scores[t] for t in TICKERS if closes[t].dropna().count() >= MIN_DATA_DAYS}
         if valid:
             best = max(valid, key=valid.get)
@@ -142,6 +115,10 @@ def main():
                     }])
                     new_pos.to_csv(POSITIONS_PATH, index=False)
                     print(f"🟢 ENTRY {best} @ ${price:.2f} | Score: {score} | Shares: {shares}")
+                    entered = True
+
+    # Reload positions after possible entry
+    positions = pd.read_csv(POSITIONS_PATH) if POSITIONS_PATH.exists() else pd.DataFrame(columns=["ticker","entry_date","entry_price","shares","highest_price","trailing_stop","entry_score"])
 
     # Performance
     realized = trade_log['gross_pl'].sum() if not trade_log.empty else 0.0
@@ -153,9 +130,13 @@ def main():
         open_pl = (float(current_prices[p['ticker']]) - float(p['entry_price'])) * int(p['shares'])
 
     total = STARTING_BALANCE + realized + open_pl
-    perf = pd.DataFrame([{"total_trades": len(trade_log), "win_rate_pct": round((trade_log['gross_pl']>0).mean()*100,1) if len(trade_log)>0 else 0,
-                          "total_return_pct": round((total/STARTING_BALANCE-1)*100,2),
-                          "net_profit_dollars": round(realized+open_pl,2), "final_balance": round(total,2)}])
+    perf = pd.DataFrame([{
+        "total_trades": len(trade_log),
+        "win_rate_pct": round((trade_log['gross_pl']>0).mean()*100,1) if len(trade_log)>0 else 0,
+        "total_return_pct": round((total/STARTING_BALANCE-1)*100,2),
+        "net_profit_dollars": round(realized+open_pl,2),
+        "final_balance": round(total,2)
+    }])
     perf.to_csv(PERFORMANCE_PATH, index=False)
 
     print("\n✅ Run Complete!")
