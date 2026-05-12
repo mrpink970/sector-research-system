@@ -77,7 +77,7 @@
         <div class="card-content">
             <table class="ranking-table" id="tradesTable">
                 <thead><tr><th>Ticker</th><th>Entry Date</th><th>Exit Date</th><th>Return %</th><th>P&L</th><th>Exit Reason</th></tr></thead>
-                <tbody id="tradesBody"><td><td colspan="6" class="loading">Loading...<\/td><\/tr><\/tbody>
+                <tbody id="tradesBody"><tr><td colspan="6" class="loading">Loading...<\/td><\/tr><\/tbody>
             <\/table>
         <\/div>
     <\/div>
@@ -108,7 +108,7 @@
         if (!csvText) return [];
         const lines = csvText.trim().split('\n');
         if (lines.length < 2) return [];
-        const headers = lines[0].split(',');
+        const headers = lines[0].split(',').map(h => h.trim());
         const result = [];
         for (let i = 1; i < lines.length; i++) {
             const values = lines[i].split(',');
@@ -139,10 +139,31 @@
         const pricesData = parseCSVtoJSON(await fetchCSV(PRICES_URL));
         const scoresData = parseCSVtoJSON(await fetchCSV(SCORES_URL));
         const positions = parseCSVtoJSON(await fetchCSV(POSITIONS_URL));
-        const trades = parseCSVtoJSON(await fetchCSV(TRADES_URL));
+        let trades = parseCSVtoJSON(await fetchCSV(TRADES_URL));
         const perf = parseCSVtoJSON(await fetchCSV(PERFORMANCE_URL));
         
-        // Get latest prices and scores (last row)
+        // If trades is empty from CSV, try direct fetch as fallback
+        if (trades.length === 0) {
+            const tradeText = await fetchCSV(TRADES_URL);
+            if (tradeText) {
+                const lines = tradeText.trim().split('\n');
+                if (lines.length >= 2) {
+                    const headers = lines[0].split(',').map(h => h.trim());
+                    for (let i = 1; i < lines.length; i++) {
+                        const values = lines[i].split(',');
+                        const row = {};
+                        for (let j = 0; j < headers.length; j++) {
+                            let val = values[j] ? values[j].trim() : '';
+                            if (!isNaN(val) && val !== '') row[headers[j]] = parseFloat(val);
+                            else row[headers[j]] = val;
+                        }
+                        trades.push(row);
+                    }
+                }
+            }
+        }
+        
+        // Get latest prices and scores
         let latestPrices = {};
         let latestScores = {};
         let lastDate = '';
@@ -187,16 +208,18 @@
             </tr>`;
         }).join('');
         
-        // Calculate performance
+        // Calculate performance from trades
         let realizedPL = 0;
         let winningTrades = 0;
-        trades.forEach(t => {
-            if (t.gross_pl) {
-                realizedPL += t.gross_pl;
-                if (t.gross_pl > 0) winningTrades++;
+        if (trades.length > 0) {
+            for (const t of trades) {
+                const pl = t.gross_pl || 0;
+                realizedPL += pl;
+                if (pl > 0) winningTrades++;
             }
-        });
+        }
         
+        // Open position
         let openPosition = null;
         let openCost = 0;
         if (positions.length > 0) {
@@ -254,21 +277,25 @@
             <div><strong>Realized P&L:</strong> ${realizedPL >= 0 ? '+' : ''}${formatCurrency(realizedPL)}</div>
         `;
         
-        // Trades table
+        // Trades table - direct display
         const tbody = document.getElementById('tradesBody');
         if (trades.length === 0) {
             tbody.innerHTML = '<tr><td colspan="6">No closed trades yet<\/td><\/tr>';
         } else {
-            const recent = [...trades].reverse().slice(0, 20);
-            tbody.innerHTML = recent.map(t => `
-                <tr>
+            tbody.innerHTML = '';
+            for (let i = 0; i < trades.length; i++) {
+                const t = trades[i];
+                const ret = t.return_pct || 0;
+                const pl = t.gross_pl || 0;
+                tbody.innerHTML += `<tr>
                     <td><strong>${t.ticker || '?'}</strong></td>
                     <td>${t.entry_date || '?'}</td>
                     <td>${t.exit_date || '?'}</td>
-                    <td class="${(t.return_pct || 0) >= 0 ? 'positive' : 'negative'}">${(t.return_pct || 0) >= 0 ? '+' : ''}${(t.return_pct || 0).toFixed(1)}%</td>
-                    <td class="${(t.gross_pl || 0) >= 0 ? 'positive' : 'negative'}">${(t.gross_pl || 0) >= 0 ? '+' : ''}${formatCurrency(t.gross_pl || 0)}</td>
-                    <td>${t.exit_reason || '?'}</td>
-                </tr>`).join('');
+                    <td class="${ret >= 0 ? 'positive' : 'negative'}">${ret >= 0 ? '+' : ''}${ret.toFixed(1)}%<\/td>
+                    <td class="${pl >= 0 ? 'positive' : 'negative'}">${pl >= 0 ? '+' : ''}${formatCurrency(pl)}<\/td>
+                    <td>${t.exit_reason || '?'}<\/td>
+                </tr>`;
+            }
         }
         
         document.getElementById('lastUpdated').innerHTML = `Last updated: ${new Date().toLocaleString()} | Data: ${lastDate}`;
