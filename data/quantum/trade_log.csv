@@ -1,0 +1,2 @@
+ticker,entry_date,exit_date,entry_price,exit_price,shares,return_pct,gross_pl,exit_reason
+QUBT,2026-02-09,2026-02-13,9.44,8.5,529,-10.0,-499.38,trailing_stop
