@@ -82,9 +82,7 @@
         <div class="card-content">
             <table class="ranking-table">
                 <thead><tr><th>Ticker</th><th>Entry Date</th><th>Exit Date</th><th>Shares</th><th>Entry $</th><th>Exit $</th><th>Return %</th><th>P&L</th><th>Exit Reason</th></tr></thead>
-                <tbody id="tradesBody">
-                    <!-- Trade will appear here -->
-                </tbody>
+                <tbody id="tradesBody"><\/tbody>
             <\/table>
         <\/div>
     <\/div>
@@ -130,13 +128,12 @@
     }
 
     async function loadDashboard() {
-        // Fetch all CSVs
         const scoresText = await fetchCSV(SCORES_URL);
         const positions = parseCSV(await fetchCSV(POSITIONS_URL));
         const trades = parseCSV(await fetchCSV(TRADE_URL));
         const perf = parseCSV(await fetchCSV(PERF_URL));
         
-        // Display trades directly
+        // Display trades
         const tbody = document.getElementById('tradesBody');
         if (trades.length === 0) {
             tbody.innerHTML = '<tr><td colspan="9">No closed trades yet<\/td><\/tr>';
@@ -160,7 +157,7 @@
             }
         }
         
-        // Parse scores and prices
+        // Parse latest scores
         let latestScores = {};
         let latestPrices = {};
         let lastDate = '';
@@ -182,7 +179,7 @@
             }
         }
         
-        // Build rankings
+        // Rankings
         const rankings = [];
         for (const ticker of TICKERS) {
             const score = latestScores[ticker] || 0;
@@ -204,7 +201,7 @@
             </tr>`;
         }).join('');
         
-        // Calculate totals from trades
+        // Calculate totals
         let totalPL = 0;
         let winningTrades = 0;
         for (const t of trades) {
@@ -213,7 +210,6 @@
             if (pl > 0) winningTrades++;
         }
         
-        // Calculate open positions
         let openPositions = [];
         let totalCost = 0;
         if (positions.length > 0) {
@@ -235,7 +231,6 @@
             }
         }
         
-        // Get win rate
         let winRate = 0;
         if (perf.length > 0 && perf[0].win_rate_pct) {
             winRate = perf[0].win_rate_pct;
@@ -248,7 +243,6 @@
         const totalEquity = cashBalance + currentValue;
         const totalReturnPct = ((totalEquity - STARTING_BALANCE) / STARTING_BALANCE) * 100;
         
-        // Update KPI cards
         document.getElementById('cashBalance').innerHTML = `$${cashBalance.toFixed(2)}`;
         document.getElementById('totalEquity').innerHTML = `$${totalEquity.toFixed(2)}`;
         document.getElementById('winRate').innerHTML = `${winRate.toFixed(1)}%`;
@@ -258,7 +252,6 @@
         document.getElementById('openCount').innerHTML = `${openPositions.length}`;
         document.getElementById('totalCost').innerHTML = `Total Cost: $${totalCost.toFixed(2)}`;
         
-        // Position card
         if (openPositions.length > 0) {
             const pos = openPositions[0];
             const pnl = pos.value - pos.cost;
@@ -277,7 +270,6 @@
             document.getElementById('positionCard').innerHTML = `<div class="current-position-card"><div style="font-size:1.2rem;">📭 No Open Position</div><div class="small-note">In cash • Waiting for signal</div></div>`;
         }
         
-        // Performance summary
         const unrealizedPL = openPositions.reduce((sum, p) => sum + (p.value - p.cost), 0);
         document.getElementById('performanceSummary').innerHTML = `
             <div><strong>Starting Balance:</strong> $${STARTING_BALANCE.toFixed(2)}</div>
