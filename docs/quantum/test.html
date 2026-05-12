@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html>
+<head><title>Trade Log Test</title></head>
+<body>
+<h1>Trade Log Test</h1>
+<div id="output">Loading...</div>
+<script>
+fetch('https://raw.githubusercontent.com/mrpink970/sector-research-system/main/data/quantum/trade_log.csv')
+  .then(r => r.text())
+  .then(data => {
+    document.getElementById('output').innerHTML = '<pre>' + data + '</pre>';
+  })
+  .catch(e => {
+    document.getElementById('output').innerHTML = 'Error: ' + e.message;
+  });
+</script>
+</body>
+</html>
