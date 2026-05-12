@@ -5,94 +5,272 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Quantum System Dashboard</title>
     <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background: #f0f4f8; margin: 0; padding: 15px; color: #1a2a3a; }
-        h1 { color: #1a4d7a; }
+        body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background: #f0f4f8; margin: 0; padding: 15px; color: #1a2a3a; max-width: 1200px; margin: 0 auto; }
+        h1 { color: #1a4d7a; margin-bottom: 5px; }
+        .subtitle { color: #5a6e7c; margin-top: 0; margin-bottom: 20px; }
+        .kpi-grid { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 20px; }
+        .kpi-card { background: white; border-radius: 12px; padding: 15px; flex: 1; min-width: 120px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+        .kpi-label { font-size: 11px; text-transform: uppercase; color: #6c7e8f; margin-bottom: 5px; }
+        .kpi-value { font-size: 24px; font-weight: 700; }
+        .positive { color: #1e8a4c; }
+        .negative { color: #c2412c; }
         .card { background: white; border-radius: 12px; padding: 16px; margin: 12px 0; box-shadow: 0 2px 10px rgba(0,0,0,0.08); }
-        table { width: 100%; border-collapse: collapse; font-size: 0.95rem; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
         th, td { padding: 10px; text-align: left; border-bottom: 1px solid #eee; }
         th { background: #f8fafc; }
-        .positive { color: #1e8a4c; font-weight: bold; }
-        .big { font-size: 2rem; font-weight: 700; color: #1e8a4c; }
         .score-high { color: #1e8a4c; font-weight: bold; }
+        .score-mid { color: #eab308; font-weight: bold; }
+        .score-low { color: #c2412c; font-weight: bold; }
+        .small-note { font-size: 11px; color: #8ba0b0; margin-top: 8px; }
+        .footer { text-align: center; font-size: 11px; color: #8ba0b0; margin-top: 20px; padding-top: 10px; border-top: 1px solid #e2edf2; }
     </style>
 </head>
 <body>
     <h1>🔬 Quantum Computing System</h1>
-    <p>7 Quantum Stocks • Single Position • 10% Trailing Stop</p>
+    <p class="subtitle">7 Quantum Stocks • Single Position • 10% Trailing Stop</p>
 
+    <!-- KPI Cards -->
+    <div class="kpi-grid" id="kpiGrid"></div>
+
+    <!-- Rankings Table -->
     <div class="card">
-        <h2>🏆 Rankings (as of 2026-05-11)</h2>
-        <table id="rankings"></table>
+        <h2>🏆 Rankings (as of latest data)</h2>
+        <table id="rankingsTable">
+            <thead><tr><th>Rank</th><th>Ticker</th><th>Close</th><th>Score</th></tr></thead>
+            <tbody id="rankingsBody"><tr><td colspan="4">Loading...</td></tr></tbody>
+        </table>
     </div>
 
+    <!-- Current Position -->
     <div class="card" id="positionCard">
         <h2>📌 Current Position</h2>
-        Loading...
+        <div id="positionContent">Loading...</div>
     </div>
 
-    <div class="card">
-        <h2>📈 Performance</h2>
-        <div id="perf">Loading performance...</div>
+    <!-- Performance Summary -->
+    <div class="card" id="perfCard">
+        <h2>📈 Performance Summary</h2>
+        <div id="perfContent">Loading...</div>
     </div>
 
-    <small id="lastUpdated"></small>
+    <!-- Closed Trades -->
+    <div class="card" id="tradesCard">
+        <h2>📜 Closed Trades</h2>
+        <div id="tradesContent">Loading...</div>
+    </div>
+
+    <div class="footer" id="lastUpdated"></div>
 
 <script>
     const BASE = "https://raw.githubusercontent.com/mrpink970/sector-research-system/main/data/quantum/";
+    const STARTING_BALANCE = 5000;
+
+    async function fetchCSV(url) {
+        const r = await fetch(url + "?t=" + Date.now());
+        if (!r.ok) return null;
+        return r.text();
+    }
 
     async function loadDashboard() {
         try {
-            const [pricesText, scoresText, posText] = await Promise.all([
-                fetch(BASE + "prices.csv?t=" + Date.now()).then(r => r.text()),
-                fetch(BASE + "scores.csv?t=" + Date.now()).then(r => r.text()),
-                fetch(BASE + "positions.csv?t=" + Date.now()).then(r => r.text())
+            // Fetch all data
+            const [pricesCSV, scoresCSV, positionsCSV, tradesCSV, perfCSV] = await Promise.all([
+                fetchCSV(BASE + "prices.csv"),
+                fetchCSV(BASE + "scores.csv"),
+                fetchCSV(BASE + "positions.csv"),
+                fetchCSV(BASE + "trade_log.csv"),
+                fetchCSV(BASE + "performance.csv")
             ]);
 
-            // Parse last lines
-            const priceRow = pricesText.trim().split('\n').pop().split(',');
-            const scoreRow = scoresText.trim().split('\n').pop().split(',');
-            const posRow = posText.trim().split('\n').pop().split(',');
-
-            const tickers = ['IONQ','QBTS','RGTI','QUBT','XNDU','INFQ','HQ'];
-
-            // Rankings
-            let rows = `<tr><th>Rank</th><th>Ticker</th><th>Close</th><th>Score</th></tr>`;
-            tickers.map((t, i) => ({
-                ticker: t,
-                price: parseFloat(priceRow[i+1] || 0),
-                score: parseFloat(scoreRow[i+1] || 0)
-            })).sort((a,b) => b.score - a.score).forEach((item, idx) => {
-                rows += `<tr><td>${idx+1}</td><td><b>${item.ticker}</b></td><td>$${item.price.toFixed(2)}</td><td class="score-high">${item.score}</td></tr>`;
-            });
-            document.getElementById('rankings').innerHTML = rows;
-
-            // Position
-            if (posRow.length > 1) {
-                const ticker = posRow[0];
-                const entry = parseFloat(posRow[2]);
-                const shares = parseInt(posRow[3]);
-                const cost = (entry * shares).toFixed(2);
-                document.getElementById('positionCard').innerHTML = `
-                    <h2>📌 Current Position</h2>
-                    <div class="big">${ticker}</div>
-                    <p><strong>Shares:</strong> ${shares}<br>
-                       <strong>Entry:</strong> $${entry}<br>
-                       <strong>Cost Basis:</strong> $${cost}<br>
-                       <strong>Remaining Cash:</strong> ~$9.71</p>
+            // Parse prices and scores (last row)
+            const priceLines = pricesCSV ? pricesCSV.trim().split('\n') : [];
+            const scoreLines = scoresCSV ? scoresCSV.trim().split('\n') : [];
+            const tickers = ['IONQ', 'QBTS', 'RGTI', 'QUBT', 'XNDU', 'INFQ', 'HQ'];
+            
+            let lastDate = "";
+            let prices = {};
+            let scores = {};
+            
+            if (priceLines.length >= 2) {
+                const lastPriceRow = priceLines[priceLines.length - 1].split(',');
+                const priceHeaders = priceLines[0].split(',');
+                for (let i = 1; i < priceHeaders.length; i++) {
+                    prices[priceHeaders[i]] = parseFloat(lastPriceRow[i]) || 0;
+                }
+                lastDate = lastPriceRow[0] || "";
+            }
+            
+            if (scoreLines.length >= 2) {
+                const lastScoreRow = scoreLines[scoreLines.length - 1].split(',');
+                const scoreHeaders = scoreLines[0].split(',');
+                for (let i = 1; i < scoreHeaders.length; i++) {
+                    scores[scoreHeaders[i]] = parseFloat(lastScoreRow[i]) || 0;
+                }
+            }
+            
+            // Build rankings
+            const rankings = tickers.map(t => ({ ticker: t, price: prices[t] || 0, score: scores[t] || 0 }));
+            rankings.sort((a, b) => b.score - a.score);
+            
+            const rankBody = document.getElementById('rankingsBody');
+            rankBody.innerHTML = rankings.map((r, idx) => {
+                let scoreClass = "";
+                if (r.score >= 5) scoreClass = "score-high";
+                else if (r.score >= 2) scoreClass = "score-mid";
+                else if (r.score < 0) scoreClass = "score-low";
+                return `<tr>
+                    <td>${idx + 1}</td>
+                    <td><strong>${r.ticker}</strong></td>
+                    <td>$${r.price.toFixed(2)}</td>
+                    <td class="${scoreClass}">${r.score.toFixed(2)}</td>
+                </tr>`;
+            }).join('');
+            
+            // Parse positions
+            let positions = [];
+            if (positionsCSV) {
+                const posLines = positionsCSV.trim().split('\n');
+                if (posLines.length >= 2) {
+                    const headers = posLines[0].split(',');
+                    const values = posLines[1].split(',');
+                    for (let i = 0; i < headers.length; i++) {
+                        positions[headers[i]] = values[i];
+                    }
+                }
+            }
+            
+            // Parse trades
+            let trades = [];
+            if (tradesCSV) {
+                const tradeLines = tradesCSV.trim().split('\n');
+                if (tradeLines.length >= 2) {
+                    const headers = tradeLines[0].split(',');
+                    for (let i = 1; i < tradeLines.length; i++) {
+                        const values = tradeLines[i].split(',');
+                        const trade = {};
+                        for (let j = 0; j < headers.length; j++) {
+                            trade[headers[j]] = isNaN(values[j]) ? values[j] : parseFloat(values[j]);
+                        }
+                        trades.push(trade);
+                    }
+                }
+            }
+            
+            // Calculate realized P&L from trades
+            let realizedPL = 0;
+            let winningTrades = 0;
+            for (const t of trades) {
+                const pl = t.gross_pl || 0;
+                realizedPL += pl;
+                if (pl > 0) winningTrades++;
+            }
+            
+            // Calculate open position values
+            let openPosition = null;
+            let openCost = 0;
+            let openValue = 0;
+            let openPL = 0;
+            let remainingCash = STARTING_BALANCE + realizedPL;
+            
+            if (positions && positions.ticker && positions.ticker !== "ticker") {
+                const ticker = positions.ticker;
+                const entryPrice = parseFloat(positions.entry_price);
+                const shares = parseInt(positions.shares);
+                const currentPrice = prices[ticker] || entryPrice;
+                openCost = entryPrice * shares;
+                openValue = currentPrice * shares;
+                openPL = openValue - openCost;
+                remainingCash = STARTING_BALANCE + realizedPL - openCost;
+                openPosition = { ticker, entryPrice, currentPrice, shares, cost: openCost, value: openValue, pl: openPL };
+            }
+            
+            const totalEquity = STARTING_BALANCE + realizedPL + openPL;
+            const totalReturn = totalEquity - STARTING_BALANCE;
+            const totalReturnPct = (totalReturn / STARTING_BALANCE) * 100;
+            const winRate = trades.length > 0 ? (winningTrades / trades.length) * 100 : 0;
+            
+            // Parse performance file for win rate (more accurate)
+            let perfWinRate = winRate;
+            if (perfCSV) {
+                const perfLines = perfCSV.trim().split('\n');
+                if (perfLines.length >= 2) {
+                    const perfValues = perfLines[1].split(',');
+                    if (perfValues.length >= 2) perfWinRate = parseFloat(perfValues[1]) || winRate;
+                }
+            }
+            
+            // KPI Cards
+            const kpiGrid = document.getElementById('kpiGrid');
+            kpiGrid.innerHTML = `
+                <div class="kpi-card"><div class="kpi-label">💰 Cash Balance</div><div class="kpi-value">$${Math.max(0, remainingCash).toFixed(2)}</div><div class="small-note">Started: $${STARTING_BALANCE.toFixed(2)}</div></div>
+                <div class="kpi-card"><div class="kpi-label">📈 Total Equity</div><div class="kpi-value positive">$${totalEquity.toFixed(2)}</div><div class="small-note">Cash + Position Value</div></div>
+                <div class="kpi-card"><div class="kpi-label">🏆 Win Rate</div><div class="kpi-value">${perfWinRate.toFixed(1)}%</div><div class="small-note">${trades.length} closed trades</div></div>
+                <div class="kpi-card"><div class="kpi-label">📊 Total Return</div><div class="kpi-value ${totalReturnPct >= 0 ? 'positive' : 'negative'}">${totalReturnPct >= 0 ? '+' : ''}${totalReturnPct.toFixed(1)}%</div><div class="small-note">${totalReturnPct >= 0 ? '+' : ''}$${totalReturn.toFixed(2)}</div></div>
+                <div class="kpi-card"><div class="kpi-label">📌 Open Positions</div><div class="kpi-value">${openPosition ? 1 : 0}</div><div class="small-note">${openPosition ? `Cost: $${openCost.toFixed(2)}` : 'No position'}</div></div>
+            `;
+            
+            // Current Position Card
+            const positionDiv = document.getElementById('positionContent');
+            if (openPosition) {
+                const pnlClass = openPosition.pl >= 0 ? 'positive' : 'negative';
+                const pnlPct = (openPosition.pl / openPosition.cost) * 100;
+                positionDiv.innerHTML = `
+                    <div style="text-align:center; background:#e8f5e9; padding:16px; border-radius:12px;">
+                        <div style="font-size:2rem; font-weight:700; color:#1e8a4c;">${openPosition.ticker}</div>
+                        <div>Entry: $${openPosition.entryPrice.toFixed(2)} | Current: $${openPosition.currentPrice.toFixed(2)}</div>
+                        <div>Shares: ${openPosition.shares} | Cost: $${openPosition.cost.toFixed(2)} | Value: $${openPosition.value.toFixed(2)}</div>
+                        <div>Unrealized: <span class="${pnlClass}">${openPosition.pl >= 0 ? '+' : ''}$${openPosition.pl.toFixed(2)} (${pnlPct >= 0 ? '+' : ''}${pnlPct.toFixed(1)}%)</span></div>
+                        <div class="small-note">Remaining Cash: $${Math.max(0, remainingCash).toFixed(2)}</div>
+                    </div>
                 `;
             } else {
-                document.getElementById('positionCard').innerHTML += "<p>No open position</p>";
+                positionDiv.innerHTML = `<div style="text-align:center; padding:20px;">📭 No open position<br><span class="small-note">In cash • Waiting for signal (min score: 4.0)</span></div>`;
             }
-
-            document.getElementById('lastUpdated').innerHTML = `Last updated: ${new Date().toLocaleString()}`;
-            document.getElementById('perf').innerHTML = `Total Equity: <strong>$5,000.00</strong><br>Position: HQ (397 shares)`;
-
+            
+            // Performance Summary
+            document.getElementById('perfContent').innerHTML = `
+                <div><strong>Starting Balance:</strong> $${STARTING_BALANCE.toFixed(2)}</div>
+                <div><strong>Cash Balance:</strong> $${Math.max(0, remainingCash).toFixed(2)}</div>
+                <div><strong>Total Equity:</strong> <span class="positive">$${totalEquity.toFixed(2)}</span></div>
+                <div><strong>Total Return:</strong> <span class="${totalReturnPct >= 0 ? 'positive' : 'negative'}">${totalReturnPct >= 0 ? '+' : ''}${totalReturnPct.toFixed(1)}% (${totalReturnPct >= 0 ? '+' : ''}$${totalReturn.toFixed(2)})</span></div>
+                <hr>
+                <div><strong>Realized P&L:</strong> ${realizedPL >= 0 ? '+' : ''}$${realizedPL.toFixed(2)}</div>
+                <div><strong>Unrealized P&L:</strong> ${openPL >= 0 ? '+' : ''}$${openPL.toFixed(2)}</div>
+                ${trades.length > 0 ? `<div><strong>Avg Win:</strong> ${(trades.filter(t => t.gross_pl > 0).reduce((s,t) => s + t.return_pct, 0) / (trades.filter(t => t.gross_pl > 0).length || 1)).toFixed(1)}%</div>` : ''}
+                ${trades.length > 0 ? `<div><strong>Avg Loss:</strong> ${Math.abs(trades.filter(t => t.gross_pl < 0).reduce((s,t) => s + t.return_pct, 0) / (trades.filter(t => t.gross_pl < 0).length || 1)).toFixed(1)}%</div>` : ''}
+            `;
+            
+            // Closed Trades Table
+            const tradesDiv = document.getElementById('tradesContent');
+            if (trades.length === 0) {
+                tradesDiv.innerHTML = '<div class="small-note">No closed trades yet</div>';
+            } else {
+                let tradeHtml = `<table><thead><tr><th>Ticker</th><th>Entry Date</th><th>Exit Date</th><th>Return %</th><th>P&L</th><th>Exit Reason</th></tr></thead><tbody>`;
+                for (let i = trades.length - 1; i >= 0; i--) {
+                    const t = trades[i];
+                    const retClass = t.return_pct >= 0 ? 'positive' : 'negative';
+                    const plClass = t.gross_pl >= 0 ? 'positive' : 'negative';
+                    tradeHtml += `<tr>
+                        <td><strong>${t.ticker}</strong></td>
+                        <td>${t.entry_date}</td>
+                        <td>${t.exit_date}</td>
+                        <td class="${retClass}">${t.return_pct >= 0 ? '+' : ''}${t.return_pct}%</td>
+                        <td class="${plClass}">${t.gross_pl >= 0 ? '+' : ''}$${Math.abs(t.gross_pl).toFixed(2)}</td>
+                        <td>${t.exit_reason}</td>
+                    </tr>`;
+                }
+                tradeHtml += `</tbody></table>`;
+                tradesDiv.innerHTML = tradeHtml;
+            }
+            
+            document.getElementById('lastUpdated').innerHTML = `Last updated: ${new Date().toLocaleString()} | Data as of: ${lastDate}`;
+            
         } catch (e) {
             console.error(e);
-            document.body.innerHTML += `<p style="color:red">Failed to load data. Please refresh.</p>`;
+            document.body.innerHTML += `<p style="color:red">Error loading data. Please refresh.</p>`;
         }
     }
-
+    
     loadDashboard();
     setInterval(loadDashboard, 180000);
 </script>
