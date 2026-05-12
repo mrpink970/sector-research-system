@@ -7,7 +7,6 @@ from pathlib import Path
 from datetime import datetime, timedelta
 import pandas as pd
 import yfinance as yf
-import yaml
 
 # ========================= CONFIG =========================
 DATA_DIR = Path("data/quantum")
@@ -27,12 +26,10 @@ MIN_DATA_DAYS = 20
 
 def calculate_score(ret_1d: float, ret_3d: float, ret_5d: float) -> float:
     score = (ret_1d * 0.30) + (ret_3d * 0.25) + (ret_5d * 0.20)
-    
     if ret_1d > 0 and ret_3d > 0 and ret_5d > 0:
         score += 0.75
     elif ret_1d < 0 and ret_3d < 0 and ret_5d < 0:
         score -= 0.75
-    
     vol = abs(ret_1d - ret_3d)
     score += max(0, 10 - vol) * 0.10
     return round(score, 2)
@@ -57,13 +54,12 @@ def main():
     print("\n📥 Fetching latest prices...")
     end = datetime.now()
     start = end - timedelta(days=200)
-    data = yf.download(TICKERS + ["QQQ"], start=start, end=end, progress=False, group_by='ticker')
-    
-    closes = data['Close'] if 'Close' in data.columns else pd.DataFrame({t: data[t]['Close'] for t in TICKERS})
+    data = yf.download(TICKERS + ["QQQ"], start=start, end=end, progress=False)
+    closes = data['Close'][TICKERS] if isinstance(data.columns, pd.MultiIndex) else data['Close']
     
     print(f"✅ Data up to {closes.index[-1].date()}")
     
-    # Calculate returns and scores
+    # Calculate scores
     ret_1d = closes.pct_change() * 100
     ret_3d = closes.pct_change(3) * 100
     ret_5d = closes.pct_change(5) * 100
@@ -76,7 +72,7 @@ def main():
             ret_5d[ticker].iloc[i] if pd.notna(ret_5d[ticker].iloc[i]) else 0
         ) for i in range(len(closes))]
     
-    closes[TICKERS].round(2).to_csv(PRICES_PATH)
+    closes.round(2).to_csv(PRICES_PATH)
     scores_df.round(2).to_csv(SCORES_PATH)
     print(f"✅ Saved prices.csv and scores.csv")
     
@@ -88,46 +84,54 @@ def main():
     latest_scores = scores_df.iloc[-1]
     
     # Load state
-    positions = pd.read_csv(POSITIONS_PATH) if POSITIONS_PATH.exists() else pd.DataFrame(columns=["ticker","entry_date","entry_price","shares","highest_price","trailing_stop","entry_score"])
-    trade_log = pd.read_csv(TRADE_LOG_PATH) if TRADE_LOG_PATH.exists() else pd.DataFrame(columns=["ticker","entry_date","exit_date","entry_price","exit_price","shares","return_pct","gross_pl","exit_reason"])
+    if POSITIONS_PATH.exists():
+        positions = pd.read_csv(POSITIONS_PATH)
+    else:
+        positions = pd.DataFrame(columns=["ticker","entry_date","entry_price","shares","highest_price","trailing_stop","entry_score"])
     
-    cash = STARTING_BALANCE + (trade_log['gross_pl'].sum() if not trade_log.empty else 0)
+    if TRADE_LOG_PATH.exists():
+        trade_log = pd.read_csv(TRADE_LOG_PATH)
+    else:
+        trade_log = pd.DataFrame(columns=["ticker","entry_date","exit_date","entry_price","exit_price","shares","return_pct","gross_pl","exit_reason"])
+    
+    cash = STARTING_BALANCE + (trade_log['gross_pl'].sum() if not trade_log.empty else 0.0)
     
     # === EXIT CHECK ===
-    exited = False
     if not positions.empty:
         pos = positions.iloc[0].copy()
         ticker = pos['ticker']
-        curr_price = current_prices[ticker]
-        highest = max(pos['highest_price'], curr_price)
+        curr_price = float(current_prices[ticker])
+        highest = max(float(pos['highest_price']), curr_price)
         
         stop_price = highest * (1 - TRAILING_STOP_PCT)
         
         if curr_price <= stop_price or latest_scores[ticker] < MIN_SCORE:
             exit_reason = "trailing_stop" if curr_price <= stop_price else "low_score"
-            ret_pct = (curr_price / pos['entry_price'] - 1) * 100
-            pl = (curr_price - pos['entry_price']) * pos['shares']
+            ret_pct = (curr_price / float(pos['entry_price']) - 1) * 100
+            pl = (curr_price - float(pos['entry_price'])) * int(pos['shares'])
             
-            new_trade = pd.DataFrame([{
+            new_trade = {
                 "ticker": ticker, "entry_date": pos['entry_date'], "exit_date": today,
-                "entry_price": round(float(pos['entry_price']),2), "exit_price": round(curr_price,2),
-                "shares": int(pos['shares']), "return_pct": round(ret_pct,2),
-                "gross_pl": round(pl,2), "exit_reason": exit_reason
-            }])
-            
-            trade_log = pd.concat([trade_log, new_trade], ignore_index=True)
+                "entry_price": round(float(pos['entry_price']),2), 
+                "exit_price": round(curr_price,2),
+                "shares": int(pos['shares']), 
+                "return_pct": round(ret_pct,2),
+                "gross_pl": round(pl,2), 
+                "exit_reason": exit_reason
+            }
+            trade_log = pd.concat([trade_log, pd.DataFrame([new_trade])], ignore_index=True)
             trade_log.to_csv(TRADE_LOG_PATH, index=False)
             print(f"🚪 EXIT {ticker} | {exit_reason} | P&L: ${pl:.2f}")
-            positions = pd.DataFrame(columns=positions.columns)
-            exited = True
+            positions = pd.DataFrame(columns=positions.columns)  # clear
         else:
-            # Update highest price
+            # Update highest
             pos['highest_price'] = highest
             positions.iloc[0] = pos
             positions.to_csv(POSITIONS_PATH, index=False)
+            print(f"📍 Holding {ticker} | Highest: ${highest:.2f}")
     
     # === ENTRY CHECK ===
-    if (positions.empty or exited) and regime_ok:
+    if positions.empty and regime_ok:
         valid = {}
         for t in TICKERS:
             if closes[t].dropna().shape[0] >= MIN_DATA_DAYS:
@@ -138,32 +142,33 @@ def main():
             best_score = valid[best_ticker]
             
             if best_score >= MIN_SCORE:
-                entry_price = current_prices[best_ticker]   # EOD: enter at tomorrow's open (approx today's close for now)
-                shares = int(cash / entry_price)
+                entry_price = float(current_prices[best_ticker])
+                shares = int(cash // entry_price)
                 
                 if shares > 0:
-                    new_pos = pd.DataFrame([{
+                    new_pos = {
                         "ticker": best_ticker,
                         "entry_date": today,
                         "entry_price": round(entry_price, 2),
                         "shares": shares,
-                        "highest_price": entry_price,
+                        "highest_price": round(entry_price, 2),
                         "trailing_stop": round(entry_price * (1 - TRAILING_STOP_PCT), 2),
                         "entry_score": best_score
-                    }])
-                    new_pos.to_csv(POSITIONS_PATH, index=False)
+                    }
+                    pd.DataFrame([new_pos]).to_csv(POSITIONS_PATH, index=False)
                     print(f"🟢 ENTRY {best_ticker} @ ${entry_price:.2f} | Score: {best_score} | Shares: {shares}")
     
-    # Update Performance
-    realized = trade_log['gross_pl'].sum() if not trade_log.empty else 0
-    open_pl = 0
+    # === PERFORMANCE ===
+    realized = trade_log['gross_pl'].sum() if not trade_log.empty else 0.0
+    open_pl = 0.0
     current_pos = None
     if not positions.empty:
         pos = positions.iloc[0]
         current_pos = pos['ticker']
-        open_pl = (current_prices[pos['ticker']] - pos['entry_price']) * pos['shares']
+        open_pl = (float(current_prices[pos['ticker']]) - float(pos['entry_price'])) * int(pos['shares'])
     
     total_equity = STARTING_BALANCE + realized + open_pl
+    
     perf = pd.DataFrame([{
         "total_trades": len(trade_log),
         "win_rate_pct": round((trade_log['gross_pl'] > 0).mean()*100, 1) if not trade_log.empty else 0,
