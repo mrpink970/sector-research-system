@@ -63,7 +63,7 @@
         <div class="card-content">
             <table class="ranking-table">
                 <thead><tr><th>Rank</th><th>Ticker</th><th>Close</th><th>Momentum Score</th></tr></thead>
-                <tbody id="rankingsBody"><td><td colspan="4" class="loading">Loading...<\/td><\/tr><\/tbody>
+                <tbody id="rankingsBody"><tr><td colspan="4" class="loading">Loading...<\/td><\/tr><\/tbody>
             <\/table>
             <div class="small-note">Scores based on 1d/3d/5d returns + trend strength + volatility<\/div>
         <\/div>
@@ -83,14 +83,7 @@
     <div class="full-width-card">
         <div class="card-header">📜 Recent Closed Trades</div>
         <div class="card-content">
-            <div id="tradesContainer">
-                <table class="trade-table" id="tradesTable">
-                    <thead>
-                        <tr><th>Ticker</th><th>Entry Date</th><th>Exit Date</th><th>Shares</th><th>Entry $</th><th>Exit $</th><th>Return %</th><th>P&L</th><th>Exit Reason</th></tr>
-                    </thead>
-                    <tbody id="tradesBody"></tbody>
-                </table>
-            </div>
+            <div id="tradesContainer"></div>
         </div>
     </div>
 
@@ -134,37 +127,47 @@
         return result;
     }
 
+    // Special function to display trades using the working method
+    async function displayTrades() {
+        const tradeText = await fetchCSV(TRADE_URL);
+        const container = document.getElementById('tradesContainer');
+        
+        if (!tradeText) {
+            container.innerHTML = '<p>No trade data available</p>';
+            return;
+        }
+        
+        const lines = tradeText.trim().split('\n');
+        if (lines.length < 2) {
+            container.innerHTML = '<p>No closed trades yet</p>';
+            return;
+        }
+        
+        let html = '<table class="trade-table"><thead><tr>';
+        const headers = lines[0].split(',');
+        headers.forEach(h => html += `<th>${h}</th>`);
+        html += '</tr></thead><tbody>';
+        
+        for (let i = 1; i < lines.length; i++) {
+            html += '<tr>';
+            const cells = lines[i].split(',');
+            cells.forEach(c => html += `<td>${c}</td>`);
+            html += '</tr>';
+        }
+        html += '</tbody></table>';
+        container.innerHTML = html;
+    }
+
     async function loadDashboard() {
+        // Display trades first (using the working method)
+        await displayTrades();
+        
         const scoresText = await fetchCSV(SCORES_URL);
         const positions = parseCSV(await fetchCSV(POSITIONS_URL));
         const trades = parseCSV(await fetchCSV(TRADE_URL));
         const perf = parseCSV(await fetchCSV(PERF_URL));
         
-        // Display trades
-        const tbody = document.getElementById('tradesBody');
-        if (trades.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="9">No closed trades yet<\/td><\/tr>';
-        } else {
-            tbody.innerHTML = '';
-            for (let i = 0; i < trades.length; i++) {
-                const t = trades[i];
-                const ret = t.return_pct || 0;
-                const pl = t.gross_pl || 0;
-                tbody.innerHTML += `<tr>
-                    <td><strong>${t.ticker || '?'}</strong></td>
-                    <td>${t.entry_date || '?'}</td>
-                    <td>${t.exit_date || '?'}</td>
-                    <td>${t.shares || 0}<\/td>
-                    <td>$${(t.entry_price || 0).toFixed(2)}<\/td>
-                    <td>$${(t.exit_price || 0).toFixed(2)}<\/td>
-                    <td class="${ret >= 0 ? 'positive' : 'negative'}">${ret >= 0 ? '+' : ''}${ret.toFixed(1)}%<\/td>
-                    <td class="${pl >= 0 ? 'positive' : 'negative'}">${pl >= 0 ? '+' : ''}$${pl.toFixed(2)}<\/td>
-                    <td>${t.exit_reason || '?'}<\/td>
-                </tr>`;
-            }
-        }
-        
-        // Parse latest scores
+        // Parse latest scores from the last line
         let latestScores = {};
         let latestPrices = {};
         let lastDate = '';
@@ -173,13 +176,19 @@
             const lines = scoresText.trim().split('\n');
             if (lines.length >= 2) {
                 const lastLine = lines[lines.length - 1];
-                const parts = lastLine.match(/^([^,]*),"(.*)","(.*)"$/);
-                if (parts) {
-                    lastDate = parts[1];
-                    const scoresStr = parts[2].replace(/'/g, '"');
-                    const pricesStr = parts[3].replace(/'/g, '"');
+                const firstComma = lastLine.indexOf(',');
+                const secondComma = lastLine.indexOf(',', firstComma + 1);
+                if (firstComma > 0) {
+                    lastDate = lastLine.substring(0, firstComma);
+                    let scoresStr = lastLine.substring(firstComma + 1, secondComma > 0 ? secondComma : undefined);
+                    let pricesStr = secondComma > 0 ? lastLine.substring(secondComma + 1) : '';
+                    
                     try {
+                        scoresStr = scoresStr.replace(/'/g, '"');
                         latestScores = JSON.parse(scoresStr);
+                    } catch(e) {}
+                    try {
+                        pricesStr = pricesStr.replace(/'/g, '"');
                         latestPrices = JSON.parse(pricesStr);
                     } catch(e) {}
                 }
@@ -196,19 +205,23 @@
         rankings.sort((a, b) => b.score - a.score);
         
         const rankBody = document.getElementById('rankingsBody');
-        rankBody.innerHTML = rankings.map((r, idx) => {
-            let scoreClass = 'score-low';
-            if (r.score >= 5) scoreClass = 'score-high';
-            else if (r.score >= 2) scoreClass = 'score-mid';
-            return `<tr>
-                <td>${idx + 1}</td>
-                <td><strong>${r.ticker}</strong></td>
-                <td>${r.price > 0 ? `$${r.price.toFixed(2)}` : 'N/A'}</td>
-                <td class="${scoreClass}">${r.score.toFixed(1)}<\/td>
-            </tr>`;
-        }).join('');
+        if (rankings.length > 0 && rankings[0].score > 0) {
+            rankBody.innerHTML = rankings.map((r, idx) => {
+                let scoreClass = 'score-low';
+                if (r.score >= 5) scoreClass = 'score-high';
+                else if (r.score >= 2) scoreClass = 'score-mid';
+                return `<tr>
+                    <td>${idx + 1}</td>
+                    <td><strong>${r.ticker}</strong></td>
+                    <td>${r.price > 0 ? `$${r.price.toFixed(2)}` : 'N/A'}</td>
+                    <td class="${scoreClass}">${r.score.toFixed(1)}<\/td>
+                </tr>`;
+            }).join('');
+        } else {
+            rankBody.innerHTML = '<tr><td colspan="4">Loading scores...<\/td><\/tr>';
+        }
         
-        // Calculate totals
+        // Calculate totals from trades
         let totalPL = 0;
         let winningTrades = 0;
         for (const t of trades) {
@@ -225,16 +238,7 @@
                 const shares = pos.shares || 0;
                 const cost = entry * shares;
                 totalCost += cost;
-                const currentPrice = latestPrices[pos.ticker] || entry;
-                openPositions.push({
-                    ticker: pos.ticker,
-                    entry_date: pos.entry_date,
-                    entry_price: entry,
-                    current_price: currentPrice,
-                    shares: shares,
-                    cost: cost,
-                    value: currentPrice * shares
-                });
+                openPositions.push({ ticker: pos.ticker, entry_date: pos.entry_date, entry_price: entry, shares: shares });
             }
         }
         
@@ -246,8 +250,7 @@
         }
         
         const cashBalance = STARTING_BALANCE + totalPL - totalCost;
-        const currentValue = openPositions.reduce((sum, p) => sum + p.value, 0);
-        const totalEquity = cashBalance + currentValue;
+        const totalEquity = cashBalance;
         const totalReturnPct = ((totalEquity - STARTING_BALANCE) / STARTING_BALANCE) * 100;
         
         document.getElementById('cashBalance').innerHTML = `$${cashBalance.toFixed(2)}`;
@@ -261,15 +264,11 @@
         
         if (openPositions.length > 0) {
             const pos = openPositions[0];
-            const pnl = pos.value - pos.cost;
-            const pnlPct = ((pos.current_price - pos.entry_price) / pos.entry_price) * 100;
             document.getElementById('positionCard').innerHTML = `
                 <div class="current-position-card">
                     <div><span class="badge">${pos.ticker}</span></div>
-                    <div class="big-number">${pnlPct >= 0 ? '+' : ''}${pnlPct.toFixed(1)}%</div>
-                    <div>Entry: $${pos.entry_price.toFixed(2)} | Current: $${pos.current_price.toFixed(2)}</div>
-                    <div>Shares: ${pos.shares} | Total Cost: $${pos.cost.toFixed(2)}</div>
-                    <div>Unrealized: <span class="${pnl >= 0 ? 'positive' : 'negative'}">${pnl >= 0 ? '+' : ''}$${pnl.toFixed(2)}</span></div>
+                    <div>Entry: $${pos.entry_price.toFixed(2)}</div>
+                    <div>Shares: ${pos.shares}</div>
                     <div class="small-note">Entry Date: ${pos.entry_date || 'N/A'}</div>
                 </div>
             `;
@@ -277,17 +276,15 @@
             document.getElementById('positionCard').innerHTML = `<div class="current-position-card"><div style="font-size:1.2rem;">📭 No Open Position</div><div class="small-note">In cash • Waiting for signal</div></div>`;
         }
         
-        const unrealizedPL = openPositions.reduce((sum, p) => sum + (p.value - p.cost), 0);
         document.getElementById('performanceSummary').innerHTML = `
             <div><strong>Starting Balance:</strong> $${STARTING_BALANCE.toFixed(2)}</div>
             <div><strong>Cash Balance:</strong> $${cashBalance.toFixed(2)}</div>
             <div><strong>Total Equity:</strong> <span class="positive">$${totalEquity.toFixed(2)}</span></div>
             <div><strong>Total Return:</strong> <span class="${totalReturnPct >= 0 ? 'positive' : 'negative'}">${totalReturnPct >= 0 ? '+' : ''}${totalReturnPct.toFixed(1)}%</span></div>
             <hr>
-            ${openPositions.length > 0 ? `<div><strong>${openPositions[0].ticker}:</strong> ${openPositions[0].shares} shares @ $${openPositions[0].entry_price.toFixed(2)}</div><div>Unrealized: <span class="${unrealizedPL >= 0 ? 'positive' : 'negative'}">${unrealizedPL >= 0 ? '+' : ''}$${unrealizedPL.toFixed(2)} (${((openPositions[0].current_price - openPositions[0].entry_price) / openPositions[0].entry_price * 100).toFixed(1)}%)</span></div>` : '<div>No open position</div>'}
+            ${openPositions.length > 0 ? `<div><strong>${openPositions[0].ticker}:</strong> ${openPositions[0].shares} shares @ $${openPositions[0].entry_price.toFixed(2)}</div>` : '<div>No open position</div>'}
             <hr>
             <div><strong>Realized P&L:</strong> ${totalPL >= 0 ? '+' : ''}$${totalPL.toFixed(2)}</div>
-            <div><strong>Unrealized P&L:</strong> ${unrealizedPL >= 0 ? '+' : ''}$${unrealizedPL.toFixed(2)}</div>
         `;
         
         document.getElementById('lastUpdated').innerHTML = `Last updated: ${new Date().toLocaleString()} | Data as of: ${lastDate}`;
