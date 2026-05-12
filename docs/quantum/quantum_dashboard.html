@@ -20,7 +20,7 @@
         .two-col { display: flex; flex-wrap: wrap; gap: 1.2rem; margin-bottom: 1.2rem; }
         .card { background: white; border-radius: 1rem; border: 1px solid #e2e8f0; overflow: hidden; flex: 1; min-width: 280px; }
         .card-header { padding: 0.9rem 1.2rem; font-weight: 600; font-size: 0.98rem; border-bottom: 1px solid #edf2f7; background: #fafcfd; color: #2c5a7a; }
-        .card-content { padding: 1.2rem; }
+        .card-content { padding: 1.2rem; line-height: 1.5; }
         .badge { background: #e0f5e8; color: #1e6b3b; padding: 0.25rem 0.7rem; border-radius: 20px; font-size: 0.75rem; font-weight: 700; }
         .big-number { font-size: 2.1rem; font-weight: 700; color: #1e8a4c; }
         .ranking-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
@@ -40,11 +40,9 @@
         <p>7 Quantum Stocks • Momentum Scoring • Single Position • 10% Trailing Stop</p>
     </div>
 
-    <div class="kpi-grid" id="kpiContainer">
-        <div class="loading">Loading dashboard...</div>
-    </div>
+    <div class="kpi-grid" id="kpiContainer">Loading...</div>
 
-    <div class="full-width-card" style="background:white; border-radius:1rem; border:1px solid #e2e8f0; margin-bottom:1.2rem;">
+    <div class="card" style="margin-bottom:1.2rem;">
         <div class="card-header">🏆 Quantum Stock Rankings</div>
         <div class="card-content">
             <table class="ranking-table" id="rankingsTable">
@@ -57,15 +55,15 @@
     <div class="two-col">
         <div class="card">
             <div class="card-header">📌 Current Position</div>
-            <div class="card-content" id="positionCard"></div>
+            <div class="card-content" id="positionCard">Loading...</div>
         </div>
         <div class="card">
             <div class="card-header">📈 Performance Summary</div>
-            <div class="card-content" id="performanceSummary"></div>
+            <div class="card-content" id="performanceSummary">Loading...</div>
         </div>
     </div>
 
-    <div class="full-width-card" style="background:white; border-radius:1rem; border:1px solid #e2e8f0;">
+    <div class="card">
         <div class="card-header">📜 Closed Trades</div>
         <div class="card-content">
             <table class="ranking-table" id="tradesTable">
@@ -80,16 +78,14 @@
 </div>
 
 <script>
-    const STARTING_BALANCE = 5000;
     const TICKERS = ['IONQ', 'QBTS', 'RGTI', 'QUBT', 'XNDU', 'INFQ', 'HQ'];
-
     const BASE = 'https://raw.githubusercontent.com/mrpink970/sector-research-system/main/data/quantum/';
 
     async function fetchCSV(name) {
         try {
             const res = await fetch(BASE + name + '?t=' + Date.now());
-            return res.ok ? await res.text() : null;
-        } catch { return null; }
+            return res.ok ? await res.text() : '';
+        } catch { return ''; }
     }
 
     function parseLastLine(csvText) {
@@ -100,18 +96,20 @@
         const values = lines[lines.length-1].split(',').map(v => v.trim());
         const row = {};
         headers.forEach((h, i) => {
-            const val = values[i];
-            row[h] = !isNaN(val) && val !== '' ? parseFloat(val) : val;
+            const val = values[i] || '';
+            row[h] = (!isNaN(val) && val !== '') ? parseFloat(val) : val;
         });
         return row;
     }
 
     async function loadDashboard() {
-        const pricesText = await fetchCSV('prices.csv');
-        const scoresText = await fetchCSV('scores.csv');
-        const posText = await fetchCSV('positions.csv');
-        const tradeText = await fetchCSV('trade_log.csv');
-        const perfText = await fetchCSV('performance.csv');
+        const [pricesText, scoresText, posText, tradeText, perfText] = await Promise.all([
+            fetchCSV('prices.csv'),
+            fetchCSV('scores.csv'),
+            fetchCSV('positions.csv'),
+            fetchCSV('trade_log.csv'),
+            fetchCSV('performance.csv')
+        ]);
 
         const latestPrice = parseLastLine(pricesText);
         const latestScore = parseLastLine(scoresText);
@@ -121,10 +119,9 @@
         // Rankings
         let rankings = TICKERS.map(t => ({
             ticker: t,
-            price: latestPrice ? latestPrice[t] || 0 : 0,
-            score: latestScore ? latestScore[t] || 0 : 0
-        }));
-        rankings.sort((a,b) => b.score - a.score);
+            price: latestPrice ? (latestPrice[t] || 0) : 0,
+            score: latestScore ? (latestScore[t] || 0) : 0
+        })).sort((a,b) => b.score - a.score);
 
         document.getElementById('rankingsBody').innerHTML = rankings.map((r,i) => `
             <tr>
@@ -136,30 +133,30 @@
         `).join('');
 
         // KPIs
-        const equity = perf ? perf.final_balance || STARTING_BALANCE : STARTING_BALANCE;
-        const returnPct = perf ? perf.total_return_pct || 0 : 0;
+        const equity = perf && perf.final_balance ? perf.final_balance : 5000;
+        const returnPct = perf && perf.total_return_pct ? perf.total_return_pct : 0;
 
         document.getElementById('kpiContainer').innerHTML = `
-            <div class="kpi-card"><div class="kpi-label">Cash Balance</div><div class="kpi-value">$${((position ? 0 : equity).toFixed(2))}</div></div>
+            <div class="kpi-card"><div class="kpi-label">Cash Balance</div><div class="kpi-value">$${position ? '0.00' : equity.toFixed(2)}</div></div>
             <div class="kpi-card"><div class="kpi-label">Total Equity</div><div class="kpi-value positive">$${equity.toFixed(2)}</div></div>
-            <div class="kpi-card"><div class="kpi-label">Win Rate</div><div class="kpi-value">${perf ? perf.win_rate_pct : 0}%</div></div>
+            <div class="kpi-card"><div class="kpi-label">Win Rate</div><div class="kpi-value">${perf && perf.win_rate_pct ? perf.win_rate_pct : 0}%</div></div>
             <div class="kpi-card"><div class="kpi-label">Total Return</div><div class="kpi-value ${returnPct>=0?'positive':'negative'}">${returnPct >= 0 ? '+' : ''}${returnPct}%</div></div>
             <div class="kpi-card"><div class="kpi-label">Open Positions</div><div class="kpi-value">${position ? 1 : 0}</div></div>
         `;
 
         // Current Position
         const posCard = document.getElementById('positionCard');
-        if (position) {
+        if (position && latestPrice) {
+            const ticker = position.ticker;
             const entry = position.entry_price;
-            const current = latestPrice ? latestPrice[position.ticker] || entry : entry;
+            const current = latestPrice[ticker] || entry;
             const unrealized = (current - entry) * position.shares;
             posCard.innerHTML = `
-                <div style="text-align:center; background:#f0fdf4; padding:1.2rem; border-radius:12px;">
-                    <div><span class="badge">${position.ticker}</span></div>
-                    <div class="big-number">${((current/entry-1)*100).toFixed(1)}%</div>
-                    <div>Entry ${entry} → Current ${current.toFixed(2)}</div>
+                <div style="text-align:center; background:#f0fdf4; padding:1.5rem; border-radius:12px;">
+                    <div><span class="badge">${ticker}</span></div>
+                    <div class="big-number">${((current/entry - 1)*100).toFixed(1)}%</div>
+                    <div>Entry $${entry} → Current $${current.toFixed(2)}</div>
                     <div>Shares: ${position.shares} | Unrealized: <span class="${unrealized>=0?'positive':'negative'}">$${unrealized.toFixed(2)}</span></div>
-                    <div class="small-note">Entry Score: ${position.entry_score} | ${position.entry_date}</div>
                 </div>
             `;
         } else {
@@ -168,14 +165,35 @@
 
         // Performance Summary
         document.getElementById('performanceSummary').innerHTML = perf ? `
-            <strong>Starting:</strong> $${STARTING_BALANCE}<br>
-            <strong>Current Equity:</strong> $${perf.final_balance.toFixed(2)}<br>
-            <strong>Total Return:</strong> <span class="${returnPct>=0?'positive':'negative'}">${returnPct}%</span><br>
-            <strong>Net Profit:</strong> $${perf.net_profit_dollars.toFixed(2)}
-        ` : 'Loading performance...';
+            Starting: $${5000}<br>
+            Equity: $${perf.final_balance.toFixed(2)}<br>
+            Return: <span class="${returnPct>=0?'positive':'negative'}">${returnPct}%</span><br>
+            Net Profit: $${(perf.net_profit_dollars || 0).toFixed(2)}
+        ` : 'No performance data yet';
 
-        // Trades
+        // Closed Trades
         const trades = tradeText ? tradeText.trim().split('\n').slice(1).map(line => {
-            const vals = line.split(',');
-            return {
-                ticker: vals[0], entry_date: vals[
+            const v = line.split(',');
+            return {ticker: v[0], entry_date: v[1], exit_date: v[2], return_pct: parseFloat(v[6]||0), gross_pl: parseFloat(v[7]||0), exit_reason: v[8]};
+        }).filter(t => t.ticker) : [];
+
+        const tbody = document.getElementById('tradesBody');
+        tbody.innerHTML = trades.length ? trades.map(t => `
+            <tr>
+                <td><strong>${t.ticker}</strong></td>
+                <td>${t.entry_date}</td>
+                <td>${t.exit_date}</td>
+                <td class="${t.return_pct>=0?'positive':'negative'}">${t.return_pct.toFixed(1)}%</td>
+                <td class="${t.gross_pl>=0?'positive':'negative'}">$${t.gross_pl.toFixed(2)}</td>
+                <td>${t.exit_reason}</td>
+            </tr>
+        `).join('') : `<tr><td colspan="6">No closed trades yet</td></tr>`;
+
+        document.getElementById('lastUpdated').textContent = `Last updated: ${new Date().toLocaleString()}`;
+    }
+
+    loadDashboard();
+    setInterval(loadDashboard, 300000);
+</script>
+</body>
+</html>
