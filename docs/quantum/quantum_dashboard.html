@@ -78,7 +78,7 @@
         <div class="card-content">
             <table class="ranking-table" id="tradesTable">
                 <thead><tr><th>Ticker</th><th>Entry Date</th><th>Exit Date</th><th>Return %</th><th>P&L</th><th>Exit Reason</th></tr></thead>
-                <tbody id="tradesBody"><\/tbody>
+                <tbody id="tradesBody"><tr><td colspan="6" class="loading">Loading...<\/td><\/tr><\/tbody>
             <\/table>
         <\/div>
     <\/div>
@@ -128,6 +128,18 @@
             result.push(row);
         }
         return result;
+    }
+
+    function parsePythonDict(str) {
+        if (!str) return {};
+        try {
+            // Replace single quotes with double quotes for JSON parsing
+            let jsonStr = str.replace(/'/g, '"');
+            return JSON.parse(jsonStr);
+        } catch(e) {
+            console.log('Parse error:', e);
+            return {};
+        }
     }
 
     function formatCurrency(value) {
@@ -198,18 +210,19 @@
             const lines = scoresCSV.trim().split('\n');
             if (lines.length >= 2) {
                 const lastLine = lines[lines.length - 1];
-                const parts = lastLine.split(',');
-                if (parts.length >= 2) {
-                    try {
-                        let scoresStr = parts[1].replace(/'/g, '"');
-                        latestScores = JSON.parse(scoresStr);
-                    } catch(e) {}
+                // Format: date,"{scores}","{prices}"
+                const firstQuote = lastLine.indexOf('"');
+                const secondQuote = lastLine.indexOf('"', firstQuote + 1);
+                const thirdQuote = lastLine.indexOf('"', secondQuote + 1);
+                const fourthQuote = lastLine.indexOf('"', thirdQuote + 1);
+                
+                if (firstQuote > 0 && secondQuote > 0) {
+                    const scoresStr = lastLine.substring(firstQuote + 1, secondQuote);
+                    latestScores = parsePythonDict(scoresStr);
                 }
-                if (parts.length >= 3) {
-                    try {
-                        let pricesStr = parts[2].replace(/'/g, '"');
-                        latestPrices = JSON.parse(pricesStr);
-                    } catch(e) {}
+                if (thirdQuote > 0 && fourthQuote > 0) {
+                    const pricesStr = lastLine.substring(thirdQuote + 1, fourthQuote);
+                    latestPrices = parsePythonDict(pricesStr);
                 }
             }
         }
@@ -255,15 +268,15 @@
         
         // Render rankings table
         const rankBody = document.getElementById('rankingsBody');
-        if (rankings.length > 0 && rankings[0].score > 0) {
+        if (rankings.length > 0 && rankings[0].score !== 0) {
             rankBody.innerHTML = rankings.map((r, idx) => {
                 let scoreClass = 'score-low';
                 if (r.score >= 5) scoreClass = 'score-high';
                 else if (r.score >= 2) scoreClass = 'score-mid';
                 return `<tr>
-                    <td>${idx + 1}</td>
-                    <td><strong>${r.ticker}</strong></td>
-                    <td>${r.price > 0 ? formatCurrency(r.price) : 'N/A'}</td>
+                    五是${idx + 1}五
+                    五是<strong>${r.ticker}</strong>五
+                    五是${r.price > 0 ? formatCurrency(r.price) : 'N/A'}五
                     <td class="${scoreClass}">${r.score.toFixed(1)}<\/td>
                 </tr>`;
             }).join('');
@@ -299,16 +312,17 @@
         }
         
         // Render performance summary
+        const unrealizedPL = currentPosition ? ((currentPosition.highest_price || currentPosition.entry_price) - (currentPosition.entry_price || 0)) * (currentPosition.shares || 0) : 0;
         document.getElementById('performanceSummary').innerHTML = `
             <div><strong>Starting Balance:</strong> ${formatCurrency(STARTING_BALANCE)}</div>
             <div><strong>Cash Balance:</strong> ${formatCurrency(cashBalance)}</div>
             <div><strong>Total Equity:</strong> <span class="positive">${formatCurrency(totalEquity)}</span></div>
             <div><strong>Total Return:</strong> <span class="${totalReturnPct >= 0 ? 'positive' : 'negative'}">${formatPercent(totalReturnPct)}</span></div>
             <hr>
-            ${currentPosition ? `<div><strong>${currentPosition.ticker}:</strong> ${currentPosition.shares} shares @ ${formatCurrency(currentPosition.entry_price)}</div><div>Unrealized: <span class="${unrealized >= 0 ? 'positive' : 'negative'}">${unrealized >= 0 ? '+' : ''}${formatCurrency(unrealized)} (${formatPercent(positionReturn)})</span></div>` : '<div>No open position</div>'}
+            ${currentPosition ? `<div><strong>${currentPosition.ticker}:</strong> ${currentPosition.shares} shares @ ${formatCurrency(currentPosition.entry_price)}</div><div>Unrealized: <span class="${unrealizedPL >= 0 ? 'positive' : 'negative'}">${unrealizedPL >= 0 ? '+' : ''}${formatCurrency(unrealizedPL)} (${formatPercent(positionReturn)})</span></div>` : '<div>No open position</div>'}
             <hr>
             <div><strong>Realized P&L:</strong> ${realizedPL >= 0 ? '+' : ''}${formatCurrency(realizedPL)}</div>
-            <div><strong>Unrealized P&L:</strong> ${currentPosition ? (unrealized >= 0 ? '+' : '') + formatCurrency(unrealized) : '$0.00'}</div>
+            <div><strong>Unrealized P&L:</strong> ${currentPosition ? (unrealizedPL >= 0 ? '+' : '') + formatCurrency(unrealizedPL) : '$0.00'}</div>
             ${maxDrawdown !== 0 && maxDrawdown !== undefined ? `<div><strong>Max Drawdown:</strong> ${formatPercent(Math.abs(maxDrawdown))}</div>` : ''}
         `;
         
