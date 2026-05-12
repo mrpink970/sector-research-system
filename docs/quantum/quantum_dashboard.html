@@ -9,300 +9,173 @@
         body { background: #f0f4f8; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; padding: 1.5rem; color: #1a2a3a; }
         .dashboard { max-width: 1400px; margin: 0 auto; }
         .header { margin-bottom: 1.5rem; }
-        .header h1 { font-size: 1.6rem; font-weight: 700; color: #1a4d7a; }
-        .header p { color: #5a6e7c; margin-top: 0.2rem; border-left: 3px solid #2c7fb8; padding-left: 1rem; }
+        .header h1 { font-size: 1.7rem; font-weight: 700; color: #1a4d7a; }
+        .header p { color: #5a6e7c; margin-top: 0.2rem; border-left: 4px solid #2c7fb8; padding-left: 1rem; }
         .kpi-grid { display: flex; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.5rem; }
-        .kpi-card { background: white; border-radius: 1rem; padding: 1rem 1.2rem; flex: 1 1 160px; box-shadow: 0 2px 6px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; }
-        .kpi-label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1px; color: #6c7e8f; margin-bottom: 0.4rem; }
-        .kpi-value { font-size: 1.6rem; font-weight: 700; color: #1a4d7a; }
+        .kpi-card { background: white; border-radius: 1rem; padding: 1.1rem 1.3rem; flex: 1 1 160px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); border: 1px solid #e2e8f0; }
+        .kpi-label { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; color: #6c7e8f; margin-bottom: 0.4rem; }
+        .kpi-value { font-size: 1.65rem; font-weight: 700; color: #1a4d7a; }
         .positive { color: #1e8a4c; }
         .negative { color: #c2412c; }
         .two-col { display: flex; flex-wrap: wrap; gap: 1.2rem; margin-bottom: 1.2rem; }
         .card { background: white; border-radius: 1rem; border: 1px solid #e2e8f0; overflow: hidden; flex: 1; min-width: 280px; }
-        .card-header { padding: 0.8rem 1rem; font-weight: 600; font-size: 0.95rem; border-bottom: 1px solid #edf2f7; background: #fafcfd; color: #2c5a7a; }
-        .card-content { padding: 1rem; }
-        .badge { background: #e0f5e8; color: #1e6b3b; padding: 0.2rem 0.5rem; border-radius: 20px; font-size: 0.65rem; font-weight: 600; display: inline-block; }
-        .current-position-card { background: #e8f5e9; border-radius: 0.75rem; padding: 1rem; text-align: center; border: 1px solid #c8e6c9; }
-        .big-number { font-size: 2rem; font-weight: 700; color: #1e8a4c; }
-        .loading { text-align: center; padding: 2rem; color: #6c7e8f; }
-        .small-note { font-size: 0.65rem; color: #8ba0b0; margin-top: 0.5rem; text-align: center; }
-        hr { margin: 0.8rem 0; border: none; border-top: 1px solid #e2edf2; }
-        .footer { text-align: center; font-size: 0.65rem; color: #8ba0b0; margin-top: 1.5rem; padding-top: 0.8rem; border-top: 1px solid #e2edf2; }
-        .last-updated { font-size: 0.65rem; color: #8ba0b0; text-align: right; margin-top: 0.5rem; }
-        .full-width-card { background: white; border-radius: 1rem; border: 1px solid #e2e8f0; overflow: auto; margin-bottom: 1.2rem; }
-        .full-width-card .card-content { overflow-x: auto; }
-        .ranking-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
-        .ranking-table th, .ranking-table td { padding: 0.6rem 0.5rem; text-align: left; border-bottom: 1px solid #e2edf2; }
+        .card-header { padding: 0.9rem 1.2rem; font-weight: 600; font-size: 0.98rem; border-bottom: 1px solid #edf2f7; background: #fafcfd; color: #2c5a7a; }
+        .card-content { padding: 1.2rem; }
+        .badge { background: #e0f5e8; color: #1e6b3b; padding: 0.25rem 0.7rem; border-radius: 20px; font-size: 0.75rem; font-weight: 700; }
+        .big-number { font-size: 2.1rem; font-weight: 700; color: #1e8a4c; }
+        .ranking-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+        .ranking-table th, .ranking-table td { padding: 0.7rem 0.6rem; text-align: left; border-bottom: 1px solid #e2edf2; }
         .ranking-table th { background: #f9fafb; font-weight: 600; color: #4a627a; }
         .score-high { color: #1e8a4c; font-weight: 700; }
         .score-mid { color: #eab308; font-weight: 600; }
         .score-low { color: #ef4444; font-weight: 600; }
-        .text-right { text-align: right; }
+        .last-updated { font-size: 0.7rem; color: #8ba0b0; text-align: right; margin: 1rem 0; }
+        .footer { text-align: center; font-size: 0.7rem; color: #8ba0b0; margin-top: 1.5rem; }
     </style>
 </head>
 <body>
 <div class="dashboard">
     <div class="header">
         <h1>🔬 Quantum Computing System</h1>
-        <p>Pure Play Quantum Stocks • 7 Tickers • 10% Trailing Stop</p>
+        <p>7 Quantum Stocks • Momentum Scoring • Single Position • 10% Trailing Stop</p>
     </div>
 
     <div class="kpi-grid" id="kpiContainer">
-        <div class="loading">Loading...</div>
+        <div class="loading">Loading dashboard...</div>
     </div>
 
-    <div class="full-width-card">
+    <div class="full-width-card" style="background:white; border-radius:1rem; border:1px solid #e2e8f0; margin-bottom:1.2rem;">
         <div class="card-header">🏆 Quantum Stock Rankings</div>
         <div class="card-content">
             <table class="ranking-table" id="rankingsTable">
                 <thead><tr><th>Rank</th><th>Ticker</th><th>Close</th><th>Score</th></tr></thead>
-                <tbody id="rankingsBody"><tr><td colspan="4" class="loading">Loading...<\/td><\/tr><\/tbody>
-            <\/table>
-        <\/div>
-    <\/div>
+                <tbody id="rankingsBody"></tbody>
+            </table>
+        </div>
+    </div>
 
     <div class="two-col">
         <div class="card">
             <div class="card-header">📌 Current Position</div>
-            <div class="card-content" id="positionCard"><div class="loading">Loading...</div></div>
+            <div class="card-content" id="positionCard"></div>
         </div>
         <div class="card">
             <div class="card-header">📈 Performance Summary</div>
-            <div class="card-content" id="performanceSummary"><div class="loading">Loading...</div></div>
+            <div class="card-content" id="performanceSummary"></div>
         </div>
     </div>
 
-    <div class="full-width-card">
+    <div class="full-width-card" style="background:white; border-radius:1rem; border:1px solid #e2e8f0;">
         <div class="card-header">📜 Closed Trades</div>
         <div class="card-content">
             <table class="ranking-table" id="tradesTable">
-                <thead><tr><th>Ticker</th><th>Entry Date</th><th>Exit Date</th><th>Return %</th><th>P&L</th><th>Exit Reason</th></tr></thead>
-                <tbody id="tradesBody"><tr><td colspan="6" class="loading">Loading...<\/td><\/tr><\/tbody>
-            <\/table>
-        <\/div>
-    <\/div>
+                <thead><tr><th>Ticker</th><th>Entry</th><th>Exit</th><th>Return %</th><th>P&L</th><th>Reason</th></tr></thead>
+                <tbody id="tradesBody"></tbody>
+            </table>
+        </div>
+    </div>
 
-    <div class="last-updated" id="lastUpdated"><\/div>
-    <div class="footer">⚡ 10% Trailing Stop • Single Position • Min Score: 4.0<\/div>
-<\/div>
+    <div class="last-updated" id="lastUpdated"></div>
+    <div class="footer">End-of-Day System • Updated after market close</div>
+</div>
 
 <script>
     const STARTING_BALANCE = 5000;
-    const TICKERS = ['HQ', 'IONQ', 'RGTI', 'QBTS', 'QUBT', 'INFQ', 'XNDU'];
+    const TICKERS = ['IONQ', 'QBTS', 'RGTI', 'QUBT', 'XNDU', 'INFQ', 'HQ'];
 
-    const PRICES_URL = 'https://raw.githubusercontent.com/mrpink970/sector-research-system/main/data/quantum/prices.csv';
-    const SCORES_URL = 'https://raw.githubusercontent.com/mrpink970/sector-research-system/main/data/quantum/scores.csv';
-    const POSITIONS_URL = 'https://raw.githubusercontent.com/mrpink970/sector-research-system/main/data/quantum/positions.csv';
-    const TRADES_URL = 'https://raw.githubusercontent.com/mrpink970/sector-research-system/main/data/quantum/trade_log.csv';
-    const PERFORMANCE_URL = 'https://raw.githubusercontent.com/mrpink970/sector-research-system/main/data/quantum/performance.csv';
+    const BASE = 'https://raw.githubusercontent.com/mrpink970/sector-research-system/main/data/quantum/';
 
-    async function fetchCSV(url) {
+    async function fetchCSV(name) {
         try {
-            const response = await fetch(url + '?t=' + new Date().getTime());
-            if (!response.ok) return null;
-            return await response.text();
-        } catch (error) { return null; }
+            const res = await fetch(BASE + name + '?t=' + Date.now());
+            return res.ok ? await res.text() : null;
+        } catch { return null; }
     }
 
-    function parseCSVtoJSON(csvText) {
-        if (!csvText) return [];
+    function parseLastLine(csvText) {
+        if (!csvText) return null;
         const lines = csvText.trim().split('\n');
-        if (lines.length < 2) return [];
+        if (lines.length < 2) return null;
         const headers = lines[0].split(',').map(h => h.trim());
-        const result = [];
-        for (let i = 1; i < lines.length; i++) {
-            const values = lines[i].split(',');
-            const row = {};
-            for (let j = 0; j < headers.length; j++) {
-                let val = values[j] ? values[j].trim() : '';
-                if (!isNaN(val) && val !== '') row[headers[j]] = parseFloat(val);
-                else row[headers[j]] = val;
-            }
-            result.push(row);
-        }
-        return result;
-    }
-
-    function formatCurrency(value) {
-        if (value === undefined || value === null) return '$0.00';
-        return '$' + value.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-    }
-
-    function formatPercent(value) {
-        if (value === undefined || value === null) return '0%';
-        const sign = value >= 0 ? '+' : '';
-        return sign + value.toFixed(1) + '%';
+        const values = lines[lines.length-1].split(',').map(v => v.trim());
+        const row = {};
+        headers.forEach((h, i) => {
+            const val = values[i];
+            row[h] = !isNaN(val) && val !== '' ? parseFloat(val) : val;
+        });
+        return row;
     }
 
     async function loadDashboard() {
-        // Load all data
-        const pricesData = parseCSVtoJSON(await fetchCSV(PRICES_URL));
-        const scoresData = parseCSVtoJSON(await fetchCSV(SCORES_URL));
-        const positions = parseCSVtoJSON(await fetchCSV(POSITIONS_URL));
-        let trades = parseCSVtoJSON(await fetchCSV(TRADES_URL));
-        const perf = parseCSVtoJSON(await fetchCSV(PERFORMANCE_URL));
-        
-        // If trades is empty from CSV, try direct fetch as fallback
-        if (trades.length === 0) {
-            const tradeText = await fetchCSV(TRADES_URL);
-            if (tradeText) {
-                const lines = tradeText.trim().split('\n');
-                if (lines.length >= 2) {
-                    const headers = lines[0].split(',').map(h => h.trim());
-                    for (let i = 1; i < lines.length; i++) {
-                        const values = lines[i].split(',');
-                        const row = {};
-                        for (let j = 0; j < headers.length; j++) {
-                            let val = values[j] ? values[j].trim() : '';
-                            if (!isNaN(val) && val !== '') row[headers[j]] = parseFloat(val);
-                            else row[headers[j]] = val;
-                        }
-                        trades.push(row);
-                    }
-                }
-            }
-        }
-        
-        // Get latest prices and scores
-        let latestPrices = {};
-        let latestScores = {};
-        let lastDate = '';
-        
-        if (pricesData.length > 0) {
-            const lastRow = pricesData[pricesData.length - 1];
-            lastDate = lastRow.date || '';
-            for (const ticker of TICKERS) {
-                latestPrices[ticker] = lastRow[ticker] || 0;
-            }
-        }
-        
-        if (scoresData.length > 0) {
-            const lastRow = scoresData[scoresData.length - 1];
-            for (const ticker of TICKERS) {
-                latestScores[ticker] = lastRow[ticker] || 0;
-            }
-        }
-        
-        // Build rankings
-        const rankings = [];
-        for (const ticker of TICKERS) {
-            rankings.push({
-                ticker: ticker,
-                price: latestPrices[ticker] || 0,
-                score: latestScores[ticker] || 0
-            });
-        }
-        rankings.sort((a, b) => b.score - a.score);
-        
-        // Render rankings
-        const rankBody = document.getElementById('rankingsBody');
-        rankBody.innerHTML = rankings.map((r, idx) => {
-            let scoreClass = 'score-low';
-            if (r.score >= 5) scoreClass = 'score-high';
-            else if (r.score >= 2) scoreClass = 'score-mid';
-            return `<tr>
-                <td>${idx + 1}</td>
+        const pricesText = await fetchCSV('prices.csv');
+        const scoresText = await fetchCSV('scores.csv');
+        const posText = await fetchCSV('positions.csv');
+        const tradeText = await fetchCSV('trade_log.csv');
+        const perfText = await fetchCSV('performance.csv');
+
+        const latestPrice = parseLastLine(pricesText);
+        const latestScore = parseLastLine(scoresText);
+        const position = parseLastLine(posText);
+        const perf = parseLastLine(perfText);
+
+        // Rankings
+        let rankings = TICKERS.map(t => ({
+            ticker: t,
+            price: latestPrice ? latestPrice[t] || 0 : 0,
+            score: latestScore ? latestScore[t] || 0 : 0
+        }));
+        rankings.sort((a,b) => b.score - a.score);
+
+        document.getElementById('rankingsBody').innerHTML = rankings.map((r,i) => `
+            <tr>
+                <td>${i+1}</td>
                 <td><strong>${r.ticker}</strong></td>
-                <td>${r.price > 0 ? formatCurrency(r.price) : 'N/A'}</td>
-                <td class="${scoreClass}">${r.score.toFixed(1)}<\/td>
-            </tr>`;
-        }).join('');
-        
-        // Calculate performance from trades
-        let realizedPL = 0;
-        let winningTrades = 0;
-        if (trades.length > 0) {
-            for (const t of trades) {
-                const pl = t.gross_pl || 0;
-                realizedPL += pl;
-                if (pl > 0) winningTrades++;
-            }
-        }
-        
-        // Open position
-        let openPosition = null;
-        let openCost = 0;
-        if (positions.length > 0) {
-            const pos = positions[0];
-            openCost = (pos.entry_price || 0) * (pos.shares || 0);
-            openPosition = pos;
-        }
-        
-        const cashBalance = Math.max(0, STARTING_BALANCE + realizedPL - openCost);
-        const currentValue = openPosition ? (openPosition.highest_price || openPosition.entry_price) * (openPosition.shares || 0) : 0;
-        const totalEquity = cashBalance + currentValue;
-        const totalReturn = totalEquity - STARTING_BALANCE;
-        const totalReturnPct = (totalReturn / STARTING_BALANCE) * 100;
-        const winRate = trades.length > 0 ? (winningTrades / trades.length) * 100 : 0;
-        
-        // KPI cards
+                <td>$${r.price.toFixed(2)}</td>
+                <td class="${r.score >= 8 ? 'score-high' : r.score >= 4 ? 'score-mid' : 'score-low'}">${r.score}</td>
+            </tr>
+        `).join('');
+
+        // KPIs
+        const equity = perf ? perf.final_balance || STARTING_BALANCE : STARTING_BALANCE;
+        const returnPct = perf ? perf.total_return_pct || 0 : 0;
+
         document.getElementById('kpiContainer').innerHTML = `
-            <div class="kpi-card"><div class="kpi-label">💰 Cash Balance</div><div class="kpi-value">${formatCurrency(cashBalance)}</div><div class="small-note">Started: ${formatCurrency(STARTING_BALANCE)}</div></div>
-            <div class="kpi-card"><div class="kpi-label">📈 Total Equity</div><div class="kpi-value positive">${formatCurrency(totalEquity)}</div><div class="small-note">Cash + Position Value</div></div>
-            <div class="kpi-card"><div class="kpi-label">🏆 Win Rate</div><div class="kpi-value">${winRate.toFixed(1)}%</div><div class="small-note">${trades.length} trades</div></div>
-            <div class="kpi-card"><div class="kpi-label">📊 Total Return</div><div class="kpi-value ${totalReturnPct >= 0 ? 'positive' : 'negative'}">${formatPercent(totalReturnPct)}</div><div class="small-note">${totalReturnPct >= 0 ? '+' : ''}${formatCurrency(totalReturn)}</div></div>
-            <div class="kpi-card"><div class="kpi-label">📌 Open Positions</div><div class="kpi-value">${positions.length}</div><div class="small-note">Cost: ${formatCurrency(openCost)}</div></div>
+            <div class="kpi-card"><div class="kpi-label">Cash Balance</div><div class="kpi-value">$${((position ? 0 : equity).toFixed(2))}</div></div>
+            <div class="kpi-card"><div class="kpi-label">Total Equity</div><div class="kpi-value positive">$${equity.toFixed(2)}</div></div>
+            <div class="kpi-card"><div class="kpi-label">Win Rate</div><div class="kpi-value">${perf ? perf.win_rate_pct : 0}%</div></div>
+            <div class="kpi-card"><div class="kpi-label">Total Return</div><div class="kpi-value ${returnPct>=0?'positive':'negative'}">${returnPct >= 0 ? '+' : ''}${returnPct}%</div></div>
+            <div class="kpi-card"><div class="kpi-label">Open Positions</div><div class="kpi-value">${position ? 1 : 0}</div></div>
         `;
-        
-        // Position card
-        if (openPosition) {
-            const entry = openPosition.entry_price;
-            const current = openPosition.highest_price || entry;
-            const shares = openPosition.shares;
-            const pnl = (current - entry) * shares;
-            const pnlPct = ((current - entry) / entry) * 100;
-            document.getElementById('positionCard').innerHTML = `
-                <div class="current-position-card">
-                    <div><span class="badge">${openPosition.ticker}</span></div>
-                    <div class="big-number">${formatPercent(pnlPct)}</div>
-                    <div>Entry: ${formatCurrency(entry)} | Current: ${formatCurrency(current)}</div>
-                    <div>Shares: ${shares} | Cost: ${formatCurrency(entry * shares)}</div>
-                    <div>P&L: <span class="${pnl >= 0 ? 'positive' : 'negative'}">${pnl >= 0 ? '+' : ''}${formatCurrency(pnl)}</span></div>
-                    <div class="small-note">Entry: ${openPosition.entry_date || 'N/A'}</div>
+
+        // Current Position
+        const posCard = document.getElementById('positionCard');
+        if (position) {
+            const entry = position.entry_price;
+            const current = latestPrice ? latestPrice[position.ticker] || entry : entry;
+            const unrealized = (current - entry) * position.shares;
+            posCard.innerHTML = `
+                <div style="text-align:center; background:#f0fdf4; padding:1.2rem; border-radius:12px;">
+                    <div><span class="badge">${position.ticker}</span></div>
+                    <div class="big-number">${((current/entry-1)*100).toFixed(1)}%</div>
+                    <div>Entry ${entry} → Current ${current.toFixed(2)}</div>
+                    <div>Shares: ${position.shares} | Unrealized: <span class="${unrealized>=0?'positive':'negative'}">$${unrealized.toFixed(2)}</span></div>
+                    <div class="small-note">Entry Score: ${position.entry_score} | ${position.entry_date}</div>
                 </div>
             `;
         } else {
-            document.getElementById('positionCard').innerHTML = `<div class="current-position-card"><div style="font-size:1.2rem;">📭 No Open Position</div><div class="small-note">In cash • Waiting for signal</div></div>`;
+            posCard.innerHTML = `<div style="text-align:center; padding:2rem; color:#666;">No Open Position<br><small>In Cash</small></div>`;
         }
-        
-        // Performance summary
-        document.getElementById('performanceSummary').innerHTML = `
-            <div><strong>Starting:</strong> ${formatCurrency(STARTING_BALANCE)}</div>
-            <div><strong>Cash:</strong> ${formatCurrency(cashBalance)}</div>
-            <div><strong>Equity:</strong> <span class="positive">${formatCurrency(totalEquity)}</span></div>
-            <div><strong>Return:</strong> <span class="${totalReturnPct >= 0 ? 'positive' : 'negative'}">${formatPercent(totalReturnPct)}</span></div>
-            <hr>
-            ${openPosition ? `<div><strong>${openPosition.ticker}:</strong> ${openPosition.shares} shares @ ${formatCurrency(openPosition.entry_price)}</div><div>Unrealized: ${((openPosition.highest_price || openPosition.entry_price) - openPosition.entry_price) * openPosition.shares >= 0 ? '+' : ''}${formatCurrency(((openPosition.highest_price || openPosition.entry_price) - openPosition.entry_price) * openPosition.shares)}</div>` : '<div>No open position</div>'}
-            <hr>
-            <div><strong>Realized P&L:</strong> ${realizedPL >= 0 ? '+' : ''}${formatCurrency(realizedPL)}</div>
-        `;
-        
-        // Trades table - direct display
-        const tbody = document.getElementById('tradesBody');
-        if (trades.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="6">No closed trades yet<\/td><\/tr>';
-        } else {
-            tbody.innerHTML = '';
-            for (let i = 0; i < trades.length; i++) {
-                const t = trades[i];
-                const ret = t.return_pct || 0;
-                const pl = t.gross_pl || 0;
-                tbody.innerHTML += `<tr>
-                    <td><strong>${t.ticker || '?'}</strong></td>
-                    <td>${t.entry_date || '?'}</td>
-                    <td>${t.exit_date || '?'}</td>
-                    <td class="${ret >= 0 ? 'positive' : 'negative'}">${ret >= 0 ? '+' : ''}${ret.toFixed(1)}%<\/td>
-                    <td class="${pl >= 0 ? 'positive' : 'negative'}">${pl >= 0 ? '+' : ''}${formatCurrency(pl)}<\/td>
-                    <td>${t.exit_reason || '?'}<\/td>
-                </tr>`;
-            }
-        }
-        
-        document.getElementById('lastUpdated').innerHTML = `Last updated: ${new Date().toLocaleString()} | Data: ${lastDate}`;
-    }
-    
-    loadDashboard();
-    setInterval(loadDashboard, 300000);
-</script>
-</body>
-</html>
+
+        // Performance Summary
+        document.getElementById('performanceSummary').innerHTML = perf ? `
+            <strong>Starting:</strong> $${STARTING_BALANCE}<br>
+            <strong>Current Equity:</strong> $${perf.final_balance.toFixed(2)}<br>
+            <strong>Total Return:</strong> <span class="${returnPct>=0?'positive':'negative'}">${returnPct}%</span><br>
+            <strong>Net Profit:</strong> $${perf.net_profit_dollars.toFixed(2)}
+        ` : 'Loading performance...';
+
+        // Trades
+        const trades = tradeText ? tradeText.trim().split('\n').slice(1).map(line => {
+            const vals = line.split(',');
+            return {
+                ticker: vals[0], entry_date: vals[
