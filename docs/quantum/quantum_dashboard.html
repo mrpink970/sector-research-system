@@ -38,6 +38,9 @@
         .score-mid { color: #eab308; font-weight: 600; }
         .score-low { color: #ef4444; font-weight: 600; }
         .text-right { text-align: right; }
+        .trade-table { width: 100%; border-collapse: collapse; font-size: 0.75rem; }
+        .trade-table th, .trade-table td { padding: 0.5rem; text-align: left; border-bottom: 1px solid #ddd; }
+        .trade-table th { background: #f0f0f0; }
     </style>
 </head>
 <body>
@@ -60,7 +63,7 @@
         <div class="card-content">
             <table class="ranking-table">
                 <thead><tr><th>Rank</th><th>Ticker</th><th>Close</th><th>Momentum Score</th></tr></thead>
-                <tbody id="rankingsBody"><tr><td colspan="4" class="loading">Loading...<\/td><\/tr><\/tbody>
+                <tbody id="rankingsBody"><td><td colspan="4" class="loading">Loading...<\/td><\/tr><\/tbody>
             <\/table>
             <div class="small-note">Scores based on 1d/3d/5d returns + trend strength + volatility<\/div>
         <\/div>
@@ -78,18 +81,22 @@
     <\/div>
 
     <div class="full-width-card">
-        <div class="card-header">📜 Recent Closed Trades<\/div>
+        <div class="card-header">📜 Recent Closed Trades</div>
         <div class="card-content">
-            <table class="ranking-table">
-                <thead><tr><th>Ticker</th><th>Entry Date</th><th>Exit Date</th><th>Shares</th><th>Entry $</th><th>Exit $</th><th>Return %</th><th>P&L</th><th>Exit Reason</th></tr></thead>
-                <tbody id="tradesBody"><\/tbody>
-            <\/table>
-        <\/div>
-    <\/div>
+            <div id="tradesContainer">
+                <table class="trade-table" id="tradesTable">
+                    <thead>
+                        <tr><th>Ticker</th><th>Entry Date</th><th>Exit Date</th><th>Shares</th><th>Entry $</th><th>Exit $</th><th>Return %</th><th>P&L</th><th>Exit Reason</th></tr>
+                    </thead>
+                    <tbody id="tradesBody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
 
-    <div class="last-updated" id="lastUpdated"><\/div>
-    <div class="footer">⚡ 10% Trailing Stop • Single Position • Scores update daily (6 PM ET)<\/div>
-<\/div>
+    <div class="last-updated" id="lastUpdated"></div>
+    <div class="footer">⚡ 10% Trailing Stop • Single Position • Scores update daily (6 PM ET)</div>
+</div>
 
 <script>
     const STARTING_BALANCE = 5000;
@@ -147,11 +154,11 @@
                     <td><strong>${t.ticker || '?'}</strong></td>
                     <td>${t.entry_date || '?'}</td>
                     <td>${t.exit_date || '?'}</td>
-                    <td class="text-right">${t.shares || 0}<\/td>
-                    <td class="text-right">$${(t.entry_price || 0).toFixed(2)}<\/td>
-                    <td class="text-right">$${(t.exit_price || 0).toFixed(2)}<\/td>
-                    <td class="text-right ${ret >= 0 ? 'positive' : 'negative'}">${ret >= 0 ? '+' : ''}${ret.toFixed(1)}%<\/td>
-                    <td class="text-right ${pl >= 0 ? 'positive' : 'negative'}">${pl >= 0 ? '+' : ''}$${pl.toFixed(2)}<\/td>
+                    <td>${t.shares || 0}<\/td>
+                    <td>$${(t.entry_price || 0).toFixed(2)}<\/td>
+                    <td>$${(t.exit_price || 0).toFixed(2)}<\/td>
+                    <td class="${ret >= 0 ? 'positive' : 'negative'}">${ret >= 0 ? '+' : ''}${ret.toFixed(1)}%<\/td>
+                    <td class="${pl >= 0 ? 'positive' : 'negative'}">${pl >= 0 ? '+' : ''}$${pl.toFixed(2)}<\/td>
                     <td>${t.exit_reason || '?'}<\/td>
                 </tr>`;
             }
