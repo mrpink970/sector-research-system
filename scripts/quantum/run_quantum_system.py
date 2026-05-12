@@ -37,7 +37,6 @@ def main():
     print("🔬 QUANTUM COMPUTING PAPER TRADING SYSTEM")
     print("=" * 60)
     
-    # Fetch data
     print("\n📥 Fetching latest prices...")
     data = yf.download(TICKERS, period="6mo", progress=False)
     if isinstance(data.columns, pd.MultiIndex):
@@ -47,7 +46,6 @@ def main():
     
     print(f"✅ Data up to {closes.index[-1].date()}")
     
-    # Scores
     ret_1d = closes.pct_change() * 100
     ret_3d = closes.pct_change(3) * 100
     ret_5d = closes.pct_change(5) * 100
@@ -95,10 +93,9 @@ def main():
             pos['highest_price'] = highest
             positions.iloc[0] = pos
             positions.to_csv(POSITIONS_PATH, index=False)
-            print(f"📍 Holding {ticker}")
+            print(f"📍 Holding {ticker} | Score: {latest_scores[ticker]:.2f} | Highest: ${highest:.2f}")
 
     # ENTRY
-    entered = False
     if positions.empty:
         valid = {t: latest_scores[t] for t in TICKERS if closes[t].dropna().count() >= MIN_DATA_DAYS}
         if valid:
@@ -115,9 +112,8 @@ def main():
                     }])
                     new_pos.to_csv(POSITIONS_PATH, index=False)
                     print(f"🟢 ENTRY {best} @ ${price:.2f} | Score: {score} | Shares: {shares}")
-                    entered = True
 
-    # Reload positions after possible entry
+    # Reload positions
     positions = pd.read_csv(POSITIONS_PATH) if POSITIONS_PATH.exists() else pd.DataFrame(columns=["ticker","entry_date","entry_price","shares","highest_price","trailing_stop","entry_score"])
 
     # Performance
