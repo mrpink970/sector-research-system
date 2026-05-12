@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """
-Quantum Computing System - FINAL WORKING VERSION
+Quantum Computing System - Paper Trading
+Saves simple CSV files for dashboard (prices.csv, scores.csv)
 """
 
 from __future__ import annotations
@@ -8,7 +9,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 import pandas as pd
 import yaml
@@ -32,8 +33,8 @@ def load_config() -> dict:
 
 
 def fetch_prices(tickers: List[str]) -> pd.DataFrame:
-    """Fetch closing prices"""
-    start = (datetime.now() - timedelta(days=90)).strftime("%Y-%m-%d")
+    """Fetch closing prices for all tickers"""
+    start = (datetime.now() - timedelta(days=120)).strftime("%Y-%m-%d")
     data = yf.download(tickers, start=start, progress=False)
     if data.empty:
         return pd.DataFrame()
@@ -41,7 +42,7 @@ def fetch_prices(tickers: List[str]) -> pd.DataFrame:
 
 
 def calculate_score(ret_1d: float, ret_3d: float, ret_5d: float) -> float:
-    """Momentum score"""
+    """Momentum score - same as other systems"""
     score = (ret_1d * 0.30) + (ret_3d * 0.25) + (ret_5d * 0.20)
     
     if ret_1d > 0 and ret_3d > 0 and ret_5d > 0:
@@ -61,11 +62,14 @@ def get_qqq_regime() -> str:
     hist = qqq.history(period="3mo")
     if len(hist) < 50:
         return "BULL"
-    
     current = hist['Close'].iloc[-1]
     ma50 = hist['Close'].rolling(50).mean().iloc[-1]
-    
     return "BULL" if current > ma50 else "CASH"
+
+
+def get_ticker_data_days(df: pd.DataFrame, ticker: str) -> int:
+    """Get number of days with non-NaN data for a ticker"""
+    return df[ticker].dropna().shape[0]
 
 
 def main():
@@ -94,12 +98,19 @@ def main():
     
     print(f"✅ Data: {df.index[0].date()} to {df.index[-1].date()}")
     
+    # Show data availability for each ticker
+    print("\n📊 Data availability:")
+    for ticker in tickers:
+        days = get_ticker_data_days(df, ticker)
+        status = "✅" if days >= 30 else "⚠️" if days >= 10 else "❌"
+        print(f"   {status} {ticker}: {days} days")
+    
     # Calculate returns
     ret_1d = df.pct_change() * 100
     ret_3d = df.pct_change(3) * 100
     ret_5d = df.pct_change(5) * 100
     
-    # Calculate scores for each day
+    # Calculate daily scores
     scores = pd.DataFrame(index=df.index)
     for ticker in tickers:
         scores[ticker] = [
@@ -111,64 +122,47 @@ def main():
             for i in range(len(df))
         ]
     
-    # Save scores and prices - convert numpy types
-    scores_with_prices = []
-    for i in range(len(df)):
-        date = df.index[i]
-        
-        # Convert to regular Python float and round to 2 decimals
-        price_dict = {}
-        for ticker in tickers:
-            val = df[ticker].iloc[i]
-            if pd.notna(val):
-                price_dict[ticker] = round(float(val), 2)
-        
-        score_dict = {}
-        for ticker in tickers:
-            val = scores[ticker].iloc[i]
-            score_dict[ticker] = round(float(val), 2)
-        
-        scores_with_prices.append({
-            'date': date.strftime("%Y-%m-%d"),
-            'scores': str(score_dict),
-            'prices': str(price_dict)
-        })
+    # Save prices.csv (simple columns)
+    prices_df = df.round(2)
+    prices_df.to_csv("data/quantum/prices.csv")
+    print(f"\n✅ Saved prices.csv ({len(prices_df)} rows)")
     
-    scores_df = pd.DataFrame(scores_with_prices)
-    scores_df.to_csv("data/quantum/quantum_scores.csv", index=False)
-    print(f"✅ Saved scores and prices")
+    # Save scores.csv (simple columns)
+    scores_df = scores.round(2)
+    scores_df.to_csv("data/quantum/scores.csv")
+    print(f"✅ Saved scores.csv ({len(scores_df)} rows)")
     
-    # Run simulation
+    # Run paper trading simulation
     cash = start_balance
-    position = None
+    position: Optional[Position] = None
     trades = []
     regime = get_qqq_regime()
     
     print(f"\n📊 Regime: {regime}")
     print(f"🔄 Running simulation...\n")
     
-    for i in range(5, len(df) - 1):
+    for i in range(10, len(df) - 1):
         date = df.index[i]
-        next_day = df.index[i + 1]
+        next_date = df.index[i + 1]
         
-        # Exit logic
+        # === EXIT ===
         if position:
-            ticker = position['ticker']
+            ticker = position.ticker
             current = df[ticker].iloc[i]
-            high = max(position['highest_price'], current)
+            high = max(position.highest_price, current)
             stop = high * (1 - trailing_stop_pct)
             
             if current <= stop:
                 exit_price = stop
-                pl = (exit_price - position['entry_price']) * position['shares']
-                ret = (exit_price / position['entry_price'] - 1) * 100
+                pl = (exit_price - position.entry_price) * position.shares
+                ret = (exit_price / position.entry_price - 1) * 100
                 trades.append({
                     'ticker': ticker,
-                    'entry_date': position['entry_date'],
-                    'exit_date': next_day.strftime("%Y-%m-%d"),
-                    'entry_price': round(position['entry_price'], 2),
+                    'entry_date': position.entry_date,
+                    'exit_date': next_date.strftime("%Y-%m-%d"),
+                    'entry_price': round(position.entry_price, 2),
                     'exit_price': round(exit_price, 2),
-                    'shares': position['shares'],
+                    'shares': position.shares,
                     'return_pct': round(ret, 2),
                     'gross_pl': round(pl, 2),
                     'exit_reason': 'trailing_stop'
@@ -177,27 +171,36 @@ def main():
                 print(f"  EXIT: {ticker} @ ${exit_price:.2f} ({ret:+.1f}%)")
                 position = None
             else:
-                position['highest_price'] = high
+                position.highest_price = high
         
-        # Entry logic
+        # === ENTRY ===
         if not position and regime == "BULL":
-            today_scores = {ticker: float(scores[ticker].iloc[i]) for ticker in tickers}
-            best = max(today_scores, key=today_scores.get)
-            best_score = today_scores[best]
+            # Check each ticker's data availability before considering
+            today_scores = {}
+            for ticker in tickers:
+                days = get_ticker_data_days(df, ticker)
+                if days >= 20:  # Need at least 20 days of data to consider trading
+                    today_scores[ticker] = float(scores[ticker].iloc[i])
+                else:
+                    today_scores[ticker] = -999  # Skip
+            
+            best_ticker = max(today_scores, key=lambda x: today_scores[x])
+            best_score = today_scores[best_ticker]
             
             if best_score >= min_score:
-                entry_price = float(df[best].iloc[i + 1])
+                entry_price = float(df[best_ticker].iloc[i + 1])
                 shares = int(cash / entry_price)
                 if shares > 0:
-                    position = {
-                        'ticker': best,
-                        'entry_date': next_day.strftime("%Y-%m-%d"),
-                        'entry_price': entry_price,
-                        'shares': shares,
-                        'highest_price': entry_price,
-                        'entry_score': best_score
-                    }
-                    print(f"  ENTRY: {best} @ ${entry_price:.2f} ({shares} shares, score: {best_score:.1f})")
+                    position = Position(
+                        ticker=best_ticker,
+                        entry_date=next_date.strftime("%Y-%m-%d"),
+                        entry_price=entry_price,
+                        shares=shares,
+                        highest_price=entry_price,
+                        trailing_stop=entry_price * (1 - trailing_stop_pct),
+                        entry_score=best_score
+                    )
+                    print(f"  ENTRY: {best_ticker} @ ${entry_price:.2f} ({shares} shares, score: {best_score:.1f})")
                     cash -= entry_price * shares
     
     # Save results
@@ -207,14 +210,11 @@ def main():
     if trades:
         trade_df = pd.DataFrame(trades)
         trade_df.to_csv(data_dir / "trade_log.csv", index=False)
+        print(f"\n✅ Saved {len(trades)} trades")
+        
         total_pl = sum(t['gross_pl'] for t in trades)
         final = start_balance + total_pl
         ret_pct = (final / start_balance - 1) * 100
-        
-        print(f"\n📊 RESULTS:")
-        print(f"   Trades: {len(trades)}")
-        print(f"   Return: {ret_pct:+.1f}%")
-        print(f"   Final: ${final:,.2f}")
         
         perf_df = pd.DataFrame([{
             'total_trades': len(trades),
@@ -224,20 +224,24 @@ def main():
             'final_balance': round(final, 2)
         }])
         perf_df.to_csv(data_dir / "performance.csv", index=False)
+        print(f"📊 Return: {ret_pct:+.1f}% | Final: ${final:,.2f}")
+    else:
+        print(f"\n📊 No trades executed")
     
     if position:
         pos_df = pd.DataFrame([{
-            'ticker': position['ticker'],
-            'entry_date': position['entry_date'],
-            'entry_price': round(position['entry_price'], 2),
-            'shares': position['shares'],
-            'highest_price': round(position['highest_price'], 2),
-            'trailing_stop': round(position['highest_price'] * (1 - trailing_stop_pct), 2),
-            'entry_score': round(position['entry_score'], 2)
+            'ticker': position.ticker,
+            'entry_date': position.entry_date,
+            'entry_price': position.entry_price,
+            'shares': position.shares,
+            'highest_price': position.highest_price,
+            'trailing_stop': position.trailing_stop,
+            'entry_score': position.entry_score
         }])
         pos_df.to_csv(data_dir / "positions.csv", index=False)
+        print(f"📌 Open position: {position.ticker}")
     
-    print(f"\n✅ Complete")
+    print(f"\n✅ Quantum System complete")
 
 
 if __name__ == "__main__":
