@@ -17,7 +17,6 @@
         .kpi-value { font-size: 1.65rem; font-weight: 700; color: #1a4d7a; }
         .positive { color: #1e8a4c; }
         .negative { color: #c2412c; }
-        .two-col { display: flex; flex-wrap: wrap; gap: 1.2rem; margin-bottom: 1.2rem; }
         .card { background: white; border-radius: 1rem; border: 1px solid #e2e8f0; overflow: hidden; flex: 1; min-width: 280px; }
         .card-header { padding: 0.9rem 1.2rem; font-weight: 600; font-size: 0.98rem; border-bottom: 1px solid #edf2f7; background: #fafcfd; color: #2c5a7a; }
         .card-content { padding: 1.2rem; line-height: 1.5; }
@@ -71,3 +70,47 @@
                 <tbody id="tradesBody"></tbody>
             </table>
         </div>
+    </div>
+
+    <div class="last-updated" id="lastUpdated"></div>
+    <div class="footer">End-of-Day System • Updated after market close</div>
+</div>
+
+<script>
+    const TICKERS = ['IONQ', 'QBTS', 'RGTI', 'QUBT', 'XNDU', 'INFQ', 'HQ'];
+    const BASE = 'https://raw.githubusercontent.com/mrpink970/sector-research-system/main/data/quantum/';
+    const STARTING = 5000;
+
+    async function fetchCSV(name) {
+        try {
+            const res = await fetch(BASE + name + '?t=' + Date.now());
+            return res.ok ? await res.text() : '';
+        } catch { return ''; }
+    }
+
+    function parseLastLine(text) {
+        if (!text) return null;
+        const lines = text.trim().split('\n');
+        if (lines.length < 2) return null;
+        const headers = lines[0].split(',').map(h => h.trim());
+        const vals = lines[lines.length-1].split(',').map(v => v.trim());
+        const row = {};
+        headers.forEach((h,i) => {
+            const v = vals[i] || '';
+            row[h] = (!isNaN(v) && v !== '') ? parseFloat(v) : v;
+        });
+        return row;
+    }
+
+    async function loadDashboard() {
+        const [pText, sText, posText, tText, perfText] = await Promise.all([
+            fetchCSV('prices.csv'), fetchCSV('scores.csv'), fetchCSV('positions.csv'),
+            fetchCSV('trade_log.csv'), fetchCSV('performance.csv')
+        ]);
+
+        const price = parseLastLine(pText);
+        const score = parseLastLine(sText);
+        const pos = parseLastLine(posText);
+        const perf = parseLastLine(perfText);
+
+        // Rankings
