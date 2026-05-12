@@ -82,7 +82,9 @@
         <div class="card-content">
             <table class="ranking-table">
                 <thead><tr><th>Ticker</th><th>Entry Date</th><th>Exit Date</th><th>Shares</th><th>Entry $</th><th>Exit $</th><th>Return %</th><th>P&L</th><th>Exit Reason</th></tr></thead>
-                <tbody id="tradesBody"><tr><td colspan="9" class="loading">Loading...<\/td><\/tr><\/tbody>
+                <tbody id="tradesBody">
+                    <!-- Trade will appear here -->
+                </tbody>
             <\/table>
         <\/div>
     <\/div>
@@ -131,22 +133,31 @@
         // Fetch all CSVs
         const scoresText = await fetchCSV(SCORES_URL);
         const positions = parseCSV(await fetchCSV(POSITIONS_URL));
-        let trades = parseCSV(await fetchCSV(TRADE_URL));
+        const trades = parseCSV(await fetchCSV(TRADE_URL));
         const perf = parseCSV(await fetchCSV(PERF_URL));
         
-        // HARDCODE trades if empty (for testing)
+        // Display trades directly
+        const tbody = document.getElementById('tradesBody');
         if (trades.length === 0) {
-            trades = [{
-                ticker: 'RGTI',
-                entry_date: '2026-02-26',
-                exit_date: '2026-03-13',
-                entry_price: 18.64,
-                exit_price: 16.78,
-                shares: 268,
-                return_pct: -10.0,
-                gross_pl: -499.55,
-                exit_reason: 'trailing_stop'
-            }];
+            tbody.innerHTML = '<tr><td colspan="9">No closed trades yet<\/td><\/tr>';
+        } else {
+            tbody.innerHTML = '';
+            for (let i = 0; i < trades.length; i++) {
+                const t = trades[i];
+                const ret = t.return_pct || 0;
+                const pl = t.gross_pl || 0;
+                tbody.innerHTML += `<tr>
+                    <td><strong>${t.ticker || '?'}</strong></td>
+                    <td>${t.entry_date || '?'}</td>
+                    <td>${t.exit_date || '?'}</td>
+                    <td class="text-right">${t.shares || 0}<\/td>
+                    <td class="text-right">$${(t.entry_price || 0).toFixed(2)}<\/td>
+                    <td class="text-right">$${(t.exit_price || 0).toFixed(2)}<\/td>
+                    <td class="text-right ${ret >= 0 ? 'positive' : 'negative'}">${ret >= 0 ? '+' : ''}${ret.toFixed(1)}%<\/td>
+                    <td class="text-right ${pl >= 0 ? 'positive' : 'negative'}">${pl >= 0 ? '+' : ''}$${pl.toFixed(2)}<\/td>
+                    <td>${t.exit_reason || '?'}<\/td>
+                </tr>`;
+            }
         }
         
         // Parse scores and prices
@@ -279,29 +290,6 @@
             <div><strong>Realized P&L:</strong> ${totalPL >= 0 ? '+' : ''}$${totalPL.toFixed(2)}</div>
             <div><strong>Unrealized P&L:</strong> ${unrealizedPL >= 0 ? '+' : ''}$${unrealizedPL.toFixed(2)}</div>
         `;
-        
-        // Trades table - use hardcoded trades
-        const tbody = document.getElementById('tradesBody');
-        if (trades.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="9">No closed trades yet<\/td><\/tr>';
-        } else {
-            const recent = [...trades].reverse().slice(0, 20);
-            tbody.innerHTML = recent.map(t => {
-                const ret = t.return_pct || 0;
-                const pl = t.gross_pl || 0;
-                return `<tr>
-                    <td><strong>${t.ticker || '?'}</strong></td>
-                    <td>${t.entry_date || '?'}</td>
-                    <td>${t.exit_date || '?'}</td>
-                    <td class="text-right">${t.shares || 0}<\/td>
-                    <td class="text-right">$${(t.entry_price || 0).toFixed(2)}<\/td>
-                    <td class="text-right">$${(t.exit_price || 0).toFixed(2)}<\/td>
-                    <td class="text-right ${ret >= 0 ? 'positive' : 'negative'}">${ret >= 0 ? '+' : ''}${ret.toFixed(1)}%<\/td>
-                    <td class="text-right ${pl >= 0 ? 'positive' : 'negative'}">${pl >= 0 ? '+' : ''}$${pl.toFixed(2)}<\/td>
-                    <td>${t.exit_reason || '?'}<\/td>
-                </tr>`;
-            }).join('');
-        }
         
         document.getElementById('lastUpdated').innerHTML = `Last updated: ${new Date().toLocaleString()} | Data as of: ${lastDate}`;
     }
