@@ -1,0 +1,2 @@
+ticker,entry_date,exit_date,entry_price,exit_price,shares,return_pct,gross_pl,exit_reason,leverage
+GGLL,2026-05-04,2026-05-12,135.55999755859375,138.02999877929688,36,1.82,88.92,score_-1.6,1.5
