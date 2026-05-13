@@ -2,7 +2,7 @@ name: Decision Engine
 
 on:
   schedule:
-    - cron: '0 14 * * 1-5'   # 10:00 AM ET (14:00 UTC)
+    - cron: '0 12 * * 1-5'   # 10:00 AM ET (14:00 UTC)
   workflow_dispatch:
 
 jobs:
