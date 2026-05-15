@@ -185,9 +185,9 @@ def get_stock_system_data(config: dict) -> dict:
         result['total_trades'] = safe_int(perf['total_trades'].sum()) if 'total_trades' in perf.columns else 0
         
         if 'total_trades' in perf.columns and 'win_rate' in perf.columns:
-            total_trades = perf['total_trades'].sum()
-            if total_trades > 0:
-                weighted_win_rate = (perf['total_trades'] * perf['win_rate']).sum() / total_trades
+            total_trades_sum = perf['total_trades'].sum()
+            if total_trades_sum > 0:
+                weighted_win_rate = (perf['total_trades'] * perf['win_rate']).sum() / total_trades_sum
                 result['win_rate'] = weighted_win_rate
     
     all_positions = []
@@ -210,6 +210,92 @@ def get_stock_system_data(config: dict) -> dict:
     
     result['open_positions'] = all_positions
     result['open_count'] = len(all_positions)
+    
+    return result
+
+
+def get_ai_system_data(config: dict) -> dict:
+    """Extract performance data for AI system"""
+    paths = config['systems']['ai']['data_files']
+    start_balance = config['systems']['ai']['starting_balance']
+    
+    perf = safe_read_csv(Path(paths['performance']))
+    positions = safe_read_csv(Path(paths['positions']))
+    
+    result = {
+        'name': config['systems']['ai']['display_name'],
+        'start_date': config['systems']['ai']['start_date'],
+        'starting_balance': start_balance,
+        'dashboard_url': config['systems']['ai']['dashboard_url'],
+        'balance': start_balance,
+        'total_return_pct': 0.0,
+        'win_rate': 0.0,
+        'total_trades': 0,
+        'open_positions': [],
+        'open_count': 0,
+    }
+    
+    if not perf.empty:
+        row = perf.iloc[0]
+        net_profit = safe_float(row.get('net_profit_dollars', 0))
+        result['balance'] = start_balance + net_profit
+        result['total_return_pct'] = (result['balance'] / start_balance - 1) * 100
+        result['win_rate'] = safe_float(row.get('win_rate_pct', 0))
+        result['total_trades'] = safe_int(row.get('total_trades', 0))
+    
+    if not positions.empty:
+        for _, row in positions.iterrows():
+            entry_price = safe_float(row.get('entry_price', 0))
+            shares = safe_int(row.get('shares', 0))
+            result['open_positions'].append({
+                'ticker': row.get('ticker', 'N/A'),
+                'shares': shares,
+                'entry_price': entry_price,
+            })
+        result['open_count'] = len(result['open_positions'])
+    
+    return result
+
+
+def get_quantum_system_data(config: dict) -> dict:
+    """Extract performance data for Quantum system"""
+    paths = config['systems']['quantum']['data_files']
+    start_balance = config['systems']['quantum']['starting_balance']
+    
+    perf = safe_read_csv(Path(paths['performance']))
+    positions = safe_read_csv(Path(paths['positions']))
+    
+    result = {
+        'name': config['systems']['quantum']['display_name'],
+        'start_date': config['systems']['quantum']['start_date'],
+        'starting_balance': start_balance,
+        'dashboard_url': config['systems']['quantum']['dashboard_url'],
+        'balance': start_balance,
+        'total_return_pct': 0.0,
+        'win_rate': 0.0,
+        'total_trades': 0,
+        'open_positions': [],
+        'open_count': 0,
+    }
+    
+    if not perf.empty:
+        row = perf.iloc[0]
+        net_profit = safe_float(row.get('net_profit_dollars', 0))
+        result['balance'] = start_balance + net_profit
+        result['total_return_pct'] = (result['balance'] / start_balance - 1) * 100
+        result['win_rate'] = safe_float(row.get('win_rate_pct', 0))
+        result['total_trades'] = safe_int(row.get('total_trades', 0))
+    
+    if not positions.empty:
+        for _, row in positions.iterrows():
+            entry_price = safe_float(row.get('entry_price', 0))
+            shares = safe_int(row.get('shares', 0))
+            result['open_positions'].append({
+                'ticker': row.get('ticker', 'N/A'),
+                'shares': shares,
+                'entry_price': entry_price,
+            })
+        result['open_count'] = len(result['open_positions'])
     
     return result
 
@@ -255,7 +341,13 @@ def build_html_email(data: dict, config: dict) -> str:
     sector = data['sector']
     two_etf = data['two_etf']
     stock = data['stock']
+    ai = data['ai']
+    quantum = data['quantum']
     date_str = datetime.now().strftime("%Y-%m-%d")
+    
+    # Helper function for return class
+    def return_class(pct):
+        return "positive-text" if pct >= 0 else "negative-text"
     
     html = f"""
 <!DOCTYPE html>
@@ -282,6 +374,8 @@ def build_html_email(data: dict, config: dict) -> str:
         .dashboard-link {{ margin-top: 16px; }}
         .dashboard-link a {{ color: #2c7fb8; text-decoration: none; font-weight: 600; }}
         .footer {{ background: #f8fafc; padding: 16px 30px; text-align: center; font-size: 12px; color: #8ba0b0; }}
+        .positive-text {{ color: #1e8a4c; }}
+        .negative-text {{ color: #c2412c; }}
     </style>
 </head>
 <body>
@@ -293,7 +387,6 @@ def build_html_email(data: dict, config: dict) -> str:
 """
     
     # Sector System
-    sector_return_class = "positive" if sector['total_return_pct'] >= 0 else "negative"
     html += f"""
     <div class="system">
         <h2>💰 {sector['name']}</h2>
@@ -305,7 +398,7 @@ def build_html_email(data: dict, config: dict) -> str:
             </div>
             <div class="metric">
                 <div class="metric-label">Total Return</div>
-                <div class="metric-value {sector_return_class}">{format_percent(sector['total_return_pct'])}</div>
+                <div class="metric-value {return_class(sector['total_return_pct'])}">{format_percent(sector['total_return_pct'])}</div>
             </div>
             <div class="metric">
                 <div class="metric-label">Win Rate</div>
@@ -324,7 +417,6 @@ def build_html_email(data: dict, config: dict) -> str:
 """
     
     # 2 ETF System
-    two_etf_return_class = "positive" if two_etf['total_return_pct'] >= 0 else "negative"
     html += f"""
     <div class="system">
         <h2>📈 {two_etf['name']}</h2>
@@ -336,7 +428,7 @@ def build_html_email(data: dict, config: dict) -> str:
             </div>
             <div class="metric">
                 <div class="metric-label">Total Return</div>
-                <div class="metric-value {two_etf_return_class}">{format_percent(two_etf['total_return_pct'])}</div>
+                <div class="metric-value {return_class(two_etf['total_return_pct'])}">{format_percent(two_etf['total_return_pct'])}</div>
             </div>
             <div class="metric">
                 <div class="metric-label">Win Rate</div>
@@ -355,7 +447,6 @@ def build_html_email(data: dict, config: dict) -> str:
 """
     
     # Stock System
-    stock_return_class = "positive" if stock['total_return_pct'] >= 0 else "negative"
     html += f"""
     <div class="system">
         <h2>📊 {stock['name']}</h2>
@@ -367,7 +458,7 @@ def build_html_email(data: dict, config: dict) -> str:
             </div>
             <div class="metric">
                 <div class="metric-label">Total Return</div>
-                <div class="metric-value {stock_return_class}">{format_percent(stock['total_return_pct'])}</div>
+                <div class="metric-value {return_class(stock['total_return_pct'])}">{format_percent(stock['total_return_pct'])}</div>
             </div>
             <div class="metric">
                 <div class="metric-label">Win Rate</div>
@@ -381,6 +472,66 @@ def build_html_email(data: dict, config: dict) -> str:
         </div>
         <div class="dashboard-link">
             <a href="{stock['dashboard_url']}">🔗 View Full Dashboard →</a>
+        </div>
+    </div>
+"""
+    
+    # AI System
+    html += f"""
+    <div class="system">
+        <h2>🤖 {ai['name']}</h2>
+        <div class="metrics">
+            <div class="metric">
+                <div class="metric-label">Total Equity</div>
+                <div class="metric-value">{format_currency(ai['balance'])}</div>
+                <div style="font-size: 11px; color: #6c7e8f;">Started: {format_currency(ai['starting_balance'])} ({ai['start_date']})</div>
+            </div>
+            <div class="metric">
+                <div class="metric-label">Total Return</div>
+                <div class="metric-value {return_class(ai['total_return_pct'])}">{format_percent(ai['total_return_pct'])}</div>
+            </div>
+            <div class="metric">
+                <div class="metric-label">Win Rate</div>
+                <div class="metric-value">{ai['win_rate']:.1f}%</div>
+                <div style="font-size: 11px; color: #6c7e8f;">{ai['total_trades']} trades</div>
+            </div>
+        </div>
+        <div class="positions">
+            <div class="positions-title">📌 Open Positions ({ai['open_count']})</div>
+            <pre style="margin: 0; font-family: monospace; font-size: 12px;">{format_position_summary(ai['open_positions'])}</pre>
+        </div>
+        <div class="dashboard-link">
+            <a href="{ai['dashboard_url']}">🔗 View Full Dashboard →</a>
+        </div>
+    </div>
+"""
+    
+    # Quantum System
+    html += f"""
+    <div class="system">
+        <h2>🔬 {quantum['name']}</h2>
+        <div class="metrics">
+            <div class="metric">
+                <div class="metric-label">Total Equity</div>
+                <div class="metric-value">{format_currency(quantum['balance'])}</div>
+                <div style="font-size: 11px; color: #6c7e8f;">Started: {format_currency(quantum['starting_balance'])} ({quantum['start_date']})</div>
+            </div>
+            <div class="metric">
+                <div class="metric-label">Total Return</div>
+                <div class="metric-value {return_class(quantum['total_return_pct'])}">{format_percent(quantum['total_return_pct'])}</div>
+            </div>
+            <div class="metric">
+                <div class="metric-label">Win Rate</div>
+                <div class="metric-value">{quantum['win_rate']:.1f}%</div>
+                <div style="font-size: 11px; color: #6c7e8f;">{quantum['total_trades']} trades</div>
+            </div>
+        </div>
+        <div class="positions">
+            <div class="positions-title">📌 Open Positions ({quantum['open_count']})</div>
+            <pre style="margin: 0; font-family: monospace; font-size: 12px;">{format_position_summary(quantum['open_positions'])}</pre>
+        </div>
+        <div class="dashboard-link">
+            <a href="{quantum['dashboard_url']}">🔗 View Full Dashboard →</a>
         </div>
     </div>
 """
@@ -455,11 +606,19 @@ def main():
     stock_data = get_stock_system_data(config)
     print(f"   Stock System:  Total Equity ${stock_data['balance']:,.2f}")
     
+    ai_data = get_ai_system_data(config)
+    print(f"   AI System:     Total Equity ${ai_data['balance']:,.2f}")
+    
+    quantum_data = get_quantum_system_data(config)
+    print(f"   Quantum System: Total Equity ${quantum_data['balance']:,.2f}")
+    
     print("\n📧 Building email...")
     data = {
         'sector': sector_data,
         'two_etf': two_etf_data,
         'stock': stock_data,
+        'ai': ai_data,
+        'quantum': quantum_data,
     }
     html_content = build_html_email(data, config)
     
