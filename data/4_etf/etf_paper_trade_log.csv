@@ -2,3 +2,4 @@ ticker,regime,entry_date,entry_price,exit_date,exit_price,shares,gross_pl,return
 TQQQ,bull,2026-04-03,40.880001,2026-04-08,47.428001,100,654.8,16.0176,rotation_to_SOXL
 SOXL,bull,2026-04-03,46.060001,2026-04-28,109.56,100,6350.0,137.8637,cash_zone_score_-1.6
 SOXL,bull,2026-04-30,122.81,2026-05-04,127.55,92,436.08,3.8596,cash_zone_score_2.0
+SOXL,bull,2026-05-05,135.0,2026-05-15,165.695,87,2670.46,22.737,trailing_stop
