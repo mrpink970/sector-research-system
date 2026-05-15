@@ -1,7 +1,3 @@
-# Trading Systems Master Configuration
-# This file is the single source of truth for monitoring engine
-# Last updated: 2026-05-09
-
 systems:
   sector:
     name: "Sector Rotation System"
@@ -38,12 +34,31 @@ systems:
       trade_log_trend: "data/stocks/trend_trade_log.csv"
       trade_log_breakout: "data/stocks/breakout_trade_log.csv"
 
-# Email recipients for daily monitoring
+  # ADD AI SYSTEM
+  ai:
+    name: "AI Hardware System"
+    display_name: "AI System"
+    start_date: "2026-05-11"
+    starting_balance: 5000
+    dashboard_url: "https://mrpink970.github.io/sector-research-system/docs/ai/ai_dashboard.html"
+    data_files:
+      performance: "data/ai/performance.csv"
+      positions: "data/ai/positions.csv"
+      trade_log: "data/ai/trade_log.csv"
+
+  # ADD QUANTUM SYSTEM
+  quantum:
+    name: "Quantum Computing System"
+    display_name: "Quantum System"
+    start_date: "2026-05-11"
+    starting_balance: 5000
+    dashboard_url: "https://mrpink970.github.io/sector-research-system/docs/quantum/quantum_dashboard.html"
+    data_files:
+      performance: "data/quantum/performance.csv"
+      positions: "data/quantum/positions.csv"
+      trade_log: "data/quantum/trade_log.csv"
+
 email_recipients:
   - "mrpink970@gmail.com"
   - "mwhite7680@gmail.com"
   - "jacobfarino@gmail.com"
-
-# Global settings
-global:
-  timezone: "America/New_York"
