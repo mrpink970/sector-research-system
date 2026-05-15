@@ -53,7 +53,7 @@ def safe_int(value, default=0) -> int:
 # ============================================================
 
 def get_system_performance() -> Dict[str, dict]:
-    """Read performance data from all systems and calculate 0-100 scores"""
+    """Read performance data from all 5 systems and calculate 0-100 scores"""
     systems = {}
     
     # 1. 2 ETF System
@@ -69,11 +69,9 @@ def get_system_performance() -> Dict[str, dict]:
                 win_rate = safe_float(row.get('win_rate', 0)) * 100
                 trades = safe_int(row.get('total_trades', 0))
                 
-                # Calculate return from balance
                 start_balance = 5000
                 total_equity = start_balance + total_pl
                 
-                # Get open position value if exists
                 if pos_path.exists():
                     pos_df = pd.read_csv(pos_path)
                     if not pos_df.empty:
@@ -84,9 +82,7 @@ def get_system_performance() -> Dict[str, dict]:
                             total_equity += (highest - entry) * shares
                 
                 total_return = (total_equity / start_balance - 1) * 100
-                
-                # Max drawdown (estimate if not available)
-                max_dd = 1.6  # From your dashboard
+                max_dd = 1.6
                 
                 systems['two_etf'] = {
                     'name': '2 ETF System',
@@ -145,7 +141,7 @@ def get_system_performance() -> Dict[str, dict]:
                     'return': total_return,
                     'win_rate': win_rate,
                     'trades': int(total_trades),
-                    'max_dd': 7.8,  # From your dashboard
+                    'max_dd': 7.8,
                     'current_holding': 'VARIOUS',
                 }
         except Exception as e:
@@ -177,6 +173,32 @@ def get_system_performance() -> Dict[str, dict]:
         except Exception as e:
             print(f"Error reading AI system: {e}")
     
+    # 5. Quantum System
+    perf_path = Path("data/quantum/performance.csv")
+    pos_path = Path("data/quantum/positions.csv")
+    
+    if perf_path.exists():
+        try:
+            df = pd.read_csv(perf_path)
+            if not df.empty:
+                row = df.iloc[0]
+                current_holding = 'N/A'
+                if pos_path.exists():
+                    pos_df = pd.read_csv(pos_path)
+                    if not pos_df.empty and 'ticker' in pos_df.columns:
+                        current_holding = pos_df.iloc[0]['ticker']
+                
+                systems['quantum'] = {
+                    'name': 'Quantum System',
+                    'return': safe_float(row.get('total_return_pct', 0)),
+                    'win_rate': safe_float(row.get('win_rate_pct', 0)),
+                    'trades': safe_int(row.get('total_trades', 0)),
+                    'max_dd': 0,
+                    'current_holding': current_holding,
+                }
+        except Exception as e:
+            print(f"Error reading Quantum system: {e}")
+    
     return systems
 
 
@@ -191,13 +213,11 @@ def calculate_system_scores(systems: Dict[str, dict]) -> Dict[str, dict]:
     if not systems:
         return {}
     
-    # Find min/max for normalization
     returns = [s['return'] for s in systems.values()]
     win_rates = [s['win_rate'] for s in systems.values()]
     drawdowns = [s['max_dd'] for s in systems.values()]
     trade_counts = [s['trades'] for s in systems.values()]
     
-    # Add absolute min/max for consistency
     min_return = min(returns) if returns else 0
     max_return = max(returns) if returns else 100
     min_win_rate = min(win_rates) if win_rates else 0
@@ -208,28 +228,23 @@ def calculate_system_scores(systems: Dict[str, dict]) -> Dict[str, dict]:
     
     scores = {}
     for name, data in systems.items():
-        # Normalize return (0-100)
         if max_return > min_return:
             return_score = (data['return'] - min_return) / (max_return - min_return) * 100
         else:
             return_score = 50
         
-        # Normalize win rate (0-100)
         if max_win_rate > min_win_rate:
             win_rate_score = (data['win_rate'] - min_win_rate) / (max_win_rate - min_win_rate) * 100
         else:
             win_rate_score = 50
         
-        # Drawdown score (lower drawdown = higher score)
         if max_dd > min_dd:
             dd_score = (1 - (data['max_dd'] - min_dd) / (max_dd - min_dd)) * 100
         else:
             dd_score = 50
         
-        # Trade count score (more trades = higher score, but diminishing returns)
         trade_score = min(100, (data['trades'] / max_trades) * 100) if max_trades > 0 else 50
         
-        # Weighted total
         total_score = (return_score * 0.40) + (win_rate_score * 0.25) + (dd_score * 0.25) + (trade_score * 0.10)
         
         scores[name] = {
@@ -240,8 +255,6 @@ def calculate_system_scores(systems: Dict[str, dict]) -> Dict[str, dict]:
             'max_dd': round(data['max_dd'], 1),
             'trades': data['trades'],
             'current_holding': data.get('current_holding', 'N/A'),
-            'return_raw': data['return'],
-            'win_rate_raw': data['win_rate'],
         }
     
     return scores
@@ -284,7 +297,7 @@ def save_switch_recommendation(recommendation: str, current_system: str, scores:
 def get_business_days_since(last_date: datetime) -> int:
     """Count business days (Mon-Fri) between now and last_date"""
     if last_date is None:
-        return 999  # Unlimited if never switched
+        return 999
     
     current = datetime.now()
     days = 0
@@ -293,7 +306,7 @@ def get_business_days_since(last_date: datetime) -> int:
     
     while current_date < end_date:
         current_date += timedelta(days=1)
-        if current_date.weekday() < 5:  # Monday=0, Friday=4
+        if current_date.weekday() < 5:
             days += 1
     
     return days
@@ -343,21 +356,17 @@ def send_email(
     
     date_str = datetime.now().strftime("%Y-%m-%d %H:%M")
     
-    # Build rankings table
     ranking_lines = []
     for i, (name, data) in enumerate(sorted(scores.items(), key=lambda x: x[1]['score'], reverse=True), 1):
         leader_marker = " ← CURRENT LEADER" if name == top_system else ""
         ranking_lines.append(f"  {i}. {data['name']:15} {data['score']:3.0f}{leader_marker}")
-    
     ranking_text = "\n".join(ranking_lines)
     
-    # Build scores detail
     scores_detail = []
     for name, data in scores.items():
         scores_detail.append(f"  {data['name']:15} Score: {data['score']:.0f}  |  Return: +{data['return']:.0f}%  |  Win: {data['win_rate']:.0f}%")
     scores_text = "\n".join(scores_detail)
     
-    # Build recommendation
     rec_text = "\n".join([f"  {r}" for r in recommendations])
     
     body = f"""
@@ -430,7 +439,6 @@ def main():
     print("DECISION ENGINE - Morning Analysis")
     print("=" * 60)
     
-    # Load config
     try:
         config = load_config()
         recipients = config.get('email_recipients', [])
@@ -439,7 +447,6 @@ def main():
         print(f"⚠️ Could not load config: {e}")
         recipients = ["mrpink970@gmail.com"]
     
-    # Get system performance and scores
     systems_raw = get_system_performance()
     scores = calculate_system_scores(systems_raw)
     
@@ -447,7 +454,6 @@ def main():
         print("⚠️ No system data available")
         return
     
-    # Sort by score
     sorted_scores = sorted(scores.items(), key=lambda x: x[1]['score'], reverse=True)
     top_system, top_data = sorted_scores[0]
     top_score = top_data['score']
@@ -456,17 +462,13 @@ def main():
     second_score = second_data['score']
     gap = top_score - second_score
     
-    # Get regime
     regime = get_regime()
     
-    # Load switch history
     last_switch_system, last_switch_date = load_previous_switch_log()
     days_since_switch = get_business_days_since(last_switch_date) if last_switch_date else 999
     
-    # Generate recommendations
     recommendations = []
     
-    # Cash check
     if top_score < 50:
         recommendations.append("🔴 GO TO CASH - Top system score is below 50")
         recommendations.append("   Exit all positions. Wait for scores to recover.")
@@ -476,9 +478,6 @@ def main():
         recommendations.append("   Exit all positions. Re-enter when regime turns BULL.")
         action = "CASH"
     else:
-        # Hold the top-scoring system (it's the leader)
-        # No switch needed because top_system is already the best
-        
         recommendations.append(f"✅ HOLD: {top_data['name']} (Score: {top_score:.0f})")
         recommendations.append(f"   2nd place: {second_system} ({second_score:.0f})")
         
@@ -492,11 +491,7 @@ def main():
             recommendations.append(f"   Wait {(5 - days_since_switch)} more days before considering any change.")
         
         action = f"HOLD {top_data['name']}"
-        
-        # Log the recommendation (not a switch, just tracking)
-        # save_switch_recommendation(top_data['name'], top_system, scores)
     
-    # Print summary
     print(f"\n📊 SYSTEM RANKINGS:")
     for name, data in sorted_scores:
         print(f"   {data['name']}: {data['score']:.0f} (Return: +{data['return']:.0f}%, Win: {data['win_rate']:.0f}%)")
@@ -505,7 +500,6 @@ def main():
     print(f"   Top score: {top_score:.0f} | Regime: {regime}")
     print(f"   Gap to 2nd: {gap:.0f} points | Days since switch: {days_since_switch}")
     
-    # Send email
     send_email(
         scores=scores,
         top_system=top_data['name'],
