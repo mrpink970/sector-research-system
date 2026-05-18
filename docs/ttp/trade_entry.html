@@ -73,6 +73,15 @@
         }
         .status-value { font-size: 20px; font-weight: 700; }
         .positive { color: #22c55e; }
+        .error-message {
+            background: #7f1d1d;
+            border: 1px solid #ef4444;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 16px;
+            color: #fecaca;
+            font-size: 14px;
+        }
         .saved-badge {
             position: fixed;
             bottom: 20px;
@@ -86,14 +95,17 @@
             transition: opacity 0.5s;
         }
         .saved-badge.show { opacity: 1; }
+        .saved-badge.error { background: #ef4444; }
     </style>
 </head>
 <body>
 <div class="container">
     <div class="card">
         <h1>📝 TTP Trade Entry</h1>
-        <p>Auto-saves to GitHub • No copy-paste needed</p>
+        <p>Auto-saves to GitHub</p>
     </div>
+
+    <div id="errorDisplay" class="error-message" style="display: none;"></div>
 
     <div class="status-bar" id="statusBar">
         <div class="status-card">
@@ -152,13 +164,22 @@
 <div id="savedBadge" class="saved-badge">✅ Saved to GitHub</div>
 
 <script>
+    // YOUR GITHUB TOKEN - PASTE HERE
+    const GITHUB_TOKEN = "ghp_q2tiBs3REE71QSIaW8D5BPUwfQ5qbh2y3vSZ";
+    
     const REPO_OWNER = "mrpink970";
     const REPO_NAME = "sector-research-system";
     const FILE_PATH = "data/ttp/trades.csv";
-    const GITHUB_TOKEN = "ghp_q2tiBs3REE71QSIaW8D5BPUwfQ5qbh2y3vSZ";
 
     let trades = [];
     let currentOpenTrade = null;
+
+    function showError(message) {
+        const errorDiv = document.getElementById('errorDisplay');
+        errorDiv.textContent = message;
+        errorDiv.style.display = 'block';
+        setTimeout(() => errorDiv.style.display = 'none', 5000);
+    }
 
     async function fetchCSV(url) {
         try {
@@ -189,13 +210,16 @@
 
     async function saveToGitHub(content, commitMessage) {
         if (!GITHUB_TOKEN) {
-            console.error("No GitHub token set");
-            showSaveNotification("⚠️ Configure GitHub token first (see instructions)");
+            showError("❌ No GitHub token configured. Please add your token to the script.");
+            return false;
+        }
+
+        if (GITHUB_TOKEN === "ghp_your_token_here") {
+            showError("❌ Please replace the placeholder token with your real GitHub token.");
             return false;
         }
 
         try {
-            // Get current file SHA (required for update)
             const fileUrl = `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${FILE_PATH}`;
             let sha = null;
             try {
@@ -208,7 +232,6 @@
                 }
             } catch(e) { /* File doesn't exist yet */ }
 
-            // Save the file
             const response = await fetch(fileUrl, {
                 method: 'PUT',
                 headers: {
@@ -223,26 +246,21 @@
             });
 
             if (response.ok) {
-                showSaveNotification("✅ Saved to GitHub");
+                const badge = document.getElementById('savedBadge');
+                badge.textContent = "✅ Saved to GitHub";
+                badge.classList.remove('error');
+                badge.classList.add('show');
+                setTimeout(() => badge.classList.remove('show'), 3000);
                 return true;
             } else {
                 const error = await response.json();
-                console.error("GitHub API error:", error);
-                showSaveNotification("❌ Save failed: " + (error.message || "Unknown error"));
+                showError(`❌ GitHub API error: ${error.message || "Unknown error"}`);
                 return false;
             }
         } catch (error) {
-            console.error("Save error:", error);
-            showSaveNotification("❌ Save failed: " + error.message);
+            showError(`❌ Save failed: ${error.message}`);
             return false;
         }
-    }
-
-    function showSaveNotification(message) {
-        const badge = document.getElementById('savedBadge');
-        badge.textContent = message;
-        badge.classList.add('show');
-        setTimeout(() => badge.classList.remove('show'), 3000);
     }
 
     async function loadData() {
@@ -305,7 +323,6 @@
             return;
         }
         
-        // Create new trades array with open trade
         const newTrade = {
             ticker: 'SOXX',
             entry_date: new Date().toISOString(),
@@ -318,7 +335,6 @@
         
         const allTrades = [...trades, newTrade];
         
-        // Convert to CSV
         const headers = ['ticker', 'entry_date', 'entry_price', 'shares', 'stop_price', 'target_price', 'status', 'exit_date', 'exit_price', 'profit'];
         const csvRows = [headers.join(',')];
         for (const trade of allTrades) {
@@ -355,7 +371,6 @@
         
         const profit = (exitPrice - currentOpenTrade.entry_price) * currentOpenTrade.shares;
         
-        // Update the trade in the trades array
         const updatedTrades = trades.map(t => {
             if (t.status === 'open' && t.ticker === currentOpenTrade.ticker) {
                 return {
@@ -369,7 +384,6 @@
             return t;
         });
         
-        // Convert to CSV
         const headers = ['ticker', 'entry_date', 'entry_price', 'shares', 'stop_price', 'target_price', 'status', 'exit_date', 'exit_price', 'profit'];
         const csvRows = [headers.join(',')];
         for (const trade of updatedTrades) {
@@ -395,6 +409,13 @@
     }
     
     function refreshData() { loadData(); }
+    
+    // Test token on load
+    if (GITHUB_TOKEN === "ghp_q2tiBs3REE71QSIaW8D5BPUwfQ5qbh2y3vSZ") {
+        console.log("Token appears to be set");
+    } else {
+        showError("⚠️ Token not configured. Please add your GitHub token.");
+    }
     
     loadData();
 </script>
