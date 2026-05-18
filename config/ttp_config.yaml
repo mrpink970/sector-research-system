@@ -1,0 +1,42 @@
+# Trade The Pool - SOXX Green Day System
+# Account: $2,000 FLEX Swing
+# Target: $300 profit (15%)
+
+system:
+  name: "SOXX Green Day System"
+  instrument: "SOXX"
+  shares: 2
+  account_size: 2000
+  profit_target: 300
+  daily_loss_limit: 60
+  max_drawdown: 140
+
+entry_conditions:
+  min_1h_return: 0.5  # percent
+  min_volume_ratio: 1.0  # compared to 20-day average
+  rsi_min: 50
+  above_ma20: true
+
+exit_rules:
+  stop_loss_pct: 2.0
+  take_profit_pct: 6.0
+  breakeven_trigger_pct: 3.0
+
+trade_management:
+  shares_per_trade: 2
+  max_profit_per_trade: 150
+  max_loss_per_trade: 40
+
+commission:
+  per_share: 0.005
+  min_per_order: 0.75
+
+# Data collection times (ET)
+data_times:
+  - "10:00"
+  - "13:00"
+  - "15:30"
+
+dashboard:
+  title: "Trade The Pool - SOXX Green Day System"
+  refresh_seconds: 300
