@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TTP - Trade Entry</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: #0a0e17;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            padding: 20px;
+            color: #e2e8f0;
+        }
+        .container { max-width: 600px; margin: 0 auto; }
+        .card {
+            background: #1e293b;
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 20px;
+            border: 1px solid #334155;
+        }
+        h1 { color: #38bdf8; margin-bottom: 8px; font-size: 1.5rem; }
+        .label { font-size: 12px; color: #94a3b8; margin-bottom: 4px; }
+        input, select {
+            width: 100%;
+            padding: 12px;
+            background: #0f172a;
+            border: 1px solid #334155;
+            border-radius: 8px;
+            color: #e2e8f0;
+            font-size: 16px;
+            margin-bottom: 16px;
+        }
+        button {
+            width: 100%;
+            padding: 14px;
+            background: #22c55e;
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-weight: 700;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        button:hover { background: #16a34a; }
+        .button-secondary {
+            background: #3b82f6;
+        }
+        .button-secondary:hover { background: #2563eb; }
+        .trade-row {
+            background: #0f172a;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .profit-positive { color: #22c55e; }
+        .profit-negative { color: #ef4444; }
+        hr { border-color: #334155; margin: 16px 0; }
+        .status-bar {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        .status-card {
+            background: #1e293b;
+            border-radius: 12px;
+            padding: 12px 16px;
+            flex: 1;
+            text-align: center;
+        }
+        .status-value { font-size: 20px; font-weight: 700; }
+        .positive { color: #22c55e; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="card">
+        <h1>📝 TTP Trade Entry</h1>
+        <p>Record your SOXX trades manually</p>
+    </div>
+
+    <!-- Status -->
+    <div class="status-bar" id="statusBar">
+        <div class="status-card">
+            <div class="status-label">Target</div>
+            <div class="status-value" id="targetRemaining">$300</div>
+        </div>
+        <div class="status-card">
+            <div class="status-label">Profit So Far</div>
+            <div class="status-value positive" id="totalProfit">$0</div>
+        </div>
+        <div class="status-card">
+            <div class="status-label">Trades</div>
+            <div class="status-value" id="tradeCount">0</div>
+        </div>
+    </div>
+
+    <!-- Open Position Display -->
+    <div class="card" id="openPositionCard">
+        <h3>📌 Open Position</h3>
+        <div id="openPositionDisplay">No open position</div>
+    </div>
+
+    <!-- Entry Form -->
+    <div class="card">
+        <h3>🟢 Open New Trade</h3>
+        <div class="label">Trade Type</div>
+        <select id="tradeType">
+            <option value="buy">BUY (Long)</option>
+        </select>
+        <div class="label">Entry Price ($)</div>
+        <input type="number" id="entryPrice" step="0.01" placeholder="e.g., 497.01">
+        <div class="label">Shares</div>
+        <select id="shares">
+            <option value="1">1 Share</option>
+            <option value="2" selected>2 Shares</option>
+            <option value="3">3 Shares</option>
+        </select>
+        <div class="label">Stop Loss Price ($)</div>
+        <input type="number" id="stopPrice" step="0.01" placeholder="e.g., 487.07 (-2%)">
+        <div class="label">Take Profit Price ($)</div>
+        <input type="number" id="targetPrice" step="0.01" placeholder="e.g., 526.83 (+6%)">
+        <button onclick="openTrade()">Open Trade</button>
+    </div>
+
+    <!-- Close Form -->
+    <div class="card" id="closeForm" style="display: none;">
+        <h3>🔴 Close Trade</h3>
+        <div class="label">Exit Price ($)</div>
+        <input type="number" id="exitPrice" step="0.01" placeholder="e.g., 526.83">
+        <button onclick="closeTrade()">Close Trade & Record P&L</button>
+    </div>
+
+    <!-- Trade History -->
+    <div class="card">
+        <h3>📜 Trade History</h3>
+        <div id="tradeHistory">No trades yet</div>
+    </div>
+
+    <div class="card">
+        <button class="button-secondary" onclick="refreshData()">🔄 Refresh Data</button>
+    </div>
+</div>
+
+<script>
+    // GitHub API endpoints (using raw for reading, you'll need to commit via API or manually)
+    const TRADES_URL = 'https://raw.githubusercontent.com/mrpink970/sector-research-system/main/data/ttp/trades.csv';
+    const PROGRESS_URL = 'https://raw.githubusercontent.com/mrpink970/sector-research-system/main/data/ttp/progress.csv';
+    
+    // For writing, you'll need to use GitHub API with token
+    // For manual entry, we'll use localStorage + manual copy-paste to file
+
+    let trades = [];
+    let currentOpenTrade = null;
+
+    async function fetchCSV(url) {
+        try {
+            const response = await fetch(url + '?t=' + Date.now());
+            if (!response.ok) return null;
+            return await response.text();
+        } catch (error) { return null; }
+    }
+
+    function parseCSV(csvText) {
+        if (!csvText) return [];
+        const lines = csvText.trim().split('\n');
+        if (lines.length < 2) return [];
+        const headers = lines[0].split(',').map(h => h.trim());
+        const result = [];
+        for (let i = 1; i < lines.length; i++) {
+            const values = lines[i].split(',');
+            const row = {};
+            for (let j = 0; j < headers.length; j++) {
+                let val = values[j] ? values[j].trim() : '';
+                if (!isNaN(val) && val !== '') row[headers[j]] = parseFloat(val);
+                else row[headers[j]] = val;
+            }
+            result.push(row);
+        }
+        return result;
+    }
+
+    async function loadData() {
+        const tradesCSV = await fetchCSV(TRADES_URL);
+        const progressCSV = await fetchCSV(PROGRESS_URL);
+        
+        trades = parseCSV(tradesCSV);
+        
+        // Find open trade
+        currentOpenTrade = trades.find(t => t.status === 'open');
+        
+        // Calculate totals
+        const closedTrades = trades.filter(t => t.status === 'completed');
+        const totalProfit = closedTrades.reduce((sum, t) => sum + (t.profit || 0), 0);
+        const remainingTarget = Math.max(0, 300 - totalProfit);
+        
+        document.getElementById('totalProfit').innerHTML = `$${totalProfit.toFixed(2)}`;
+        document.getElementById('targetRemaining').innerHTML = `$${remainingTarget.toFixed(2)}`;
+        document.getElementById('tradeCount').innerHTML = closedTrades.length;
+        
+        // Update open position display
+        const openDiv = document.getElementById('openPositionDisplay');
+        if (currentOpenTrade) {
+            openDiv.innerHTML = `
+                <div class="trade-row">
+                    <span><strong>${currentOpenTrade.ticker}</strong></span>
+                    <span>Entry: $${currentOpenTrade.entry_price}</span>
+                    <span>${currentOpenTrade.shares} shares</span>
+                    <span>Stop: $${currentOpenTrade.stop_price}</span>
+                    <span>Target: $${currentOpenTrade.target_price}</span>
+                </div>
+            `;
+            document.getElementById('closeForm').style.display = 'block';
+        } else {
+            openDiv.innerHTML = '<p style="color: #64748b;">No open position</p>';
+            document.getElementById('closeForm').style.display = 'none';
+        }
+        
+        // Update trade history
+        const historyDiv = document.getElementById('tradeHistory');
+        if (closedTrades.length === 0) {
+            historyDiv.innerHTML = '<p style="color: #64748b;">No completed trades yet</p>';
+        } else {
+            historyDiv.innerHTML = closedTrades.map(t => `
+                <div class="trade-row">
+                    <span><strong>${t.entry_date?.split(' ')[0] || '--'}</strong></span>
+                    <span>Entry: $${t.entry_price}</span>
+                    <span>Exit: $${t.exit_price}</span>
+                    <span class="${(t.profit || 0) >= 0 ? 'profit-positive' : 'profit-negative'}">
+                        ${(t.profit || 0) >= 0 ? '+' : ''}$${t.profit?.toFixed(2) || '0'}
+                    </span>
+                </div>
+            `).join('');
+        }
+    }
+
+    function openTrade() {
+        const entryPrice = parseFloat(document.getElementById('entryPrice').value);
+        const shares = parseInt(document.getElementById('shares').value);
+        const stopPrice = parseFloat(document.getElementById('stopPrice').value);
+        const targetPrice = parseFloat(document.getElementById('targetPrice').value);
+        
+        if (!entryPrice || !stopPrice || !targetPrice) {
+            alert('Please fill in all fields');
+            return;
+        }
+        
+        const trade = {
+            ticker: 'SOXX',
+            entry_date: new Date().toISOString(),
+            entry_price: entryPrice,
+            shares: shares,
+            stop_price: stopPrice,
+            target_price: targetPrice,
+            status: 'open'
+        };
+        
+        // For now, save to localStorage and show copyable text
+        trades.push(trade);
+        currentOpenTrade = trade;
+        
+        // Generate CSV line to copy
+        const csvLine = `${trade.ticker},${trade.entry_date},${trade.entry_price},${shares},${stopPrice},${targetPrice},open,,,`;
+        
+        showCopyDialog('Open Trade', 'Copy this line and add to data/ttp/trades.csv:', csvLine);
+        
+        loadData();
+    }
+    
+    function closeTrade() {
+        const exitPrice = parseFloat(document.getElementById('exitPrice').value);
+        
+        if (!exitPrice || !currentOpenTrade) {
+            alert('Please fill in exit price');
+            return;
+        }
+        
+        const profit = (exitPrice - currentOpenTrade.entry_price) * currentOpenTrade.shares;
+        const exitDate = new Date().toISOString();
+        
+        const csvLine = `${currentOpenTrade.ticker},${currentOpenTrade.entry_date},${currentOpenTrade.entry_price},${currentOpenTrade.shares},${currentOpenTrade.stop_price},${currentOpenTrade.target_price},completed,${exitDate},${exitPrice},${profit.toFixed(2)}`;
+        
+        showCopyDialog('Close Trade', 'Copy this line to replace the open trade line in data/ttp/trades.csv:', csvLine);
+        
+        currentOpenTrade = null;
+        loadData();
+    }
+    
+    function showCopyDialog(title, instruction, text) {
+        const modal = document.createElement('div');
+        modal.style.position = 'fixed';
+        modal.style.top = '0';
+        modal.style.left = '0';
+        modal.style.right = '0';
+        modal.style.bottom = '0';
+        modal.style.background = 'rgba(0,0,0,0.8)';
+        modal.style.zIndex = '1000';
+        modal.style.display = 'flex';
+        modal.style.alignItems = 'center';
+        modal.style.justifyContent = 'center';
+        modal.innerHTML = `
+            <div style="background: #1e293b; border-radius: 16px; padding: 24px; max-width: 500px; margin: 20px;">
+                <h3 style="color: #38bdf8; margin-bottom: 16px;">${title}</h3>
+                <p style="margin-bottom: 16px;">${instruction}</p>
+                <textarea id="copyText" style="width: 100%; height: 100px; background: #0f172a; border: 1px solid #334155; border-radius: 8px; color: #e2e8f0; padding: 8px; font-family: monospace;" readonly>${text}</textarea>
+                <button onclick="navigator.clipboard.writeText(document.getElementById('copyText').value); alert('Copied!'); this.parentElement.parentElement.remove();" style="margin-top: 16px; width: 100%; padding: 12px; background: #22c55e; border: none; border-radius: 8px; color: white; font-weight: 700;">Copy to Clipboard</button>
+                <button onclick="this.parentElement.parentElement.remove();" style="margin-top: 8px; width: 100%; padding: 12px; background: #334155; border: none; border-radius: 8px; color: white;">Close</button>
+            </div>
+        `;
+        document.body.appendChild(modal);
+    }
+    
+    function refreshData() {
+        loadData();
+    }
+    
+    loadData();
+</script>
+</body>
+</html>
