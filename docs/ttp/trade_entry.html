@@ -12,7 +12,7 @@
             padding: 20px;
             color: #e2e8f0;
         }
-        .container { max-width: 600px; margin: 0 auto; }
+        .container { max-width: 800px; margin: 0 auto; }
         .card {
             background: #1e293b;
             border-radius: 16px;
@@ -23,7 +23,7 @@
         h1 { color: #38bdf8; margin-bottom: 8px; font-size: 1.5rem; }
         h3 { margin-bottom: 16px; }
         .label { font-size: 12px; color: #94a3b8; margin-bottom: 4px; }
-        input, select {
+        input, select, textarea {
             width: 100%;
             padding: 12px;
             background: #0f172a;
@@ -32,6 +32,7 @@
             color: #e2e8f0;
             font-size: 16px;
             margin-bottom: 16px;
+            font-family: monospace;
         }
         button {
             width: 100%;
@@ -47,6 +48,8 @@
         button:hover { background: #16a34a; }
         .button-secondary { background: #3b82f6; }
         .button-secondary:hover { background: #2563eb; }
+        .button-copy { background: #8b5cf6; }
+        .button-copy:hover { background: #7c3aed; }
         .trade-row {
             background: #0f172a;
             padding: 12px;
@@ -55,6 +58,8 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
+            flex-wrap: wrap;
+            gap: 8px;
         }
         .profit-positive { color: #22c55e; }
         .profit-negative { color: #ef4444; }
@@ -73,41 +78,21 @@
         }
         .status-value { font-size: 20px; font-weight: 700; }
         .positive { color: #22c55e; }
-        .error-message {
-            background: #7f1d1d;
-            border: 1px solid #ef4444;
-            border-radius: 8px;
-            padding: 12px;
-            margin-bottom: 16px;
-            color: #fecaca;
-            font-size: 14px;
-        }
-        .saved-badge {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            background: #22c55e;
-            color: white;
-            padding: 8px 16px;
-            border-radius: 8px;
-            font-size: 12px;
-            opacity: 0;
-            transition: opacity 0.5s;
-        }
-        .saved-badge.show { opacity: 1; }
-        .saved-badge.error { background: #ef4444; }
+        .info-text { font-size: 12px; color: #94a3b8; margin-bottom: 16px; padding: 8px; background: #0f172a; border-radius: 8px; text-align: center; }
+        .csv-preview { font-size: 11px; max-height: 200px; overflow: auto; }
     </style>
 </head>
 <body>
 <div class="container">
     <div class="card">
         <h1>📝 TTP Trade Entry</h1>
-        <p>Auto-saves to GitHub</p>
+        <div class="info-text">
+            📋 Fill out trade → Click button → CSV copied to clipboard → Paste into GitHub<br>
+            <strong>File location:</strong> data/ttp/trades.csv
+        </div>
     </div>
 
-    <div id="errorDisplay" class="error-message" style="display: none;"></div>
-
-    <div class="status-bar" id="statusBar">
+    <div class="status-bar">
         <div class="status-card">
             <div class="status-label">Target</div>
             <div class="status-value" id="targetRemaining">$300</div>
@@ -141,14 +126,21 @@
         <input type="number" id="stopPrice" step="0.01" placeholder="e.g., 487.07 (-2%)">
         <div class="label">Take Profit Price ($)</div>
         <input type="number" id="targetPrice" step="0.01" placeholder="e.g., 526.83 (+6%)">
-        <button onclick="openTrade()">Open Trade</button>
+        <button onclick="openTrade()">📋 Open Trade (Copy to Clipboard)</button>
     </div>
 
     <div class="card" id="closeForm" style="display: none;">
         <h3>🔴 Close Trade</h3>
         <div class="label">Exit Price ($)</div>
         <input type="number" id="exitPrice" step="0.01" placeholder="e.g., 526.83">
-        <button onclick="closeTrade()">Close Trade & Record P&L</button>
+        <button onclick="closeTrade()">📋 Close Trade (Copy to Clipboard)</button>
+    </div>
+
+    <div class="card">
+        <h3>📄 Current trades.csv</h3>
+        <textarea id="csvContent" rows="8" class="csv-preview" style="width:100%; background:#0f172a; color:#e2e8f0; border:1px solid #334155; border-radius:8px; padding:8px; font-family:monospace; font-size:11px;"></textarea>
+        <button class="button-copy" onclick="copyCSVToClipboard()" style="margin-top:8px;">📋 Copy Entire CSV to Clipboard</button>
+        <button class="button-secondary" onclick="refreshData()" style="margin-top:8px;">🔄 Refresh CSV Preview</button>
     </div>
 
     <div class="card">
@@ -157,29 +149,33 @@
     </div>
 
     <div class="card">
-        <button class="button-secondary" onclick="refreshData()">🔄 Refresh Data</button>
+        <h3>📝 Manual Edit Instructions</h3>
+        <div class="info-text" style="text-align: left;">
+            <strong>To OPEN a trade:</strong><br>
+            1. Fill out form above → Click "Open Trade"<br>
+            2. CSV line copied to clipboard<br>
+            3. Go to GitHub → Open data/ttp/trades.csv<br>
+            4. Paste the new line at the bottom<br>
+            5. Commit changes<br><br>
+            <strong>To CLOSE a trade:</strong><br>
+            1. Click "Close Trade" → Enter exit price<br>
+            2. CSV line copied to clipboard<br>
+            3. Go to GitHub → Find the open trade line in trades.csv<br>
+            4. Replace it with the completed line from clipboard<br>
+            5. Commit changes<br><br>
+            <strong>CSV Format:</strong><br>
+            ticker,entry_date,entry_price,shares,stop_price,target_price,status,exit_date,exit_price,profit
+        </div>
     </div>
 </div>
 
-<div id="savedBadge" class="saved-badge">✅ Saved to GitHub</div>
-
 <script>
-    // YOUR GITHUB TOKEN - PASTE HERE
-    const GITHUB_TOKEN = "ghp_q2tiBs3REE71QSIaW8D5BPUwfQ5qbh2y3vSZ";
-    
     const REPO_OWNER = "mrpink970";
-    const REPO_NAME = "sector-research-system";
-    const FILE_PATH = "data/ttp/trades.csv";
+    const REPO_NAME = "prop_systems";
+    const TRADES_URL = `https://raw.githubusercontent.com/${REPO_OWNER}/${REPO_NAME}/main/data/ttp/trades.csv`;
 
     let trades = [];
     let currentOpenTrade = null;
-
-    function showError(message) {
-        const errorDiv = document.getElementById('errorDisplay');
-        errorDiv.textContent = message;
-        errorDiv.style.display = 'block';
-        setTimeout(() => errorDiv.style.display = 'none', 5000);
-    }
 
     async function fetchCSV(url) {
         try {
@@ -208,66 +204,15 @@
         return result;
     }
 
-    async function saveToGitHub(content, commitMessage) {
-        if (!GITHUB_TOKEN) {
-            showError("❌ No GitHub token configured. Please add your token to the script.");
-            return false;
-        }
-
-        if (GITHUB_TOKEN === "ghp_your_token_here") {
-            showError("❌ Please replace the placeholder token with your real GitHub token.");
-            return false;
-        }
-
-        try {
-            const fileUrl = `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${FILE_PATH}`;
-            let sha = null;
-            try {
-                const fileResp = await fetch(fileUrl, {
-                    headers: { 'Authorization': `token ${GITHUB_TOKEN}` }
-                });
-                if (fileResp.ok) {
-                    const fileData = await fileResp.json();
-                    sha = fileData.sha;
-                }
-            } catch(e) { /* File doesn't exist yet */ }
-
-            const response = await fetch(fileUrl, {
-                method: 'PUT',
-                headers: {
-                    'Authorization': `token ${GITHUB_TOKEN}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    message: commitMessage,
-                    content: btoa(unescape(encodeURIComponent(content))),
-                    sha: sha
-                })
-            });
-
-            if (response.ok) {
-                const badge = document.getElementById('savedBadge');
-                badge.textContent = "✅ Saved to GitHub";
-                badge.classList.remove('error');
-                badge.classList.add('show');
-                setTimeout(() => badge.classList.remove('show'), 3000);
-                return true;
-            } else {
-                const error = await response.json();
-                showError(`❌ GitHub API error: ${error.message || "Unknown error"}`);
-                return false;
-            }
-        } catch (error) {
-            showError(`❌ Save failed: ${error.message}`);
-            return false;
-        }
-    }
-
     async function loadData() {
-        const tradesCSV = await fetchCSV(`https://raw.githubusercontent.com/${REPO_OWNER}/${REPO_NAME}/main/${FILE_PATH}`);
-        const progressCSV = await fetchCSV(`https://raw.githubusercontent.com/${REPO_OWNER}/${REPO_NAME}/main/data/ttp/progress.csv`);
+        const tradesCSV = await fetchCSV(TRADES_URL);
+        if (tradesCSV) {
+            document.getElementById('csvContent').value = tradesCSV;
+            trades = parseCSV(tradesCSV);
+        } else {
+            trades = [];
+        }
         
-        trades = parseCSV(tradesCSV);
         currentOpenTrade = trades.find(t => t.status === 'open');
         
         const closedTrades = trades.filter(t => t.status === 'completed');
@@ -299,9 +244,10 @@
         if (closedTrades.length === 0) {
             historyDiv.innerHTML = '<p style="color: #64748b;">No completed trades yet</p>';
         } else {
-            historyDiv.innerHTML = closedTrades.map(t => `
+            historyDiv.innerHTML = closedTrades.slice(-10).reverse().map(t => `
                 <div class="trade-row">
                     <span><strong>${t.entry_date?.split(' ')[0] || '--'}</strong></span>
+                    <span>${t.ticker}</span>
                     <span>Entry: $${t.entry_price}</span>
                     <span>Exit: $${t.exit_price}</span>
                     <span class="${(t.profit || 0) >= 0 ? 'profit-positive' : 'profit-negative'}">
@@ -312,7 +258,7 @@
         }
     }
 
-    async function openTrade() {
+    function openTrade() {
         const entryPrice = parseFloat(document.getElementById('entryPrice').value);
         const shares = parseInt(document.getElementById('shares').value);
         const stopPrice = parseFloat(document.getElementById('stopPrice').value);
@@ -323,45 +269,19 @@
             return;
         }
         
-        const newTrade = {
-            ticker: 'SOXX',
-            entry_date: new Date().toISOString(),
-            entry_price: entryPrice,
-            shares: shares,
-            stop_price: stopPrice,
-            target_price: targetPrice,
-            status: 'open'
-        };
+        const csvLine = `SOXX,${new Date().toISOString()},${entryPrice},${shares},${stopPrice},${targetPrice},open,,,`;
         
-        const allTrades = [...trades, newTrade];
+        navigator.clipboard.writeText(csvLine);
+        alert('✅ CSV line copied!\n\nAdd this line to data/ttp/trades.csv:\n\n' + csvLine + '\n\nGo to GitHub → Open trades.csv → Paste at bottom → Commit');
         
-        const headers = ['ticker', 'entry_date', 'entry_price', 'shares', 'stop_price', 'target_price', 'status', 'exit_date', 'exit_price', 'profit'];
-        const csvRows = [headers.join(',')];
-        for (const trade of allTrades) {
-            csvRows.push([
-                trade.ticker,
-                trade.entry_date,
-                trade.entry_price,
-                trade.shares,
-                trade.stop_price,
-                trade.target_price,
-                trade.status,
-                trade.exit_date || '',
-                trade.exit_price || '',
-                trade.profit || ''
-            ].join(','));
-        }
+        document.getElementById('entryPrice').value = '';
+        document.getElementById('stopPrice').value = '';
+        document.getElementById('targetPrice').value = '';
         
-        const success = await saveToGitHub(csvRows.join('\n'), `Open trade: ${shares} shares SOXX @ $${entryPrice}`);
-        if (success) {
-            await loadData();
-            document.getElementById('entryPrice').value = '';
-            document.getElementById('stopPrice').value = '';
-            document.getElementById('targetPrice').value = '';
-        }
+        setTimeout(() => loadData(), 1000);
     }
     
-    async function closeTrade() {
+    function closeTrade() {
         const exitPrice = parseFloat(document.getElementById('exitPrice').value);
         
         if (!exitPrice || !currentOpenTrade) {
@@ -371,51 +291,23 @@
         
         const profit = (exitPrice - currentOpenTrade.entry_price) * currentOpenTrade.shares;
         
-        const updatedTrades = trades.map(t => {
-            if (t.status === 'open' && t.ticker === currentOpenTrade.ticker) {
-                return {
-                    ...t,
-                    status: 'completed',
-                    exit_date: new Date().toISOString(),
-                    exit_price: exitPrice,
-                    profit: profit
-                };
-            }
-            return t;
-        });
+        const csvLine = `${currentOpenTrade.ticker},${currentOpenTrade.entry_date},${currentOpenTrade.entry_price},${currentOpenTrade.shares},${currentOpenTrade.stop_price},${currentOpenTrade.target_price},completed,${new Date().toISOString()},${exitPrice},${profit.toFixed(2)}`;
         
-        const headers = ['ticker', 'entry_date', 'entry_price', 'shares', 'stop_price', 'target_price', 'status', 'exit_date', 'exit_price', 'profit'];
-        const csvRows = [headers.join(',')];
-        for (const trade of updatedTrades) {
-            csvRows.push([
-                trade.ticker,
-                trade.entry_date,
-                trade.entry_price,
-                trade.shares,
-                trade.stop_price,
-                trade.target_price,
-                trade.status,
-                trade.exit_date || '',
-                trade.exit_price || '',
-                trade.profit || ''
-            ].join(','));
-        }
+        navigator.clipboard.writeText(csvLine);
+        alert('✅ CSV line copied!\n\nREPLACE the open trade line in data/ttp/trades.csv with:\n\n' + csvLine + '\n\nGo to GitHub → Find the open SOXX line → Replace it → Commit');
         
-        const success = await saveToGitHub(csvRows.join('\n'), `Close trade: ${currentOpenTrade.shares} shares SOXX @ $${exitPrice} (Profit: $${profit.toFixed(2)})`);
-        if (success) {
-            await loadData();
-            document.getElementById('exitPrice').value = '';
-        }
+        document.getElementById('exitPrice').value = '';
+        
+        setTimeout(() => loadData(), 1000);
+    }
+    
+    function copyCSVToClipboard() {
+        const content = document.getElementById('csvContent').value;
+        navigator.clipboard.writeText(content);
+        alert('✅ Entire trades.csv copied! Go to GitHub and replace the whole file.');
     }
     
     function refreshData() { loadData(); }
-    
-    // Test token on load
-    if (GITHUB_TOKEN === "ghp_q2tiBs3REE71QSIaW8D5BPUwfQ5qbh2y3vSZ") {
-        console.log("Token appears to be set");
-    } else {
-        showError("⚠️ Token not configured. Please add your GitHub token.");
-    }
     
     loadData();
 </script>
