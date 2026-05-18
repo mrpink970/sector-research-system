@@ -31,6 +31,9 @@ jobs:
       
       - name: Generate signal
         run: python scripts/ttp/generate_signal.py
+        env:
+          MAIL_USERNAME: ${{ secrets.MAIL_USERNAME }}
+          MAIL_PASSWORD: ${{ secrets.MAIL_PASSWORD }}
       
       - name: Commit and push updates
         run: |
