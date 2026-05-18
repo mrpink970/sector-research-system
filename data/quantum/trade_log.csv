@@ -2,3 +2,4 @@ ticker,entry_date,exit_date,entry_price,exit_price,shares,return_pct,gross_pl,ex
 HQ,2026-05-11,2026-05-15,12.57,,397,,,low_score
 HQ,2026-05-11,2026-05-15,12.57,11.91,397,-5.25,-262.02,low_score
 HQ,2026-05-11,2026-05-15,12.57,11.91,397,-5.25,-262.02,low_score
+HQ,2026-05-11,2026-05-18,12.57,11.36,397,-9.63,-480.37,low_score
