@@ -80,6 +80,7 @@
         .positive { color: #22c55e; }
         .info-text { font-size: 12px; color: #94a3b8; margin-bottom: 16px; padding: 8px; background: #0f172a; border-radius: 8px; text-align: center; }
         .csv-preview { font-size: 11px; max-height: 200px; overflow: auto; }
+        .preview-row { background: #0f172a; border-radius: 8px; padding: 8px; margin-top: 12px; font-size: 12px; }
     </style>
 </head>
 <body>
@@ -87,8 +88,9 @@
     <div class="card">
         <h1>📝 TTP Trade Entry</h1>
         <div class="info-text">
-            📋 Fill out trade → Click button → CSV copied to clipboard → Paste into GitHub<br>
-            <strong>File location:</strong> data/ttp/trades.csv
+            📋 Enter percentage (%) for stop loss and take profit<br>
+            The system will calculate the actual dollar prices<br>
+            Then copy/paste to GitHub → data/ttp/trades.csv
         </div>
     </div>
 
@@ -122,11 +124,13 @@
             <option value="2" selected>2 Shares</option>
             <option value="3">3 Shares</option>
         </select>
-        <div class="label">Stop Loss Price ($)</div>
-        <input type="number" id="stopPrice" step="0.01" placeholder="e.g., 487.07 (-2%)">
-        <div class="label">Take Profit Price ($)</div>
-        <input type="number" id="targetPrice" step="0.01" placeholder="e.g., 526.83 (+6%)">
-        <button onclick="openTrade()">📋 Open Trade (Copy to Clipboard)</button>
+        <div class="label">Stop Loss (%)</div>
+        <input type="number" id="stopPercent" step="0.1" value="2.0" placeholder="e.g., 2.0">
+        <div class="label">Take Profit (%)</div>
+        <input type="number" id="targetPercent" step="0.1" value="6.0" placeholder="e.g., 6.0">
+        <button onclick="previewTrade()">🔍 Preview Calculations</button>
+        <div id="preview" class="preview-row" style="display:none;"></div>
+        <button onclick="openTrade()" style="margin-top:8px;">📋 Open Trade (Copy to Clipboard)</button>
     </div>
 
     <div class="card" id="closeForm" style="display: none;">
@@ -146,26 +150,6 @@
     <div class="card">
         <h3>📜 Trade History</h3>
         <div id="tradeHistory">No trades yet</div>
-    </div>
-
-    <div class="card">
-        <h3>📝 Manual Edit Instructions</h3>
-        <div class="info-text" style="text-align: left;">
-            <strong>To OPEN a trade:</strong><br>
-            1. Fill out form above → Click "Open Trade"<br>
-            2. CSV line copied to clipboard<br>
-            3. Go to GitHub → Open data/ttp/trades.csv<br>
-            4. Paste the new line at the bottom<br>
-            5. Commit changes<br><br>
-            <strong>To CLOSE a trade:</strong><br>
-            1. Click "Close Trade" → Enter exit price<br>
-            2. CSV line copied to clipboard<br>
-            3. Go to GitHub → Find the open trade line in trades.csv<br>
-            4. Replace it with the completed line from clipboard<br>
-            5. Commit changes<br><br>
-            <strong>CSV Format:</strong><br>
-            ticker,entry_date,entry_price,shares,stop_price,target_price,status,exit_date,exit_price,profit
-        </div>
     </div>
 </div>
 
@@ -204,6 +188,82 @@
         return result;
     }
 
+    function previewTrade() {
+        const entryPrice = parseFloat(document.getElementById('entryPrice').value);
+        const stopPercent = parseFloat(document.getElementById('stopPercent').value);
+        const targetPercent = parseFloat(document.getElementById('targetPercent').value);
+        
+        if (!entryPrice) {
+            alert('Please enter entry price first');
+            return;
+        }
+        
+        const stopPrice = entryPrice * (1 - stopPercent / 100);
+        const targetPrice = entryPrice * (1 + targetPercent / 100);
+        
+        document.getElementById('preview').style.display = 'block';
+        document.getElementById('preview').innerHTML = `
+            <strong>📊 Calculated Values:</strong><br>
+            Entry: $${entryPrice.toFixed(2)}<br>
+            Stop Loss (${stopPercent}%): $${stopPrice.toFixed(2)}<br>
+            Take Profit (${targetPercent}%): $${targetPrice.toFixed(2)}<br>
+            Risk per share: $${(entryPrice - stopPrice).toFixed(2)}<br>
+            Reward per share: $${(targetPrice - entryPrice).toFixed(2)}<br>
+            Risk:Reward: 1:${((targetPrice - entryPrice) / (entryPrice - stopPrice)).toFixed(2)}
+        `;
+    }
+
+    function openTrade() {
+        const entryPrice = parseFloat(document.getElementById('entryPrice').value);
+        const shares = parseInt(document.getElementById('shares').value);
+        const stopPercent = parseFloat(document.getElementById('stopPercent').value);
+        const targetPercent = parseFloat(document.getElementById('targetPercent').value);
+        
+        if (!entryPrice || !stopPercent || !targetPercent) {
+            alert('Please fill in all fields');
+            return;
+        }
+        
+        const stopPrice = entryPrice * (1 - stopPercent / 100);
+        const targetPrice = entryPrice * (1 + targetPercent / 100);
+        
+        const csvLine = `SOXX,${new Date().toISOString()},${entryPrice.toFixed(2)},${shares},${stopPrice.toFixed(2)},${targetPrice.toFixed(2)},open,,,`;
+        
+        navigator.clipboard.writeText(csvLine);
+        alert('✅ CSV line copied!\n\n' + csvLine + '\n\nGo to GitHub → data/ttp/trades.csv → Paste at bottom → Commit');
+        
+        document.getElementById('entryPrice').value = '';
+        document.getElementById('preview').style.display = 'none';
+        
+        setTimeout(() => loadData(), 1000);
+    }
+    
+    function closeTrade() {
+        const exitPrice = parseFloat(document.getElementById('exitPrice').value);
+        
+        if (!exitPrice || !currentOpenTrade) {
+            alert('Please fill in exit price');
+            return;
+        }
+        
+        const profit = (exitPrice - currentOpenTrade.entry_price) * currentOpenTrade.shares;
+        
+        const csvLine = `${currentOpenTrade.ticker},${currentOpenTrade.entry_date},${currentOpenTrade.entry_price},${currentOpenTrade.shares},${currentOpenTrade.stop_price},${currentOpenTrade.target_price},completed,${new Date().toISOString()},${exitPrice.toFixed(2)},${profit.toFixed(2)}`;
+        
+        navigator.clipboard.writeText(csvLine);
+        alert('✅ CSV line copied!\n\nREPLACE the open trade line in trades.csv with:\n\n' + csvLine);
+        
+        document.getElementById('exitPrice').value = '';
+        
+        setTimeout(() => loadData(), 1000);
+    }
+    
+    function copyCSVToClipboard() {
+        const content = document.getElementById('csvContent').value;
+        navigator.clipboard.writeText(content);
+        alert('✅ Entire trades.csv copied! Go to GitHub and replace the whole file.');
+    }
+    
     async function loadData() {
         const tradesCSV = await fetchCSV(TRADES_URL);
         if (tradesCSV) {
@@ -256,55 +316,6 @@
                 </div>
             `).join('');
         }
-    }
-
-    function openTrade() {
-        const entryPrice = parseFloat(document.getElementById('entryPrice').value);
-        const shares = parseInt(document.getElementById('shares').value);
-        const stopPrice = parseFloat(document.getElementById('stopPrice').value);
-        const targetPrice = parseFloat(document.getElementById('targetPrice').value);
-        
-        if (!entryPrice || !stopPrice || !targetPrice) {
-            alert('Please fill in all fields');
-            return;
-        }
-        
-        const csvLine = `SOXX,${new Date().toISOString()},${entryPrice},${shares},${stopPrice},${targetPrice},open,,,`;
-        
-        navigator.clipboard.writeText(csvLine);
-        alert('✅ CSV line copied!\n\nAdd this line to data/ttp/trades.csv:\n\n' + csvLine + '\n\nGo to GitHub → Open trades.csv → Paste at bottom → Commit');
-        
-        document.getElementById('entryPrice').value = '';
-        document.getElementById('stopPrice').value = '';
-        document.getElementById('targetPrice').value = '';
-        
-        setTimeout(() => loadData(), 1000);
-    }
-    
-    function closeTrade() {
-        const exitPrice = parseFloat(document.getElementById('exitPrice').value);
-        
-        if (!exitPrice || !currentOpenTrade) {
-            alert('Please fill in exit price');
-            return;
-        }
-        
-        const profit = (exitPrice - currentOpenTrade.entry_price) * currentOpenTrade.shares;
-        
-        const csvLine = `${currentOpenTrade.ticker},${currentOpenTrade.entry_date},${currentOpenTrade.entry_price},${currentOpenTrade.shares},${currentOpenTrade.stop_price},${currentOpenTrade.target_price},completed,${new Date().toISOString()},${exitPrice},${profit.toFixed(2)}`;
-        
-        navigator.clipboard.writeText(csvLine);
-        alert('✅ CSV line copied!\n\nREPLACE the open trade line in data/ttp/trades.csv with:\n\n' + csvLine + '\n\nGo to GitHub → Find the open SOXX line → Replace it → Commit');
-        
-        document.getElementById('exitPrice').value = '';
-        
-        setTimeout(() => loadData(), 1000);
-    }
-    
-    function copyCSVToClipboard() {
-        const content = document.getElementById('csvContent').value;
-        navigator.clipboard.writeText(content);
-        alert('✅ Entire trades.csv copied! Go to GitHub and replace the whole file.');
     }
     
     function refreshData() { loadData(); }
