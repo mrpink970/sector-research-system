@@ -1,3 +1,4 @@
 timestamp,session,price,return_1h_pct,ma20,ma50,above_ma20,volume_ratio,rsi
 2026-05-18 15:35:07,afternoon,497.01,0.5,480.16,497.01,True,0.65,65.0
 2026-05-18 15:49:45,afternoon,497.99,0.8,480.21,497.99,True,0.67,65.3
+2026-05-18 15:52:48,afternoon,496.91,0.13,480.16,496.91,True,0.67,65.0
