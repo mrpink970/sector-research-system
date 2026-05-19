@@ -11,3 +11,4 @@ timestamp,session,signal,price,stop_price,target_price,shares,net_profit,conditi
 2026-05-19 13:32:54,midday,RED,493.29,0.0,0.0,2,0.0,❌ 1h return: 0.00% < 0.5% | ✅ Above MA20 ($483.74) | ❌ Volume ratio: 0.06 < 1.0 | ✅ RSI: 61.6 >= 50
 2026-05-19 15:17:11,afternoon,RED,488.99,0.0,0.0,2,0.0,✅ 1h return: 1.80% >= 0.5% | ✅ Above MA20 ($483.52) | ❌ Volume ratio: 0.81 < 1.0 | ✅ RSI: 60.2 >= 50
 2026-05-19 16:42:56,afternoon,RED,499.82,0.0,0.0,2,0.0,✅ 1h return: 1.61% >= 0.5% | ✅ Above MA20 ($484.06) | ❌ Volume ratio: 0.99 < 1.0 | ✅ RSI: 63.2 >= 50
+2026-05-19 19:06:24,afternoon,RED,500.55,0.0,0.0,2,0.0,❌ 1h return: -0.73% < 0.5% | ✅ Above MA20 ($484.10) | ✅ Volume ratio: 1.29 >= 1.0 | ✅ RSI: 63.4 >= 50
