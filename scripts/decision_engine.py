@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """
-Decision Engine - Morning analysis and trade recommendations
+Decision Engine - Forward-Looking Market Analysis
 Runs at 10:00 AM ET
 Tells you which system to hold, when to switch, when to go to cash
+Based on MOMENTUM (recent performance) not backward-looking returns
 """
 
 import os
@@ -15,6 +16,7 @@ from typing import Dict, List, Tuple, Optional
 import pandas as pd
 import yfinance as yf
 import yaml
+import numpy as np
 
 
 # ============================================================
@@ -49,11 +51,108 @@ def safe_int(value, default=0) -> int:
 
 
 # ============================================================
-# SYSTEM PERFORMANCE DATA
+# FORWARD-LOOKING MOMENTUM DATA
+# ============================================================
+
+def get_market_momentum() -> Dict[str, float]:
+    """
+    Calculate 5-day momentum for key market indicators
+    Higher score = stronger recent performance
+    """
+    momentum = {}
+    
+    try:
+        # SOXL momentum (affects 2 ETF and Sector systems)
+        soxl = yf.Ticker("SOXL")
+        soxl_hist = soxl.history(period="2wk", interval="1d")
+        if len(soxl_hist) >= 5:
+            soxl_5d = (soxl_hist['Close'].iloc[-1] - soxl_hist['Close'].iloc[-5]) / soxl_hist['Close'].iloc[-5] * 100
+            momentum['soxl'] = max(0, min(100, (soxl_5d + 10) * 5))
+        else:
+            momentum['soxl'] = 50
+        
+        # QQQ momentum (broad market for Stock and AI systems)
+        qqq = yf.Ticker("QQQ")
+        qqq_hist = qqq.history(period="2wk", interval="1d")
+        if len(qqq_hist) >= 5:
+            qqq_5d = (qqq_hist['Close'].iloc[-1] - qqq_hist['Close'].iloc[-5]) / qqq_hist['Close'].iloc[-5] * 100
+            momentum['qqq'] = max(0, min(100, (qqq_5d + 10) * 5))
+        else:
+            momentum['qqq'] = 50
+        
+        # VIX momentum (inverse - lower VIX is better for most systems)
+        vix = yf.Ticker("^VIX")
+        vix_hist = vix.history(period="2wk", interval="1d")
+        if len(vix_hist) >= 5:
+            vix_5d = (vix_hist['Close'].iloc[-1] - vix_hist['Close'].iloc[-5]) / vix_hist['Close'].iloc[-5] * 100
+            # Inverse relationship: falling VIX = good momentum
+            momentum['vix'] = max(0, min(100, 100 - (vix_5d * 4)))
+        else:
+            momentum['vix'] = 50
+        
+        # Semiconductor sector momentum (SOXX)
+        soxx = yf.Ticker("SOXX")
+        soxx_hist = soxx.history(period="2wk", interval="1d")
+        if len(soxx_hist) >= 5:
+            soxx_5d = (soxx_hist['Close'].iloc[-1] - soxx_hist['Close'].iloc[-5]) / soxx_hist['Close'].iloc[-5] * 100
+            momentum['soxx'] = max(0, min(100, (soxx_5d + 8) * 5))
+        else:
+            momentum['soxx'] = 50
+        
+    except Exception as e:
+        print(f"Error calculating momentum: {e}")
+        momentum = {'soxl': 50, 'qqq': 50, 'vix': 50, 'soxx': 50}
+    
+    return momentum
+
+
+def get_system_momentum_scores(market_momentum: Dict[str, float]) -> Dict[str, float]:
+    """
+    Calculate forward-looking scores for each system based on:
+    - What the system holds (current positions)
+    - How those holdings have performed recently
+    - Current market regime
+    """
+    scores = {}
+    
+    # System 1: 2 ETF System (SOXL/TQQQ - high leverage)
+    # High leverage works best when momentum is strong and VIX is low
+    soxl_mom = market_momentum.get('soxl', 50)
+    vix_mom = market_momentum.get('vix', 50)
+    
+    two_etf_score = (soxl_mom * 0.6) + ((100 - vix_mom) * 0.4)
+    scores['two_etf'] = min(100, max(0, two_etf_score))
+    
+    # System 2: Sector System (SOXL but lower leverage management)
+    # More resilient, works in moderate conditions
+    soxx_mom = market_momentum.get('soxx', 50)
+    sector_score = (soxx_mom * 0.5) + (soxl_mom * 0.3) + ((100 - vix_mom) * 0.2)
+    scores['sector'] = min(100, max(0, sector_score))
+    
+    # System 3: Stock System (broad market, individual stocks)
+    # Works best when QQQ is trending
+    qqq_mom = market_momentum.get('qqq', 50)
+    stock_score = (qqq_mom * 0.7) + ((100 - vix_mom) * 0.3)
+    scores['stock'] = min(100, max(0, stock_score))
+    
+    # System 4: AI System (adaptive, good in most conditions but prefers trends)
+    ai_score = (qqq_mom * 0.4) + (soxx_mom * 0.3) + ((100 - vix_mom) * 0.3)
+    scores['ai'] = min(100, max(0, ai_score))
+    
+    # System 5: Quantum System (volatility-based, works in ranges)
+    # Inverse of VIX momentum - works when VIX is rising or stable
+    quantum_score = (vix_mom * 0.6) + (50 * 0.4)  # Default to moderate when VIX stable
+    scores['quantum'] = min(100, max(0, quantum_score))
+    
+    return scores
+
+
+# ============================================================
+# SYSTEM HISTORICAL DATA (for context, not scoring)
 # ============================================================
 
 def get_system_performance() -> Dict[str, dict]:
-    """Read performance data from all 5 systems and calculate 0-100 scores"""
+    """Read historical performance data from all 5 systems (for display only)"""
     systems = {}
     
     # 1. 2 ETF System
@@ -94,6 +193,10 @@ def get_system_performance() -> Dict[str, dict]:
                 }
         except Exception as e:
             print(f"Error reading 2 ETF system: {e}")
+            systems['two_etf'] = {
+                'name': '2 ETF System',
+                'return': 0, 'win_rate': 0, 'trades': 0, 'max_dd': 0, 'current_holding': 'SOXL',
+            }
     
     # 2. Sector System
     perf_path = Path("data/paper_performance.csv")
@@ -114,6 +217,10 @@ def get_system_performance() -> Dict[str, dict]:
                 }
         except Exception as e:
             print(f"Error reading Sector system: {e}")
+            systems['sector'] = {
+                'name': 'Sector System',
+                'return': 0, 'win_rate': 0, 'trades': 0, 'max_dd': 0, 'current_holding': 'SOXL',
+            }
     
     # 3. Stock System
     perf_path = Path("data/stocks/stock_performance.csv")
@@ -146,6 +253,10 @@ def get_system_performance() -> Dict[str, dict]:
                 }
         except Exception as e:
             print(f"Error reading Stock system: {e}")
+            systems['stock'] = {
+                'name': 'Stock System',
+                'return': 0, 'win_rate': 0, 'trades': 0, 'max_dd': 0, 'current_holding': 'VARIOUS',
+            }
     
     # 4. AI System
     perf_path = Path("data/ai/performance.csv")
@@ -172,6 +283,10 @@ def get_system_performance() -> Dict[str, dict]:
                 }
         except Exception as e:
             print(f"Error reading AI system: {e}")
+            systems['ai'] = {
+                'name': 'AI System',
+                'return': 0, 'win_rate': 0, 'trades': 0, 'max_dd': 0, 'current_holding': 'N/A',
+            }
     
     # 5. Quantum System
     perf_path = Path("data/quantum/performance.csv")
@@ -198,67 +313,89 @@ def get_system_performance() -> Dict[str, dict]:
                 }
         except Exception as e:
             print(f"Error reading Quantum system: {e}")
+            systems['quantum'] = {
+                'name': 'Quantum System',
+                'return': 0, 'win_rate': 0, 'trades': 0, 'max_dd': 0, 'current_holding': 'N/A',
+            }
     
     return systems
 
 
-def calculate_system_scores(systems: Dict[str, dict]) -> Dict[str, dict]:
-    """
-    Calculate 0-100 scores for each system based on:
-    - Return (40% weight)
-    - Win rate (25% weight)
-    - Drawdown (25% weight - lower is better)
-    - Trade count (10% weight - more trades = more confidence)
-    """
-    if not systems:
-        return {}
-    
-    returns = [s['return'] for s in systems.values()]
-    win_rates = [s['win_rate'] for s in systems.values()]
-    drawdowns = [s['max_dd'] for s in systems.values()]
-    trade_counts = [s['trades'] for s in systems.values()]
-    
-    min_return = min(returns) if returns else 0
-    max_return = max(returns) if returns else 100
-    min_win_rate = min(win_rates) if win_rates else 0
-    max_win_rate = max(win_rates) if win_rates else 100
-    min_dd = min(drawdowns) if drawdowns else 0
-    max_dd = max(drawdowns) if drawdowns else 10
-    max_trades = max(trade_counts) if trade_counts else 1
-    
-    scores = {}
-    for name, data in systems.items():
-        if max_return > min_return:
-            return_score = (data['return'] - min_return) / (max_return - min_return) * 100
-        else:
-            return_score = 50
-        
-        if max_win_rate > min_win_rate:
-            win_rate_score = (data['win_rate'] - min_win_rate) / (max_win_rate - min_win_rate) * 100
-        else:
-            win_rate_score = 50
-        
-        if max_dd > min_dd:
-            dd_score = (1 - (data['max_dd'] - min_dd) / (max_dd - min_dd)) * 100
-        else:
-            dd_score = 50
-        
-        trade_score = min(100, (data['trades'] / max_trades) * 100) if max_trades > 0 else 50
-        
-        total_score = (return_score * 0.40) + (win_rate_score * 0.25) + (dd_score * 0.25) + (trade_score * 0.10)
-        
-        scores[name] = {
-            'name': data['name'],
-            'score': round(total_score, 1),
-            'return': round(data['return'], 1),
-            'win_rate': round(data['win_rate'], 1),
-            'max_dd': round(data['max_dd'], 1),
-            'trades': data['trades'],
-            'current_holding': data.get('current_holding', 'N/A'),
-        }
-    
-    return scores
+# ============================================================
+# REGIME DETECTION (FORWARD-LOOKING)
+# ============================================================
 
+def get_regime() -> Tuple[str, float, str]:
+    """
+    Determine current market regime with strength score and trend direction
+    Returns: (regime_string, strength_score, trend_direction)
+    """
+    try:
+        qqq = yf.Ticker("QQQ")
+        hist = qqq.history(period="3mo")
+        vix = yf.Ticker("^VIX")
+        vix_hist = vix.history(period="1mo")
+        
+        if len(hist) >= 50 and len(vix_hist) >= 20:
+            current_price = hist['Close'].iloc[-1]
+            ma50 = hist['Close'].rolling(50).mean().iloc[-1]
+            ma20 = hist['Close'].rolling(20).mean().iloc[-1]
+            ma10 = hist['Close'].rolling(10).mean().iloc[-1]
+            
+            # Trend direction
+            if current_price > ma10 > ma20 > ma50:
+                trend = "STRONG_UPTREND"
+            elif current_price > ma20 > ma50:
+                trend = "UPTREND"
+            elif current_price < ma10 < ma20 < ma50:
+                trend = "STRONG_DOWNTREND"
+            elif current_price < ma20 < ma50:
+                trend = "DOWNTREND"
+            else:
+                trend = "CHOPPY"
+            
+            # Calculate trend strength using ADX simplified
+            high_low = hist['High'] - hist['Low']
+            high_close = abs(hist['High'] - hist['Close'].shift(1))
+            low_close = abs(hist['Low'] - hist['Close'].shift(1))
+            tr = pd.concat([high_low, high_close, low_close], axis=1).max(axis=1)
+            atr = tr.rolling(14).mean().iloc[-1]
+            trend_strength = min(100, (abs(current_price - ma50) / atr) * 20) if atr > 0 else 50
+            
+            # VIX regime
+            current_vix = vix_hist['Close'].iloc[-1]
+            vix_ma20 = vix_hist['Close'].rolling(20).mean().iloc[-1]
+            
+            if current_vix < 15:
+                vix_regime = "LOW_VOL"
+            elif current_vix < 20:
+                vix_regime = "NORMAL_VOL"
+            elif current_vix < 30:
+                vix_regime = "ELEVATED_VOL"
+            else:
+                vix_regime = "HIGH_VOL"
+            
+            # Combine for final regime
+            if trend in ["STRONG_UPTREND", "UPTREND"] and current_vix < 20:
+                regime = "BULL"
+            elif trend in ["STRONG_DOWNTREND", "DOWNTREND"] and current_vix > 20:
+                regime = "BEAR"
+            elif trend == "CHOPPY":
+                regime = "RANGE"
+            else:
+                regime = "NEUTRAL"
+            
+            return regime, trend_strength, vix_regime
+        
+        return "NEUTRAL", 50, "NORMAL_VOL"
+    except Exception as e:
+        print(f"Error getting regime: {e}")
+        return "UNKNOWN", 0, "UNKNOWN"
+
+
+# ============================================================
+# SWITCH LOGIC
+# ============================================================
 
 def load_previous_switch_log() -> Tuple[Optional[str], Optional[datetime]]:
     """Load last switch decision from log"""
@@ -271,18 +408,20 @@ def load_previous_switch_log() -> Tuple[Optional[str], Optional[datetime]]:
             return None, None
         
         last_row = df.iloc[-1]
-        return last_row.get('recommended_system'), pd.to_datetime(last_row.get('date'))
+        last_date = pd.to_datetime(last_row.get('date')) if 'date' in last_row else None
+        return last_row.get('recommended_system'), last_date
     except Exception:
         return None, None
 
 
-def save_switch_recommendation(recommendation: str, current_system: str, scores: Dict) -> None:
+def save_switch_recommendation(recommendation: str, current_system: str, scores: Dict, regime: str) -> None:
     """Save switch recommendation to log"""
     new_row = pd.DataFrame([{
         'date': datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         'recommended_system': recommendation,
         'current_leader': current_system,
         'top_score': max(scores.values(), key=lambda x: x['score'])['score'] if scores else 0,
+        'regime': regime,
     }])
     
     if SWITCH_LOG_PATH.exists():
@@ -312,22 +451,39 @@ def get_business_days_since(last_date: datetime) -> int:
     return days
 
 
-def get_regime() -> str:
-    """Determine current market regime"""
-    try:
-        qqq = yf.Ticker("QQQ")
-        hist = qqq.history(period="3mo")
-        if len(hist) >= 50:
-            current_price = hist['Close'].iloc[-1]
-            ma50 = hist['Close'].rolling(50).mean().iloc[-1]
-            ma20 = hist['Close'].rolling(20).mean().iloc[-1]
-            ma20_slope = ma20 > hist['Close'].rolling(20).mean().shift(1).iloc[-1]
-            
-            if current_price > ma50 and ma20_slope:
-                return "BULL"
-        return "CASH"
-    except Exception:
-        return "UNKNOWN"
+def calculate_final_scores(
+    momentum_scores: Dict[str, float],
+    historical_systems: Dict[str, dict]
+) -> Dict[str, dict]:
+    """
+    Combine forward-looking momentum (80%) with historical context (20%)
+    This makes the engine mostly forward-looking but maintains stability
+    """
+    final_scores = {}
+    
+    for name in momentum_scores.keys():
+        momentum = momentum_scores.get(name, 50)
+        
+        # Use historical return as minor factor (20% weight)
+        hist = historical_systems.get(name, {})
+        hist_return = hist.get('return', 0)
+        hist_score = min(100, max(0, hist_return / 2))  # Convert return % to 0-100 scale
+        
+        # Final score: 80% momentum, 20% historical
+        total_score = (momentum * 0.80) + (hist_score * 0.20)
+        
+        final_scores[name] = {
+            'name': hist.get('name', name.replace('_', ' ').title()),
+            'score': round(total_score, 1),
+            'return': round(hist.get('return', 0), 1),
+            'win_rate': round(hist.get('win_rate', 0), 1),
+            'max_dd': round(hist.get('max_dd', 0), 1),
+            'trades': hist.get('trades', 0),
+            'current_holding': hist.get('current_holding', 'N/A'),
+            'momentum_score': round(momentum, 1),
+        }
+    
+    return final_scores
 
 
 # ============================================================
@@ -343,10 +499,13 @@ def send_email(
     gap: float,
     days_since_switch: int,
     regime: str,
+    strength: float,
+    vix_regime: str,
+    market_momentum: Dict[str, float],
     recommendations: List[str],
     recipients: List[str]
 ) -> bool:
-    """Send decision engine email with full analysis"""
+    """Send decision engine email with full forward-looking analysis"""
     mail_username = os.environ.get("MAIL_USERNAME")
     mail_password = os.environ.get("MAIL_PASSWORD")
     
@@ -364,7 +523,7 @@ def send_email(
     
     scores_detail = []
     for name, data in scores.items():
-        scores_detail.append(f"  {data['name']:15} Score: {data['score']:.0f}  |  Return: +{data['return']:.0f}%  |  Win: {data['win_rate']:.0f}%")
+        scores_detail.append(f"  {data['name']:15} Score: {data['score']:.0f}  |  Momentum: {data['momentum_score']:.0f}  |  Return: +{data['return']:.0f}%  |  Win: {data['win_rate']:.0f}%")
     scores_text = "\n".join(scores_detail)
     
     rec_text = "\n".join([f"  {r}" for r in recommendations])
@@ -375,17 +534,38 @@ def send_email(
   These are short-term trading signals. Not investment advice.
 ═══════════════════════════════════════════════════════════
 
-  DECISION ENGINE - {date_str} ET
+  DECISION ENGINE - FORWARD-LOOKING ANALYSIS
+  {date_str} ET
 
 ═══════════════════════════════════════════════════════════
 
-📊 SYSTEM RANKINGS (0-100 Scale)
+📊 MARKET REGIME
+
+  Regime: {regime}
+  Trend Strength: {strength:.0f}/100
+  Volatility: {vix_regime}
+  
+  {'✅ FAVORABLE for trading' if regime in ['BULL', 'NEUTRAL'] else '⚠️ CAUTION - Consider reducing size'}
+
+═══════════════════════════════════════════════════════════
+
+📈 SYSTEM RANKINGS (Forward-Looking, 0-100 Scale)
+  Based on recent momentum (80%) + historical (20%)
 
 {ranking_text}
 
-📈 DETAILED SCORES
+📊 DETAILED SCORES (Momentum = recent performance driver)
 
 {scores_text}
+
+📊 MARKET MOMENTUM (5-day)
+
+  SOXL (Semiconductor 3x): {market_momentum.get('soxl', 50):.0f}/100
+  QQQ (Nasdaq): {market_momentum.get('qqq', 50):.0f}/100
+  VIX (Volatility - inverse): {market_momentum.get('vix', 50):.0f}/100
+  SOXX (Semiconductor): {market_momentum.get('soxx', 50):.0f}/100
+
+═══════════════════════════════════════════════════════════
 
 🔄 SWITCH ANALYSIS
 
@@ -400,21 +580,23 @@ def send_email(
   Threshold for trading: 50
   Regime: {regime}
   
-  {'✅ STAY ACTIVE - Top score above 50' if top_score >= 50 else '🔴 GO TO CASH - Top score below 50'}
+  {'✅ STAY ACTIVE - Top score above 50 and favorable regime' if top_score >= 50 and regime in ['BULL', 'NEUTRAL'] else '🔴 GO TO CASH - Top score below 50 or unfavorable regime'}
+
+═══════════════════════════════════════════════════════════
 
 🎯 RECOMMENDATION
 
 {rec_text}
 
 ═══════════════════════════════════════════════════════════
-  Action: {'Hold ' + top_system if top_score >= 50 else 'Go to cash'}
-  {'No trade needed' if top_score >= 50 else 'Exit all positions to cash'}
+  Action: {'Hold ' + top_system if top_score >= 50 and regime in ['BULL', 'NEUTRAL'] else 'Go to cash'}
+  {'Trade the leader with normal size' if top_score >= 50 and regime in ['BULL', 'NEUTRAL'] else 'Exit all positions to cash. Wait for better conditions.'}
 ═══════════════════════════════════════════════════════════
 """
     
     msg = EmailMessage()
     msg.set_content(body)
-    msg["Subject"] = f"🎯 Decision Engine - {datetime.now().strftime('%Y-%m-%d')}"
+    msg["Subject"] = f"🎯 Decision Engine - {datetime.now().strftime('%Y-%m-%d')} - {regime}"
     msg["From"] = mail_username
     msg["To"] = recipients[0] if recipients else mail_username
     msg["Cc"] = recipients[1:] if len(recipients) > 1 else []
@@ -436,7 +618,8 @@ def send_email(
 
 def main():
     print("=" * 60)
-    print("DECISION ENGINE - Morning Analysis")
+    print("DECISION ENGINE - FORWARD-LOOKING ANALYSIS")
+    print("Based on momentum (recent performance) not backward-looking returns")
     print("=" * 60)
     
     try:
@@ -447,13 +630,34 @@ def main():
         print(f"⚠️ Could not load config: {e}")
         recipients = ["mrpink970@gmail.com"]
     
-    systems_raw = get_system_performance()
-    scores = calculate_system_scores(systems_raw)
+    # Get forward-looking momentum
+    print("\n📊 Calculating market momentum...")
+    market_momentum = get_market_momentum()
+    print(f"   SOXL momentum: {market_momentum.get('soxl', 50):.0f}")
+    print(f"   QQQ momentum: {market_momentum.get('qqq', 50):.0f}")
+    print(f"   VIX (inverse): {market_momentum.get('vix', 50):.0f}")
+    
+    # Get system-specific momentum scores
+    momentum_scores = get_system_momentum_scores(market_momentum)
+    print(f"\n📈 System momentum scores:")
+    for name, score in momentum_scores.items():
+        print(f"   {name}: {score:.0f}")
+    
+    # Get historical data for context (20% weight)
+    historical_systems = get_system_performance()
+    
+    # Calculate final scores (80% momentum, 20% historical)
+    scores = calculate_final_scores(momentum_scores, historical_systems)
     
     if not scores:
         print("⚠️ No system data available")
         return
     
+    # Get regime
+    regime, strength, vix_regime = get_regime()
+    print(f"\n🌍 Market regime: {regime} (strength: {strength:.0f}, vol: {vix_regime})")
+    
+    # Sort and analyze
     sorted_scores = sorted(scores.items(), key=lambda x: x[1]['score'], reverse=True)
     top_system, top_data = sorted_scores[0]
     top_score = top_data['score']
@@ -462,23 +666,24 @@ def main():
     second_score = second_data['score']
     gap = top_score - second_score
     
-    regime = get_regime()
-    
+    # Switch logic
     last_switch_system, last_switch_date = load_previous_switch_log()
     days_since_switch = get_business_days_since(last_switch_date) if last_switch_date else 999
     
     recommendations = []
     
+    # Determine action
     if top_score < 50:
         recommendations.append("🔴 GO TO CASH - Top system score is below 50")
         recommendations.append("   Exit all positions. Wait for scores to recover.")
         action = "CASH"
-    elif regime == "CASH":
-        recommendations.append("🔴 GO TO CASH - Market regime is CASH (QQQ < MA50)")
-        recommendations.append("   Exit all positions. Re-enter when regime turns BULL.")
+    elif regime not in ['BULL', 'NEUTRAL']:
+        recommendations.append(f"🔴 GO TO CASH - Market regime is {regime} (unfavorable)")
+        recommendations.append("   Exit all positions. Re-enter when regime turns BULL or NEUTRAL.")
         action = "CASH"
     else:
         recommendations.append(f"✅ HOLD: {top_data['name']} (Score: {top_score:.0f})")
+        recommendations.append(f"   Momentum score: {top_data['momentum_score']:.0f}")
         recommendations.append(f"   2nd place: {second_system} ({second_score:.0f})")
         
         if gap >= 10:
@@ -492,13 +697,18 @@ def main():
         
         action = f"HOLD {top_data['name']}"
     
-    print(f"\n📊 SYSTEM RANKINGS:")
+    # Print results
+    print(f"\n📊 SYSTEM RANKINGS (Forward-looking):")
     for name, data in sorted_scores:
-        print(f"   {data['name']}: {data['score']:.0f} (Return: +{data['return']:.0f}%, Win: {data['win_rate']:.0f}%)")
+        print(f"   {data['name']}: {data['score']:.0f} (Momentum: {data['momentum_score']:.0f} | Return: +{data['return']:.0f}%)")
     
     print(f"\n🎯 RECOMMENDATION: {action}")
     print(f"   Top score: {top_score:.0f} | Regime: {regime}")
     print(f"   Gap to 2nd: {gap:.0f} points | Days since switch: {days_since_switch}")
+    
+    # Save and send
+    if action != "CASH":
+        save_switch_recommendation(top_data['name'], top_system, scores, regime)
     
     send_email(
         scores=scores,
@@ -509,6 +719,9 @@ def main():
         gap=gap,
         days_since_switch=days_since_switch,
         regime=regime,
+        strength=strength,
+        vix_regime=vix_regime,
+        market_momentum=market_momentum,
         recommendations=recommendations,
         recipients=recipients
     )
