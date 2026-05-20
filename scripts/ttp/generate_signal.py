@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """
 Trade The Pool - SOXX Signal Generator (with Email)
-Determines Green Day status AND fast breakouts
+Determines Green Day status based on: 1h return, MA20, RSI
+Volume requirement removed
 """
 
 import os
@@ -11,7 +12,6 @@ import pandas as pd
 import yaml
 from pathlib import Path
 from datetime import datetime
-import sys
 
 # Paths
 CONFIG_PATH = Path("config/ttp_config.yaml")
@@ -38,10 +38,11 @@ def load_latest_data():
 
 
 def check_green_day(data: dict, config: dict) -> tuple[bool, list]:
-    """Check if conditions meet Green Day criteria (1-hour timeframe)"""
+    """Check if conditions meet Green Day criteria"""
     conditions = []
     all_met = True
     
+    # Check 1-hour return
     min_return = config['entry_conditions']['min_1h_return']
     if data['return_1h_pct'] >= min_return:
         conditions.append(f"✅ 1h return: {data['return_1h_pct']:.2f}% >= {min_return}%")
@@ -49,6 +50,7 @@ def check_green_day(data: dict, config: dict) -> tuple[bool, list]:
         conditions.append(f"❌ 1h return: {data['return_1h_pct']:.2f}% < {min_return}%")
         all_met = False
     
+    # Check MA20
     if config['entry_conditions']['above_ma20']:
         if data['above_ma20']:
             conditions.append(f"✅ Above MA20 (${data['ma20']:.2f})")
@@ -56,13 +58,7 @@ def check_green_day(data: dict, config: dict) -> tuple[bool, list]:
             conditions.append(f"❌ Below MA20 (${data['ma20']:.2f})")
             all_met = False
     
-    min_volume = config['entry_conditions']['min_volume_ratio']
-    if data['volume_ratio'] >= min_volume:
-        conditions.append(f"✅ Volume ratio: {data['volume_ratio']:.2f} >= {min_volume}")
-    else:
-        conditions.append(f"❌ Volume ratio: {data['volume_ratio']:.2f} < {min_volume}")
-        all_met = False
-    
+    # Check RSI
     rsi_min = config['entry_conditions']['rsi_min']
     if data['rsi'] >= rsi_min:
         conditions.append(f"✅ RSI: {data['rsi']:.1f} >= {rsi_min}")
@@ -70,12 +66,14 @@ def check_green_day(data: dict, config: dict) -> tuple[bool, list]:
         conditions.append(f"❌ RSI: {data['rsi']:.1f} < {rsi_min}")
         all_met = False
     
+    # Volume check removed
+    
     return all_met, conditions
 
 
 def check_fast_breakout(data: dict, recent_data: list) -> tuple[bool, dict]:
     """
-    NEW: Check for fast breakout on 15-minute timeframe
+    Check for fast breakout on 15-minute timeframe
     Catches moves that happen too quickly for 1-hour checks
     """
     if not recent_data or len(recent_data) < 3:
@@ -86,29 +84,25 @@ def check_fast_breakout(data: dict, recent_data: list) -> tuple[bool, dict]:
     # Get recent 15-minute high/low (last 3 data points)
     recent_high = max([d['price'] for d in recent_data[-3:]])
     recent_low = min([d['price'] for d in recent_data[-3:]])
-    avg_volume = sum([d.get('volume_ratio', 1) for d in recent_data[-3:]]) / 3
     
-    # Fast breakout conditions
+    # Fast breakout conditions (volume no longer required)
     breakout_up = current_price > recent_high * 1.005  # 0.5% above recent high
-    volume_surge = data['volume_ratio'] > avg_volume * 1.5
     momentum = data['rsi'] > 60
     above_ma20 = data['above_ma20']
     
-    is_fast_long = breakout_up and volume_surge and momentum and above_ma20
+    is_fast_long = breakout_up and momentum and above_ma20
     
     details = {
         'recent_high': round(recent_high, 2),
         'recent_low': round(recent_low, 2),
-        'volume_surge': round(data['volume_ratio'] / avg_volume, 2) if avg_volume > 0 else 1,
         'breakout_up': breakout_up,
-        'volume_surge_met': volume_surge,
         'momentum_met': momentum,
     }
     
     return is_fast_long, details
 
 
-def load_recent_data_points(hours_back: int = 2) -> list:
+def load_recent_data_points() -> list:
     """Load recent data points for fast breakout detection"""
     log_path = DATA_DIR / "price_log.csv"
     if not log_path.exists():
@@ -118,7 +112,7 @@ def load_recent_data_points(hours_back: int = 2) -> list:
     if df.empty:
         return []
     
-    # Get last 2 hours of data (approx 6-8 data points depending on frequency)
+    # Get last 2 hours of data (approx 8 data points for 15-min intervals)
     recent = df.tail(8).to_dict('records')
     return recent
 
@@ -212,16 +206,16 @@ def send_email(is_green: bool, data: dict, conditions: list, positions: dict, is
 
 📊 SOXX DATA:
    Price: ${data['price']:.2f}
+   1h Return: {data['return_1h_pct']:.2f}%
    RSI: {data['rsi']:.1f}
-   Volume Ratio: {data['volume_ratio']:.2f}
    Above MA20: YES
 
 ⚡ FAST BREAKOUT CONDITIONS:
    Price broke above 15-min high by 0.5%+
-   Volume spike detected ({(data.get('volume_ratio', 0)):.1f}x)
+   RSI > 60: YES
 
 📈 TRADE PLAN (TIGHTER STOPS):
-   Action: BUY 2 SHARES SOXX
+   Action: BUY {positions['shares']} SHARES SOXX
    Entry: ${positions['entry_price']:.2f} (market)
    Stop Loss: ${positions['stop_price']:.2f} (-{positions['stop_loss_pct']}%)
    Take Profit: ${positions['target_price']:.2f} (+{positions['target_pct']}%)
@@ -232,7 +226,7 @@ def send_email(is_green: bool, data: dict, conditions: list, positions: dict, is
 
 ═══════════════════════════════════════════════════════════
   ⚠️ FAST SYSTEM - Execute within 5 minutes
-  Tighter stops (1.5%) = smaller losses
+  System checks every 15 minutes during market hours
 ═══════════════════════════════════════════════════════════
 """
     elif is_green:
@@ -248,10 +242,10 @@ def send_email(is_green: bool, data: dict, conditions: list, positions: dict, is
    Price: ${data['price']:.2f}
    1h Return: {data['return_1h_pct']:.2f}%
    RSI: {data['rsi']:.1f}
-   Volume Ratio: {data['volume_ratio']:.2f}
+   Above MA20: YES
 
 📈 TRADE PLAN:
-   Action: BUY 2 SHARES SOXX
+   Action: BUY {positions['shares']} SHARES SOXX
    Entry: ${positions['entry_price']:.2f} (market)
    Stop Loss: ${positions['stop_price']:.2f} (-{positions['stop_loss_pct']}%)
    Take Profit: ${positions['target_price']:.2f} (+{positions['target_pct']}%)
@@ -266,6 +260,7 @@ def send_email(is_green: bool, data: dict, conditions: list, positions: dict, is
 ═══════════════════════════════════════════════════════════
   Sell both shares at +6%. No partial sells.
   Max daily loss: $60. Stop trading if hit.
+  System checks every 15 minutes during market hours.
 ═══════════════════════════════════════════════════════════
 """
     else:
@@ -281,7 +276,7 @@ def send_email(is_green: bool, data: dict, conditions: list, positions: dict, is
    Price: ${data['price']:.2f}
    1h Return: {data['return_1h_pct']:.2f}%
    RSI: {data['rsi']:.1f}
-   Volume Ratio: {data['volume_ratio']:.2f}
+   Above MA20: {data['above_ma20']}
 
 ❌ CONDITIONS NOT MET:
 {chr(10).join(conditions)}
@@ -290,7 +285,8 @@ def send_email(is_green: bool, data: dict, conditions: list, positions: dict, is
 📝 TRADE ENTRY: {trade_entry_url}
 
 ═══════════════════════════════════════════════════════════
-  Wait for next check at 10 AM, 1 PM, or 3:30 PM ET.
+  System checks every 15 minutes during market hours.
+  Next check in 15 minutes.
 ═══════════════════════════════════════════════════════════
 """
     
@@ -312,6 +308,7 @@ def send_email(is_green: bool, data: dict, conditions: list, positions: dict, is
 def main():
     print("=" * 50)
     print("TTP SOXX Signal Generator (with Fast Breakout)")
+    print("Volume requirement removed")
     print("=" * 50)
     
     config = load_config()
@@ -327,7 +324,7 @@ def main():
     # Check standard Green Day conditions
     is_green, conditions = check_green_day(data, config)
     
-    # NEW: Check for fast breakout (only if not already green)
+    # Check for fast breakout (only if not already green)
     is_fast = False
     fast_details = {}
     
@@ -338,7 +335,6 @@ def main():
         if is_fast:
             print("\n⚡ FAST BREAKOUT DETECTED!")
             print(f"   Recent high: ${fast_details.get('recent_high', 0):.2f}")
-            print(f"   Volume surge: {fast_details.get('volume_surge', 0)}x")
     
     print("\n📊 Conditions Check:")
     for c in conditions:
