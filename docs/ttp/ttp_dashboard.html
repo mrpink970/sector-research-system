@@ -148,7 +148,7 @@
     </div>
 
     <div class="signal-card" id="signalCard">
-        <div class="signal-title">📡 Current Signal</div>
+        <div class="signal-title">📡 Current Position / Signal</div>
         <div id="signalContent">Loading...</div>
     </div>
 
@@ -167,7 +167,7 @@
 
     <div class="two-col">
         <div class="signal-card">
-            <div class="signal-title">📌 Open Position</div>
+            <div class="signal-title">📌 Open Position Details</div>
             <div id="openPosition">No open position</div>
         </div>
         <div class="signal-card">
@@ -189,16 +189,16 @@
         <div class="signal-title">📜 Trade History</div>
         <table class="data-table" id="tradeHistory">
             <thead>
-                <tr><th>Date</th><th>Session</th><th>Entry</th><th>Exit</th><th>Profit</th><th>Status</th></tr>
+                <tr><th>Date</th><th>Entry</th><th>Exit</th><th>Profit</th><th>Status</th></tr>
             </thead>
             <tbody id="tradeHistoryBody">
-                <tr><td colspan="6" style="text-align: center;">No trades yet</td></tr>
+                <tr><td colspan="5" style="text-align: center;">No trades yet</td></tr>
             </tbody>
         </table>
     </div>
 
     <div class="footer">
-        Data updates every 15 minutes during market hours (9:30 AM - 3:30 PM ET) | Last update: <span id="lastUpdate">--</span>
+        Data updates every 15 minutes during market hours | Last update: <span id="lastUpdate">--</span>
     </div>
 </div>
 
@@ -240,7 +240,12 @@
         const progressData = parseCSV(await fetchCSV(PROGRESS_URL));
 
         const progress = progressData.length > 0 ? progressData[progressData.length - 1] : { total_profit: 0, trades_completed: 0 };
-        const currentSignal = signals.length > 0 ? signals[signals.length - 1] : null;
+        
+        // Get open position from trades.csv
+        const openPosition = trades.find(t => t.status === 'open');
+        
+        // Get latest signal for reference
+        const latestSignal = signals.length > 0 ? signals[signals.length - 1] : null;
 
         const totalProfit = progress.total_profit || 0;
         const remaining = Math.max(0, 300 - totalProfit);
@@ -259,18 +264,41 @@
         const signalCard = document.getElementById('signalCard');
         const signalContent = document.getElementById('signalContent');
 
-        if (currentSignal && currentSignal.signal === 'GREEN') {
+        // PRIORITY: Show open position from trades.csv if exists
+        if (openPosition) {
+            signalCard.className = 'signal-card signal-green';
+            const entryDate = openPosition.entry_date ? openPosition.entry_date.split('T')[0] : '--';
+            const entryTime = openPosition.entry_date ? openPosition.entry_date.split('T')[1]?.split('.')[0] : '--';
+            signalContent.innerHTML = `
+                <div class="signal-action">🟢 OPEN POSITION</div>
+                <div class="trade-details">
+                    <table style="width:100%">
+                        <tr><td style="width:40%">Ticker:</td><td><strong>${openPosition.ticker || 'SOXX'}</strong></td></tr>
+                        <tr><td>Entry Date:</td><td>${entryDate} ${entryTime}</td></tr>
+                        <tr><td>Entry Price:</td><td><strong>$${openPosition.entry_price?.toFixed(2)}</strong></td></tr>
+                        <tr><td>Shares:</td><td>${openPosition.shares}</td></tr>
+                        <tr><td>Stop Loss:</td><td>$${openPosition.stop_price?.toFixed(2)} (-2%)</td></tr>
+                        <tr><td>Take Profit:</td><td>$${openPosition.target_price?.toFixed(2)} (+6%)</td></tr>
+                    </table>
+                </div>
+                <div style="margin-top: 16px; padding: 12px; background: #064e3b; border-radius: 8px;">
+                    ⚡ Position open. Set stop loss and take profit at above levels.
+                </div>
+            `;
+        } 
+        // No open position - show latest signal from signals.csv
+        else if (latestSignal && latestSignal.signal === 'GREEN') {
             signalCard.className = 'signal-card signal-green';
             signalContent.innerHTML = `
-                <div class="signal-action">🟢 GREEN DAY - BUY</div>
+                <div class="signal-action">🟢 GREEN DAY - BUY SIGNAL</div>
                 <div class="trade-details">
-                    <table>
-                        <tr><td>Action:</td><td><strong>BUY 2 SHARES SOXX</strong></td></tr>
-                        <tr><td>Entry Price:</td><td>$${currentSignal.price?.toFixed(2) || '--'}</td></tr>
-                        <tr><td>Stop Loss:</td><td>$${currentSignal.stop_price?.toFixed(2) || '--'} (-2%)</td></tr>
-                        <tr><td>Take Profit:</td><td>$${currentSignal.target_price?.toFixed(2) || '--'} (+6%)</td></tr>
-                        <tr><td>Expected Net Profit:</td><td>$${currentSignal.net_profit?.toFixed(2) || '--'}</td></tr>
-                        <tr><td>Session:</td><td>${currentSignal.session || '--'}</td></tr>
+                    <table style="width:100%">
+                        <tr><td style="width:40%">Action:</td><td><strong>BUY 2 SHARES SOXX</strong></td></tr>
+                        <tr><td>Entry Price:</td><td>$${latestSignal.price?.toFixed(2)}</td></tr>
+                        <tr><td>Stop Loss:</td><td>$${latestSignal.stop_price?.toFixed(2)} (-2%)</td></tr>
+                        <tr><td>Take Profit:</td><td>$${latestSignal.target_price?.toFixed(2)} (+6%)</td></tr>
+                        <tr><td>Expected Net Profit:</td><td>$${latestSignal.net_profit?.toFixed(2)}</td></tr>
+                        <tr><td>Session:</td><td>${latestSignal.session || '--'}</td></tr>
                     </table>
                 </div>
                 <div style="margin-top: 16px; padding: 12px; background: #064e3b; border-radius: 8px;">
@@ -280,26 +308,25 @@
         } else {
             signalCard.className = 'signal-card signal-red';
             signalContent.innerHTML = `
-                <div class="signal-action">🔴 RED DAY - WAIT</div>
+                <div class="signal-action">🔴 NO SIGNAL / WAIT</div>
                 <div class="trade-details">
-                    <p>Conditions for Green Day not met.</p>
+                    <p>No open position. No buy signal detected.</p>
                     <p style="margin-top: 12px; color: #94a3b8;">System checks every 15 minutes during market hours.</p>
                 </div>
-                ${currentSignal ? `<div style="margin-top: 12px;">Last check: ${currentSignal.session} session</div>` : ''}
             `;
         }
 
-        const openTrades = trades.filter(t => t.status === 'open');
+        // Open Position Details card (redundant but keeps layout)
         const openPosDiv = document.getElementById('openPosition');
-        if (openTrades.length > 0) {
-            const pos = openTrades[0];
+        if (openPosition) {
             openPosDiv.innerHTML = `
                 <div class="trade-details">
-                    <table>
-                        <tr><td>Entry:</td><td>$${pos.entry_price} (${pos.entry_date?.split(' ')[0] || '--'})</td></tr>
-                        <tr><td>Shares:</td><td>${pos.shares}</td></tr>
-                        <tr><td>Stop Loss:</td><td>$${pos.stop_price}</td></tr>
-                        <tr><td>Take Profit:</td><td>$${pos.target_price}</td></tr>
+                    <table style="width:100%">
+                        <tr><td>Ticker:</td><td><strong>${openPosition.ticker || 'SOXX'}</strong></td></tr>
+                        <tr><td>Entry:</td><td>$${openPosition.entry_price?.toFixed(2)}</td></tr>
+                        <tr><td>Shares:</td><td>${openPosition.shares}</td></tr>
+                        <tr><td>Stop:</td><td>$${openPosition.stop_price?.toFixed(2)}</td></tr>
+                        <tr><td>Target:</td><td>$${openPosition.target_price?.toFixed(2)}</td></tr>
                     </table>
                 </div>
             `;
@@ -307,17 +334,17 @@
             openPosDiv.innerHTML = '<p style="color: #64748b;">📭 No open position</p>';
         }
 
+        // Trade History - show completed trades only
         const completedTrades = trades.filter(t => t.status === 'completed');
         const tradeBody = document.getElementById('tradeHistoryBody');
         if (completedTrades.length === 0) {
-            tradeBody.innerHTML = '<tr><td colspan="6" style="text-align: center;">No trades yet</td></tr>';
+            tradeBody.innerHTML = '<tr><td colspan="5" style="text-align: center;">No trades yet</td></tr>';
         } else {
-            tradeBody.innerHTML = completedTrades.map(t => `
+            tradeBody.innerHTML = completedTrades.slice().reverse().map(t => `
                 <tr>
-                    <td>${t.entry_date?.split(' ')[0] || '--'}</td>
-                    <td>${t.session || '--'}</td>
-                    <td>$${t.entry_price || '--'}</td>
-                    <td>$${t.exit_price || '--'}</td>
+                    <td>${t.entry_date?.split('T')[0] || '--'}</td>
+                    <td>$${t.entry_price?.toFixed(2) || '--'}</td>
+                    <td>$${t.exit_price?.toFixed(2) || '--'}</td>
                     <td class="${(t.profit || 0) >= 0 ? 'positive' : 'negative'}">${(t.profit || 0) >= 0 ? '+' : ''}$${t.profit?.toFixed(2) || '0'}</td>
                     <td>Closed</td>
                 </tr>
@@ -328,7 +355,7 @@
     }
 
     loadDashboard();
-    setInterval(loadDashboard, 300000);
+    setInterval(loadDashboard, 90000);
 </script>
 </body>
 </html>
