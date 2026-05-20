@@ -18,9 +18,10 @@ entry_conditions:
   # Volume requirement removed
 
 exit_rules:
-  stop_loss_pct: 2.0
-  take_profit_pct: 8.0
-  breakeven_trigger_pct: 3.0
+  stop_loss_pct: 2.0           # Initial stop loss at -2%
+  take_profit_pct: 8.0         # Initial take profit at +8%
+  trailing_stop_pct: 2.0       # Trailing stop activates after price moves +3%
+  trailing_activation_pct: 3.0 # Start trailing once price is up 3%
 
 trade_management:
   shares_per_trade: 2
