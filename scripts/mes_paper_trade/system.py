@@ -46,31 +46,39 @@ def get_mes_data():
     """Get MES 1-hour data using ticker MES=F"""
     ticker = "MES=F"
     
-    # Get 1-hour data for last 5 days
-    data = yf.download(ticker, period="5d", interval="1h", progress=False)
-    
-    if data.empty:
-        # Fallback to ES=F which tracks the same index (just 10x size)
-        data = yf.download("ES=F", period="5d", interval="1h", progress=False)
-    
-    return data
+    try:
+        # Get 1-hour data for last 5 days
+        data = yf.download(ticker, period="5d", interval="1h")
+        
+        if data.empty:
+            # Fallback to ES=F which tracks the same index (just 10x size)
+            data = yf.download("ES=F", period="5d", interval="1h")
+        
+        return data
+    except Exception as e:
+        print(f"Error fetching MES data: {e}")
+        return None
 
 def get_current_price():
     """Get current MES price from real-time data"""
-    ticker = yf.Ticker("MES=F")
-    
-    # Try 1-minute data for current price
-    data = ticker.history(period="1d", interval="1m", progress=False)
-    
-    if not data.empty:
-        return data['Close'].iloc[-1]
-    
-    # Fallback to 1-hour
-    data = ticker.history(period="1d", interval="1h", progress=False)
-    if not data.empty:
-        return data['Close'].iloc[-1]
-    
-    return None
+    try:
+        ticker = yf.Ticker("MES=F")
+        
+        # Try 1-minute data for current price
+        data = ticker.history(period="1d", interval="1m")
+        
+        if not data.empty:
+            return data['Close'].iloc[-1]
+        
+        # Fallback to 1-hour
+        data = ticker.history(period="1d", interval="1h")
+        if not data.empty:
+            return data['Close'].iloc[-1]
+        
+        return None
+    except Exception as e:
+        print(f"Error fetching current price: {e}")
+        return None
 
 # ============================================================
 # INDICATORS
@@ -247,7 +255,7 @@ def update_dashboard_data(current_price, signal, signal_details, position, recen
     """Update JSON file for dashboard"""
     dashboard_data = {
         'timestamp': datetime.now().isoformat(),
-        'current_price': current_price,
+        'current_price': float(current_price) if current_price else None,
         'signal': signal,
         'signal_details': signal_details,
         'active_position': position,
@@ -332,7 +340,6 @@ def send_trade_alert(signal, position, signal_details):
 
 ═══════════════════════════════════════════════════════════
   PAPER TRADE - Auto-logged to CSV
-  Dashboard: https://mrpink970.github.io/.../mes_dashboard.html
 ═══════════════════════════════════════════════════════════
 """
     
@@ -390,8 +397,6 @@ def send_exit_alert(trade_record):
    Open Positions: None
    Ready for next signal
 
-═══════════════════════════════════════════════════════════
-  Dashboard: https://mrpink970.github.io/.../mes_dashboard.html
 ═══════════════════════════════════════════════════════════
 """
     
@@ -528,10 +533,16 @@ def main():
         df = pd.read_csv(TRADES_FILE)
         recent_trades = df.tail(10).to_dict('records') if not df.empty else None
     
+    signal_val = None
+    signal_details_val = None
+    if 'signal' in locals():
+        signal_val = signal
+        signal_details_val = signal_details if 'signal_details' in locals() else None
+    
     update_dashboard_data(
-        current_price=float(current_price),
-        signal=signal if 'signal' in locals() else None,
-        signal_details=signal_details if 'signal_details' in locals() else None,
+        current_price=current_price,
+        signal=signal_val,
+        signal_details=signal_details_val,
         position=existing_position,
         recent_trades=recent_trades
     )
