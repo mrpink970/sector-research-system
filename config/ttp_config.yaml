@@ -19,7 +19,7 @@ entry_conditions:
 
 exit_rules:
   stop_loss_pct: 2.0
-  take_profit_pct: 6.0
+  take_profit_pct: 8.0
   breakeven_trigger_pct: 3.0
 
 trade_management:
