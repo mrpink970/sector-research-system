@@ -1,2 +1,2 @@
-ticker,entry_date,entry_price,shares,stop_price,target_price,status,exit_date,exit_price,profit
-SOXX,2026-05-20T14:27:06.057Z,514.98,2,504.68,556.18,open,,,
+ticker,entry_date,entry_price,shares,stop_price,target_price,status,exit_date,exit_price,profit,initial_stop,highest_price,exit_reason
+SOXX,2026-05-20T...,515.28,2,504.97,546.20,open,,,,504.97,515.28,
