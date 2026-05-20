@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Trade The Pool - SOXX Signal Generator (with Email)
-Determines Green Day status and sends email alerts
+Determines Green Day status AND fast breakouts
 """
 
 import os
@@ -38,7 +38,7 @@ def load_latest_data():
 
 
 def check_green_day(data: dict, config: dict) -> tuple[bool, list]:
-    """Check if conditions meet Green Day criteria"""
+    """Check if conditions meet Green Day criteria (1-hour timeframe)"""
     conditions = []
     all_met = True
     
@@ -73,12 +73,68 @@ def check_green_day(data: dict, config: dict) -> tuple[bool, list]:
     return all_met, conditions
 
 
-def calculate_positions(data: dict, config: dict) -> dict:
+def check_fast_breakout(data: dict, recent_data: list) -> tuple[bool, dict]:
+    """
+    NEW: Check for fast breakout on 15-minute timeframe
+    Catches moves that happen too quickly for 1-hour checks
+    """
+    if not recent_data or len(recent_data) < 3:
+        return False, {}
+    
+    current_price = data['price']
+    
+    # Get recent 15-minute high/low (last 3 data points)
+    recent_high = max([d['price'] for d in recent_data[-3:]])
+    recent_low = min([d['price'] for d in recent_data[-3:]])
+    avg_volume = sum([d.get('volume_ratio', 1) for d in recent_data[-3:]]) / 3
+    
+    # Fast breakout conditions
+    breakout_up = current_price > recent_high * 1.005  # 0.5% above recent high
+    volume_surge = data['volume_ratio'] > avg_volume * 1.5
+    momentum = data['rsi'] > 60
+    above_ma20 = data['above_ma20']
+    
+    is_fast_long = breakout_up and volume_surge and momentum and above_ma20
+    
+    details = {
+        'recent_high': round(recent_high, 2),
+        'recent_low': round(recent_low, 2),
+        'volume_surge': round(data['volume_ratio'] / avg_volume, 2) if avg_volume > 0 else 1,
+        'breakout_up': breakout_up,
+        'volume_surge_met': volume_surge,
+        'momentum_met': momentum,
+    }
+    
+    return is_fast_long, details
+
+
+def load_recent_data_points(hours_back: int = 2) -> list:
+    """Load recent data points for fast breakout detection"""
+    log_path = DATA_DIR / "price_log.csv"
+    if not log_path.exists():
+        return []
+    
+    df = pd.read_csv(log_path)
+    if df.empty:
+        return []
+    
+    # Get last 2 hours of data (approx 6-8 data points depending on frequency)
+    recent = df.tail(8).to_dict('records')
+    return recent
+
+
+def calculate_positions(data: dict, config: dict, is_fast: bool = False) -> dict:
     """Calculate entry, stop, and target prices"""
     price = data['price']
     shares = config['trade_management']['shares_per_trade']
-    stop_pct = config['exit_rules']['stop_loss_pct']
-    target_pct = config['exit_rules']['take_profit_pct']
+    
+    if is_fast:
+        # Tighter stops for fast breakout trades
+        stop_pct = 1.5  # 1.5% stop instead of 2%
+        target_pct = 3.0  # 3% target instead of 6%
+    else:
+        stop_pct = config['exit_rules']['stop_loss_pct']
+        target_pct = config['exit_rules']['take_profit_pct']
     
     stop_price = round(price * (1 - stop_pct / 100), 2)
     target_price = round(price * (1 + target_pct / 100), 2)
@@ -105,12 +161,16 @@ def calculate_positions(data: dict, config: dict) -> dict:
     }
 
 
-def save_signal(data: dict, is_green: bool, conditions: list, positions: dict):
+def save_signal(data: dict, is_green: bool, conditions: list, positions: dict, is_fast: bool = False):
     """Save signal to CSV"""
+    signal_type = 'GREEN' if is_green else 'RED'
+    if is_fast and is_green:
+        signal_type = 'FAST_BREAKOUT'
+    
     new_row = pd.DataFrame([{
         'timestamp': datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         'session': data['session'],
-        'signal': 'GREEN' if is_green else 'RED',
+        'signal': signal_type,
         'price': data['price'],
         'stop_price': positions['stop_price'],
         'target_price': positions['target_price'],
@@ -128,7 +188,7 @@ def save_signal(data: dict, is_green: bool, conditions: list, positions: dict):
     updated.to_csv(SIGNALS_PATH, index=False)
 
 
-def send_email(is_green: bool, data: dict, conditions: list, positions: dict):
+def send_email(is_green: bool, data: dict, conditions: list, positions: dict, is_fast: bool = False):
     """Send email notification"""
     mail_username = os.environ.get("MAIL_USERNAME")
     mail_password = os.environ.get("MAIL_PASSWORD")
@@ -141,7 +201,41 @@ def send_email(is_green: bool, data: dict, conditions: list, positions: dict):
     dashboard_url = "https://mrpink970.github.io/sector-research-system/docs/ttp/ttp_dashboard.html"
     trade_entry_url = "https://mrpink970.github.io/sector-research-system/docs/ttp/trade_entry.html"
     
-    if is_green:
+    if is_fast and is_green:
+        subject = f"⚡ FAST BREAKOUT - BUY SOXX NOW ({date_str})"
+        body = f"""
+═══════════════════════════════════════════════════════════
+  ⚡ SOXX FAST BREAKOUT SYSTEM - IMMEDIATE ACTION ⚡
+═══════════════════════════════════════════════════════════
+
+🟢 FAST BREAKOUT DETECTED - {date_str}
+
+📊 SOXX DATA:
+   Price: ${data['price']:.2f}
+   RSI: {data['rsi']:.1f}
+   Volume Ratio: {data['volume_ratio']:.2f}
+   Above MA20: YES
+
+⚡ FAST BREAKOUT CONDITIONS:
+   Price broke above 15-min high by 0.5%+
+   Volume spike detected ({(data.get('volume_ratio', 0)):.1f}x)
+
+📈 TRADE PLAN (TIGHTER STOPS):
+   Action: BUY 2 SHARES SOXX
+   Entry: ${positions['entry_price']:.2f} (market)
+   Stop Loss: ${positions['stop_price']:.2f} (-{positions['stop_loss_pct']}%)
+   Take Profit: ${positions['target_price']:.2f} (+{positions['target_pct']}%)
+   Expected Net Profit: ${positions['net_profit']:.2f}
+
+🔗 DASHBOARD: {dashboard_url}
+📝 TRADE ENTRY: {trade_entry_url}
+
+═══════════════════════════════════════════════════════════
+  ⚠️ FAST SYSTEM - Execute within 5 minutes
+  Tighter stops (1.5%) = smaller losses
+═══════════════════════════════════════════════════════════
+"""
+    elif is_green:
         subject = f"🟢 TTP GREEN DAY - BUY SOXX ({date_str})"
         body = f"""
 ═══════════════════════════════════════════════════════════
@@ -204,7 +298,7 @@ def send_email(is_green: bool, data: dict, conditions: list, positions: dict):
     msg.set_content(body)
     msg["Subject"] = subject
     msg["From"] = mail_username
-    msg["To"] = mail_username  # Only you
+    msg["To"] = mail_username
     
     try:
         with smtplib.SMTP_SSL("smtp.gmail.com", 465) as smtp:
@@ -217,7 +311,7 @@ def send_email(is_green: bool, data: dict, conditions: list, positions: dict):
 
 def main():
     print("=" * 50)
-    print("TTP SOXX Signal Generator")
+    print("TTP SOXX Signal Generator (with Fast Breakout)")
     print("=" * 50)
     
     config = load_config()
@@ -230,21 +324,52 @@ def main():
     print(f"Processing {data['session']} data from {data['timestamp']}")
     print(f"Current SOXX price: ${data['price']:.2f}")
     
+    # Check standard Green Day conditions
     is_green, conditions = check_green_day(data, config)
+    
+    # NEW: Check for fast breakout (only if not already green)
+    is_fast = False
+    fast_details = {}
+    
+    if not is_green:
+        recent_data = load_recent_data_points()
+        is_fast, fast_details = check_fast_breakout(data, recent_data)
+        
+        if is_fast:
+            print("\n⚡ FAST BREAKOUT DETECTED!")
+            print(f"   Recent high: ${fast_details.get('recent_high', 0):.2f}")
+            print(f"   Volume surge: {fast_details.get('volume_surge', 0)}x")
     
     print("\n📊 Conditions Check:")
     for c in conditions:
         print(f"   {c}")
     
-    if is_green:
+    if is_fast:
+        print("\n⚡ SIGNAL: FAST BREAKOUT - BUY NOW")
+        positions = calculate_positions(data, config, is_fast=True)
+        
+        print(f"\n📈 Trade Plan (Tighter Stops):")
+        print(f"   Buy: {positions['shares']} shares @ ${positions['entry_price']:.2f}")
+        print(f"   Stop Loss: ${positions['stop_price']:.2f} (-{positions['stop_loss_pct']}%)")
+        print(f"   Take Profit: ${positions['target_price']:.2f} (+{positions['target_pct']}%)")
+        print(f"   Net Profit: ${positions['net_profit']:.2f}")
+        
+        save_signal(data, True, conditions + [f"⚡ Fast breakout: broke {fast_details.get('recent_high', 0):.2f}"], positions, is_fast=True)
+        send_email(True, data, conditions, positions, is_fast=True)
+        
+    elif is_green:
         print("\n🟢 SIGNAL: GREEN DAY - READY TO BUY")
-        positions = calculate_positions(data, config)
+        positions = calculate_positions(data, config, is_fast=False)
         
         print(f"\n📈 Trade Plan:")
         print(f"   Buy: {positions['shares']} shares @ ${positions['entry_price']:.2f}")
         print(f"   Stop Loss: ${positions['stop_price']:.2f} (-{positions['stop_loss_pct']}%)")
         print(f"   Take Profit: ${positions['target_price']:.2f} (+{positions['target_pct']}%)")
         print(f"   Net Profit: ${positions['net_profit']:.2f}")
+        
+        save_signal(data, is_green, conditions, positions)
+        send_email(is_green, data, conditions, positions)
+        
     else:
         print("\n🔴 SIGNAL: RED DAY - WAIT")
         positions = {
@@ -254,9 +379,9 @@ def main():
             'shares': 2,
             'net_profit': 0
         }
-    
-    save_signal(data, is_green, conditions, positions)
-    send_email(is_green, data, conditions, positions)
+        
+        save_signal(data, is_green, conditions, positions)
+        send_email(is_green, data, conditions, positions)
     
     print("\n✅ Signal saved and email sent")
 
