@@ -16,7 +16,6 @@ from datetime import datetime, time
 import smtplib
 from email.message import EmailMessage
 import json
-import time as time_module
 
 # ============================================================
 # CONFIGURATION
@@ -54,6 +53,9 @@ def get_mes_data():
             # Fallback to ES=F which tracks the same index (just 10x size)
             data = yf.download("ES=F", period="5d", interval="1h")
         
+        # Drop any rows with NaN values
+        data = data.dropna()
+        
         return data
     except Exception as e:
         print(f"Error fetching MES data: {e}")
@@ -68,12 +70,12 @@ def get_current_price():
         data = ticker.history(period="1d", interval="1m")
         
         if not data.empty:
-            return data['Close'].iloc[-1]
+            return float(data['Close'].iloc[-1])
         
         # Fallback to 1-hour
         data = ticker.history(period="1d", interval="1h")
         if not data.empty:
-            return data['Close'].iloc[-1]
+            return float(data['Close'].iloc[-1])
         
         return None
     except Exception as e:
@@ -95,14 +97,15 @@ def check_signal(data):
     ema_fast = calculate_ema(data, EMA_FAST)
     ema_slow = calculate_ema(data, EMA_SLOW)
     
-    current_fast = ema_fast.iloc[-1]
-    current_slow = ema_slow.iloc[-1]
-    prev_fast = ema_fast.iloc[-2]
-    prev_slow = ema_slow.iloc[-2]
+    # Get the last two values as scalars (not Series)
+    current_fast = float(ema_fast.iloc[-1])
+    current_slow = float(ema_slow.iloc[-1])
+    prev_fast = float(ema_fast.iloc[-2])
+    prev_slow = float(ema_slow.iloc[-2])
     
-    current_price = data['Close'].iloc[-1]
+    current_price = float(data['Close'].iloc[-1])
     
-    # Bullish crossover
+    # Bullish crossover (fast crosses above slow)
     if prev_fast <= prev_slow and current_fast > current_slow:
         return 'BUY', {
             'price': round(current_price, 2),
@@ -111,7 +114,7 @@ def check_signal(data):
             'type': 'CROSSOVER'
         }
     
-    # Bearish crossover
+    # Bearish crossover (fast crosses below slow)
     elif prev_fast >= prev_slow and current_fast < current_slow:
         return 'SELL', {
             'price': round(current_price, 2),
@@ -182,18 +185,26 @@ def open_paper_trade(signal, price, signal_details):
 
 def check_exit_conditions(position, current_price):
     """Check if position should exit"""
-    if position['direction'] == 'BUY':
-        # Check stop loss
-        if current_price <= position['stop_price']:
-            return True, 'STOP_LOSS', position['stop_price']
-        # Check take profit
-        if current_price >= position['target_price']:
-            return True, 'TAKE_PROFIT', position['target_price']
-    else:  # SELL
-        if current_price >= position['stop_price']:
-            return True, 'STOP_LOSS', position['stop_price']
-        if current_price <= position['target_price']:
-            return True, 'TAKE_PROFIT', position['target_price']
+    try:
+        entry = float(position['entry_price'])
+        stop = float(position['stop_price'])
+        target = float(position['target_price'])
+        direction = position['direction']
+        
+        if direction == 'BUY':
+            # Check stop loss
+            if current_price <= stop:
+                return True, 'STOP_LOSS', stop
+            # Check take profit
+            if current_price >= target:
+                return True, 'TAKE_PROFIT', target
+        else:  # SELL
+            if current_price >= stop:
+                return True, 'STOP_LOSS', stop
+            if current_price <= target:
+                return True, 'TAKE_PROFIT', target
+    except Exception as e:
+        print(f"Error checking exit conditions: {e}")
     
     return False, None, None
 
