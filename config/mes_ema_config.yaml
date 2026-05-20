@@ -1,0 +1,22 @@
+system:
+  name: "MES EMA Crossover Monthly Income"
+  instrument: "MES"
+  contracts: 1
+  account_size: 10000
+  monthly_target: 1500
+  daily_loss_limit: 150
+
+entry_conditions:
+  ema_fast: 9
+  ema_slow: 21
+  timeframe: "1h"
+  require_volume: false
+  only_trade_window: "09:30-11:30"
+
+exit_rules:
+  stop_loss_points: 10.0
+  take_profit_points: 20.0
+  max_hold_hours: 4
+
+commission:
+  per_contract: 1.50
