@@ -13,8 +13,6 @@
             color: #e2e8f0;
         }
         .dashboard { max-width: 1200px; margin: 0 auto; }
-        
-        /* Header */
         .header {
             background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
             border-radius: 16px;
@@ -24,8 +22,6 @@
         }
         .header h1 { font-size: 1.8rem; color: #38bdf8; margin-bottom: 8px; }
         .header p { color: #94a3b8; }
-        
-        /* Status Bar */
         .status-bar {
             display: flex;
             gap: 16px;
@@ -44,8 +40,6 @@
         .status-value { font-size: 24px; font-weight: 700; }
         .status-value.positive { color: #22c55e; }
         .status-value.negative { color: #ef4444; }
-        
-        /* Signal Card */
         .signal-card {
             background: #1e293b;
             border-radius: 16px;
@@ -57,10 +51,6 @@
             background: linear-gradient(135deg, #064e3b 0%, #065f46 100%);
             border-color: #10b981;
         }
-        .signal-fast {
-            background: linear-gradient(135deg, #1e3a5f 0%, #1e4d6f 100%);
-            border-color: #38bdf8;
-        }
         .signal-red {
             background: linear-gradient(135deg, #7f1d1d 0%, #991b1b 100%);
             border-color: #ef4444;
@@ -70,8 +60,6 @@
         .trade-details { background: #0f172a; border-radius: 12px; padding: 16px; margin-top: 16px; }
         .trade-details table { width: 100%; }
         .trade-details td { padding: 8px; }
-        
-        /* Progress Bar */
         .progress-card {
             background: #1e293b;
             border-radius: 16px;
@@ -100,12 +88,8 @@
             font-size: 12px;
             font-weight: 600;
         }
-        
-        /* Grid Layout */
         .two-col { display: flex; gap: 20px; margin-bottom: 20px; flex-wrap: wrap; }
         .two-col > div { flex: 1; min-width: 280px; }
-        
-        /* Tables */
         .data-table {
             width: 100%;
             border-collapse: collapse;
@@ -115,12 +99,7 @@
             text-align: left;
             border-bottom: 1px solid #334155;
         }
-        .data-table th {
-            color: #94a3b8;
-            font-weight: 600;
-            font-size: 12px;
-        }
-        
+        .data-table th { color: #94a3b8; font-weight: 600; font-size: 12px; }
         .rules-list {
             list-style: none;
             padding: 0;
@@ -130,38 +109,21 @@
             border-bottom: 1px solid #334155;
         }
         .rules-list li:last-child { border-bottom: none; }
-        
         .footer {
             text-align: center;
             padding: 20px;
             color: #64748b;
             font-size: 12px;
         }
-
-        .badge {
-            display: inline-block;
-            padding: 4px 8px;
-            border-radius: 12px;
-            font-size: 11px;
-            font-weight: 600;
-            margin-left: 8px;
-        }
-        .badge-fast {
-            background: #38bdf8;
-            color: #0f172a;
-        }
     </style>
 </head>
 <body>
 <div class="dashboard">
-    <!-- Header -->
     <div class="header">
         <h1>🔬 SOXX Green Day System</h1>
         <p>Trade The Pool • $2,000 FLEX Swing • Target: $300 profit (15%)</p>
-        <p style="font-size: 12px; margin-top: 8px; color: #38bdf8;">⚡ Volume requirement removed | Checks every 15 minutes during market hours</p>
     </div>
 
-    <!-- Status Bar -->
     <div class="status-bar" id="statusBar">
         <div class="status-card">
             <div class="status-label">Account Balance</div>
@@ -185,13 +147,11 @@
         </div>
     </div>
 
-    <!-- Signal Card (Dynamic) -->
     <div class="signal-card" id="signalCard">
         <div class="signal-title">📡 Current Signal</div>
         <div id="signalContent">Loading...</div>
     </div>
 
-    <!-- Progress Card -->
     <div class="progress-card">
         <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
             <span>🎯 Progress to $300 Target</span>
@@ -205,24 +165,19 @@
         </div>
     </div>
 
-    <!-- Two Column Layout -->
     <div class="two-col">
-        <!-- Open Positions -->
         <div class="signal-card">
             <div class="signal-title">📌 Open Position</div>
             <div id="openPosition">No open position</div>
         </div>
-
-        <!-- Rules Reminder -->
         <div class="signal-card">
             <div class="signal-title">⚠️ Today's Rules</div>
             <ul class="rules-list" id="rulesList">
                 <li>✅ Max daily loss: $60</li>
                 <li>✅ Max single trade profit: $150</li>
-                <li>✅ Stop loss: -2% (1.5% for fast breakouts)</li>
-                <li>✅ Take profit: +6% (3% for fast breakouts)</li>
+                <li>✅ Stop loss: -2%</li>
+                <li>✅ Take profit: +6%</li>
                 <li>✅ Sell both shares at target</li>
-                <li>✅ Volume requirement removed</li>
             </ul>
             <div id="dailyLossUsed" style="margin-top: 12px; padding-top: 12px; border-top: 1px solid #334155;">
                 Daily loss used today: <strong>$0</strong>
@@ -230,21 +185,20 @@
         </div>
     </div>
 
-    <!-- Trade History -->
     <div class="signal-card">
         <div class="signal-title">📜 Trade History</div>
         <table class="data-table" id="tradeHistory">
             <thead>
-                <tr><th>Date</th><th>Session</th><th>Signal Type</th><th>Entry</th><th>Exit</th><th>Profit</th><th>Status</th></tr>
+                <tr><th>Date</th><th>Session</th><th>Entry</th><th>Exit</th><th>Profit</th><th>Status</th></tr>
             </thead>
             <tbody id="tradeHistoryBody">
-                <tr><td colspan="7" style="text-align: center;">No trades yet</td></tr>
+                <tr><td colspan="6" style="text-align: center;">No trades yet</td></tr>
             </tbody>
         </table>
     </div>
 
     <div class="footer">
-        🔄 Data updates every 15 minutes during market hours (9:30 AM - 3:30 PM ET) | Last update: <span id="lastUpdate">--</span>
+        Data updates every 15 minutes during market hours (9:30 AM - 3:30 PM ET) | Last update: <span id="lastUpdate">--</span>
     </div>
 </div>
 
@@ -305,32 +259,13 @@
         const signalCard = document.getElementById('signalCard');
         const signalContent = document.getElementById('signalContent');
 
-        // Check for FAST_BREAKOUT signal
-        if (currentSignal && currentSignal.signal === 'FAST_BREAKOUT') {
-            signalCard.className = 'signal-card signal-fast';
-            signalContent.innerHTML = `
-                <div class="signal-action">⚡ FAST BREAKOUT - BUY NOW ⚡</div>
-                <div class="trade-details">
-                    <table>
-                        <tr><td>Action:</td><td><strong>BUY ${currentSignal.shares || 2} SHARES SOXX</strong> <span class="badge badge-fast">FAST SYSTEM</span></td></tr>
-                        <tr><td>Entry Price:</td><td>$${currentSignal.price?.toFixed(2) || '--'}</td></tr>
-                        <tr><td>Stop Loss:</td><td>$${currentSignal.stop_price?.toFixed(2) || '--'} (-1.5%)</td></tr>
-                        <tr><td>Take Profit:</td><td>$${currentSignal.target_price?.toFixed(2) || '--'} (+3%)</td></tr>
-                        <tr><td>Expected Net Profit:</td><td>$${currentSignal.net_profit?.toFixed(2) || '--'}</td></tr>
-                        <tr><td>Session:</td><td>${currentSignal.session || '--'}</td></tr>
-                    </table>
-                </div>
-                <div style="margin-top: 16px; padding: 12px; background: #1e3a5f; border-radius: 8px;">
-                    ⚡ FAST SYSTEM - Execute within 5 minutes | Tighter stops (1.5%) = smaller losses
-                </div>
-            `;
-        } else if (currentSignal && currentSignal.signal === 'GREEN') {
+        if (currentSignal && currentSignal.signal === 'GREEN') {
             signalCard.className = 'signal-card signal-green';
             signalContent.innerHTML = `
                 <div class="signal-action">🟢 GREEN DAY - BUY</div>
                 <div class="trade-details">
                     <table>
-                        <tr><td>Action:</td><td><strong>BUY ${currentSignal.shares || 2} SHARES SOXX</strong></td></tr>
+                        <tr><td>Action:</td><td><strong>BUY 2 SHARES SOXX</strong></td></tr>
                         <tr><td>Entry Price:</td><td>$${currentSignal.price?.toFixed(2) || '--'}</td></tr>
                         <tr><td>Stop Loss:</td><td>$${currentSignal.stop_price?.toFixed(2) || '--'} (-2%)</td></tr>
                         <tr><td>Take Profit:</td><td>$${currentSignal.target_price?.toFixed(2) || '--'} (+6%)</td></tr>
@@ -339,7 +274,7 @@
                     </table>
                 </div>
                 <div style="margin-top: 16px; padding: 12px; background: #064e3b; border-radius: 8px;">
-                    ⚡ Sell both shares at +6%. No partial sells. | Conditions: 1h return >=0.5%, RSI>=50, Above MA20
+                    ⚡ Sell both shares at +6%. No partial sells.
                 </div>
             `;
         } else {
@@ -347,16 +282,10 @@
             signalContent.innerHTML = `
                 <div class="signal-action">🔴 RED DAY - WAIT</div>
                 <div class="trade-details">
-                    <p>Conditions for Green Day not met:</p>
-                    <ul style="margin-left: 20px; margin-top: 8px;">
-                        <li>Requires: 1h return >= 0.5%</li>
-                        <li>Requires: RSI >= 50</li>
-                        <li>Requires: Price above MA20</li>
-                        <li>Volume requirement removed</li>
-                    </ul>
+                    <p>Conditions for Green Day not met.</p>
                     <p style="margin-top: 12px; color: #94a3b8;">System checks every 15 minutes during market hours.</p>
                 </div>
-                ${currentSignal ? `<div style="margin-top: 12px;">Last check: ${currentSignal.session} session at $${currentSignal.price?.toFixed(2) || '--'}</div>` : ''}
+                ${currentSignal ? `<div style="margin-top: 12px;">Last check: ${currentSignal.session} session</div>` : ''}
             `;
         }
 
@@ -367,8 +296,7 @@
             openPosDiv.innerHTML = `
                 <div class="trade-details">
                     <table>
-                        <tr><td>Ticker:</td><td><strong>${pos.ticker}</strong></td></tr>
-                        <tr><td>Entry:</td><td>$${pos.entry_price} (${pos.entry_date?.split('T')[0] || '--'})</td></tr>
+                        <tr><td>Entry:</td><td>$${pos.entry_price} (${pos.entry_date?.split(' ')[0] || '--'})</td></tr>
                         <tr><td>Shares:</td><td>${pos.shares}</td></tr>
                         <tr><td>Stop Loss:</td><td>$${pos.stop_price}</td></tr>
                         <tr><td>Take Profit:</td><td>$${pos.target_price}</td></tr>
@@ -382,13 +310,12 @@
         const completedTrades = trades.filter(t => t.status === 'completed');
         const tradeBody = document.getElementById('tradeHistoryBody');
         if (completedTrades.length === 0) {
-            tradeBody.innerHTML = '<tr><td colspan="7" style="text-align: center;">No trades yet</td></tr>';
+            tradeBody.innerHTML = '<tr><td colspan="6" style="text-align: center;">No trades yet</td></tr>';
         } else {
-            tradeBody.innerHTML = completedTrades.slice().reverse().map(t => `
+            tradeBody.innerHTML = completedTrades.map(t => `
                 <tr>
-                    <td>${t.entry_date?.split('T')[0] || '--'}</td>
+                    <td>${t.entry_date?.split(' ')[0] || '--'}</td>
                     <td>${t.session || '--'}</td>
-                    <td>${t.signal_type || 'GREEN'}</td>
                     <td>$${t.entry_price || '--'}</td>
                     <td>$${t.exit_price || '--'}</td>
                     <td class="${(t.profit || 0) >= 0 ? 'positive' : 'negative'}">${(t.profit || 0) >= 0 ? '+' : ''}$${t.profit?.toFixed(2) || '0'}</td>
@@ -397,24 +324,11 @@
             `).join('');
         }
 
-        // Calculate today's P&L from completed trades today
-        const today = new Date().toDateString();
-        const todayTrades = completedTrades.filter(t => {
-            const tradeDate = t.exit_date ? new Date(t.exit_date).toDateString() : null;
-            return tradeDate === today;
-        });
-        const todayPL = todayTrades.reduce((sum, t) => sum + (t.profit || 0), 0);
-        const dailyPL = document.getElementById('dailyPL');
-        if (dailyPL) {
-            dailyPL.innerHTML = `${todayPL >= 0 ? '+' : ''}$${todayPL.toFixed(2)}`;
-            dailyPL.className = `status-value ${todayPL >= 0 ? 'positive' : 'negative'}`;
-        }
-
         document.getElementById('lastUpdate').innerHTML = new Date().toLocaleString();
     }
 
     loadDashboard();
-    setInterval(loadDashboard, 90000); // Refresh every 90 seconds
+    setInterval(loadDashboard, 300000);
 </script>
 </body>
 </html>
