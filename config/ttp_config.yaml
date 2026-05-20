@@ -13,9 +13,9 @@ system:
 
 entry_conditions:
   min_1h_return: 0.5  # percent
-  min_volume_ratio: 1.0  # compared to 20-day average
   rsi_min: 50
   above_ma20: true
+  # Volume requirement removed
 
 exit_rules:
   stop_loss_pct: 2.0
@@ -33,8 +33,30 @@ commission:
 
 # Data collection times (ET)
 data_times:
+  - "09:30"
+  - "09:45"
   - "10:00"
+  - "10:15"
+  - "10:30"
+  - "10:45"
+  - "11:00"
+  - "11:15"
+  - "11:30"
+  - "11:45"
+  - "12:00"
+  - "12:15"
+  - "12:30"
+  - "12:45"
   - "13:00"
+  - "13:15"
+  - "13:30"
+  - "13:45"
+  - "14:00"
+  - "14:15"
+  - "14:30"
+  - "14:45"
+  - "15:00"
+  - "15:15"
   - "15:30"
 
 dashboard:
