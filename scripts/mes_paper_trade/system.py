@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """
-MES Automated Paper Trading System - SIMPLIFIED
-Uses ES=F (which tracks MES price, just 10x multiplier)
+MES Automated Paper Trading System - FIXED
 """
 
 import os
@@ -27,21 +26,21 @@ os.makedirs(DATA_DIR, exist_ok=True)
 CONTRACTS = 6
 STOP_POINTS = 8.0
 TARGET_POINTS = 16.0
-POINT_VALUE = 5.0  # MES is $5 per point
+POINT_VALUE = 5.0
 
 # EMA Parameters
 EMA_FAST = 9
 EMA_SLOW = 21
 
 # ============================================================
-# DATA FETCHING - Using ES=F (reliable, tracks same price)
+# DATA FETCHING
 # ============================================================
 def get_mes_price():
-    """Get current MES price using ES=F (ES price = MES price)"""
+    """Get current MES price"""
     try:
         ticker = yf.Ticker("ES=F")
         data = ticker.history(period="1d", interval="5m")
-        if not data.empty:
+        if data is not None and len(data) > 0:
             return round(float(data['Close'].iloc[-1]), 2)
         return None
     except Exception as e:
@@ -49,14 +48,19 @@ def get_mes_price():
         return None
 
 def get_historical_data():
-    """Get historical 1-hour data for EMA calculation"""
+    """Get historical 1-hour data"""
     try:
-        # Using ES=F - reliable data source
         data = yf.download("ES=F", period="5d", interval="1h")
-        if data.empty:
+        
+        if data is None or data.empty:
             return None
         
-        # Clean up - remove timezone info and NaN
+        # Make sure we have a simple DataFrame
+        if isinstance(data.columns, pd.MultiIndex):
+            # Flatten MultiIndex if present
+            data.columns = data.columns.get_level_values(0)
+        
+        # Drop NaN values
         data = data.dropna()
         
         return data
@@ -65,14 +69,13 @@ def get_historical_data():
         return None
 
 # ============================================================
-# INDICATORS - Simple EMA calculation
+# EMA CALCULATION
 # ============================================================
 def calculate_ema(prices, period):
     """Calculate EMA from a list of prices"""
     if len(prices) < period:
         return None
     
-    # Simple EMA calculation
     multiplier = 2 / (period + 1)
     ema = prices[0]
     
@@ -82,56 +85,65 @@ def calculate_ema(prices, period):
     return round(ema, 2)
 
 def check_signal(data):
-    """Check for 9/21 EMA crossover using simple lists"""
-    if len(data) < 25:
+    """Check for 9/21 EMA crossover"""
+    if data is None or data.empty or len(data) < 25:
         return None, {}
     
-    # Get closing prices as a list
-    closes = data['Close'].tolist()
-    
-    # Calculate EMAs for last few points
-    ema_9_values = []
-    ema_21_values = []
-    
-    for i in range(1, len(closes) + 1):
-        window = closes[:i]
-        if len(window) >= EMA_FAST:
-            ema_9 = calculate_ema(window[-EMA_FAST:], EMA_FAST)
-            if ema_9 is not None:
-                ema_9_values.append(ema_9)
+    try:
+        # Get closing prices as a simple list
+        closes = data['Close'].values.tolist()
         
-        if len(window) >= EMA_SLOW:
-            ema_21 = calculate_ema(window[-EMA_SLOW:], EMA_SLOW)
+        if len(closes) < 25:
+            return None, {}
+        
+        # Calculate EMAs for recent points
+        ema_9_list = []
+        ema_21_list = []
+        
+        for i in range(EMA_SLOW, len(closes)):
+            # Calculate EMA 9 on last 9 prices
+            prices_9 = closes[i-EMA_FAST:i]
+            ema_9 = calculate_ema(prices_9, EMA_FAST)
+            if ema_9 is not None:
+                ema_9_list.append(ema_9)
+            
+            # Calculate EMA 21 on last 21 prices
+            prices_21 = closes[i-EMA_SLOW:i]
+            ema_21 = calculate_ema(prices_21, EMA_SLOW)
             if ema_21 is not None:
-                ema_21_values.append(ema_21)
-    
-    # Need at least 2 values for each to detect crossover
-    if len(ema_9_values) < 2 or len(ema_21_values) < 2:
+                ema_21_list.append(ema_21)
+        
+        if len(ema_9_list) < 2 or len(ema_21_list) < 2:
+            return None, {}
+        
+        # Current and previous values
+        curr_fast = ema_9_list[-1]
+        curr_slow = ema_21_list[-1]
+        prev_fast = ema_9_list[-2]
+        prev_slow = ema_21_list[-2]
+        current_price = round(closes[-1], 2)
+        
+        # Bullish crossover
+        if prev_fast <= prev_slow and curr_fast > curr_slow:
+            return 'BUY', {
+                'price': current_price,
+                'ema_fast': curr_fast,
+                'ema_slow': curr_slow
+            }
+        
+        # Bearish crossover
+        if prev_fast >= prev_slow and curr_fast < curr_slow:
+            return 'SELL', {
+                'price': current_price,
+                'ema_fast': curr_fast,
+                'ema_slow': curr_slow
+            }
+        
         return None, {}
-    
-    # Current and previous values
-    current_fast = ema_9_values[-1]
-    current_slow = ema_21_values[-1]
-    prev_fast = ema_9_values[-2]
-    prev_slow = ema_21_values[-2]
-    
-    current_price = round(closes[-1], 2)
-    
-    # Detect crossover
-    if prev_fast <= prev_slow and current_fast > current_slow:
-        return 'BUY', {
-            'price': current_price,
-            'ema_fast': current_fast,
-            'ema_slow': current_slow
-        }
-    elif prev_fast >= prev_slow and current_fast < current_slow:
-        return 'SELL', {
-            'price': current_price,
-            'ema_fast': current_fast,
-            'ema_slow': current_slow
-        }
-    
-    return None, {}
+        
+    except Exception as e:
+        print(f"Error checking signal: {e}")
+        return None, {}
 
 # ============================================================
 # PAPER TRADE MANAGEMENT
@@ -141,13 +153,14 @@ def load_current_position():
     if not POSITIONS_FILE.exists():
         return None
     
-    df = pd.read_csv(POSITIONS_FILE)
-    open_positions = df[df['status'] == 'OPEN']
-    
-    if open_positions.empty:
+    try:
+        df = pd.read_csv(POSITIONS_FILE)
+        open_positions = df[df['status'] == 'OPEN']
+        if open_positions.empty:
+            return None
+        return open_positions.iloc[-1].to_dict()
+    except Exception:
         return None
-    
-    return open_positions.iloc[-1].to_dict()
 
 def save_position(position):
     """Save open position"""
@@ -191,21 +204,24 @@ def open_paper_trade(signal, price):
 
 def check_exit_conditions(position, current_price):
     """Check if position should exit"""
-    entry = float(position['entry_price'])
-    stop = float(position['stop_price'])
-    target = float(position['target_price'])
-    direction = position['direction']
-    
-    if direction == 'BUY':
-        if current_price <= stop:
-            return True, 'STOP_LOSS', stop
-        if current_price >= target:
-            return True, 'TAKE_PROFIT', target
-    else:
-        if current_price >= stop:
-            return True, 'STOP_LOSS', stop
-        if current_price <= target:
-            return True, 'TAKE_PROFIT', target
+    try:
+        entry = float(position['entry_price'])
+        stop = float(position['stop_price'])
+        target = float(position['target_price'])
+        direction = position['direction']
+        
+        if direction == 'BUY':
+            if current_price <= stop:
+                return True, 'STOP_LOSS', stop
+            if current_price >= target:
+                return True, 'TAKE_PROFIT', target
+        else:
+            if current_price >= stop:
+                return True, 'STOP_LOSS', stop
+            if current_price <= target:
+                return True, 'TAKE_PROFIT', target
+    except Exception as e:
+        print(f"Error checking exit: {e}")
     
     return False, None, None
 
@@ -249,7 +265,7 @@ def close_paper_trade(position, exit_price, exit_reason):
     if POSITIONS_FILE.exists():
         df = pd.read_csv(POSITIONS_FILE)
         for i, row in df.iterrows():
-            if row['entry_time'] == position['entry_time']:
+            if str(row['entry_time']) == str(position['entry_time']):
                 df.loc[i] = pd.Series(position)
                 break
         df.to_csv(POSITIONS_FILE, index=False)
@@ -266,7 +282,7 @@ def send_email(subject, body):
     
     if not mail_username or not mail_password:
         print("❌ Email credentials not found")
-        return
+        return False
     
     msg = EmailMessage()
     msg.set_content(body)
@@ -279,32 +295,47 @@ def send_email(subject, body):
             smtp.login(mail_username, mail_password)
             smtp.send_message(msg)
         print(f"✅ Email sent")
+        return True
     except Exception as e:
         print(f"❌ Email failed: {e}")
+        return False
 
 def send_trade_alert(signal, position):
     """Send trade alert email"""
     date_str = datetime.now().strftime("%Y-%m-%d %H:%M ET")
     
     if signal == 'BUY':
-        subject = f"📈 MES BUY SIGNAL - 6 Contracts at {position['entry_price']}"
-        action = "BUY 6 MES CONTRACTS"
+        subject = f"📈 MES BUY SIGNAL - {CONTRACTS} Contracts at {position['entry_price']}"
+        action = f"BUY {CONTRACTS} MES CONTRACTS"
     else:
-        subject = f"📉 MES SELL SIGNAL - 6 Contracts at {position['entry_price']}"
-        action = "SELL 6 MES CONTRACTS"
+        subject = f"📉 MES SELL SIGNAL - {CONTRACTS} Contracts at {position['entry_price']}"
+        action = f"SELL {CONTRACTS} MES CONTRACTS"
     
     body = f"""
-MES TRADE SIGNAL - {date_str}
+═══════════════════════════════════════════════════════════
+  MES PAPER TRADING SYSTEM - TRADE ALERT
+═══════════════════════════════════════════════════════════
 
-ACTION: {action}
+TIME: {date_str}
+
+🚨 TRADE SIGNAL: {signal}
+   {action}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
 ENTRY: ${position['entry_price']}
-STOP LOSS: ${position['stop_price']} (-{STOP_POINTS} pts)
-TAKE PROFIT: ${position['target_price']} (+{TARGET_POINTS} pts)
+STOP: ${position['stop_price']} (-{STOP_POINTS} pts)
+TARGET: ${position['target_price']} (+{TARGET_POINTS} pts)
 
 RISK: ${position['risk_dollars']}
 REWARD: ${position['target_dollars']}
 
-Execute now. Do not move stop loss.
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+⚠️ DO NOT move your stop loss.
+⚠️ Take profit at target - no partials.
+
+═══════════════════════════════════════════════════════════
 """
     
     send_email(subject, body)
@@ -316,13 +347,19 @@ def send_exit_alert(trade_record):
     
     subject = f"🔒 MES CLOSED - {trade_record['exit_reason']} - {profit_symbol}${trade_record['profit_dollars']:.2f}"
     body = f"""
-MES POSITION CLOSED - {date_str}
+═══════════════════════════════════════════════════════════
+  MES PAPER TRADING - POSITION CLOSED
+═══════════════════════════════════════════════════════════
 
-Exit Reason: {trade_record['exit_reason']}
-Direction: {trade_record['direction']}
-Entry: ${trade_record['entry_price']}
-Exit: ${trade_record['exit_price']}
-Profit: {profit_symbol}${trade_record['profit_dollars']:.2f}
+TIME: {date_str}
+
+EXIT REASON: {trade_record['exit_reason']}
+DIRECTION: {trade_record['direction']}
+ENTRY: ${trade_record['entry_price']}
+EXIT: ${trade_record['exit_price']}
+PROFIT: {profit_symbol}${trade_record['profit_dollars']:.2f}
+
+═══════════════════════════════════════════════════════════
 """
     
     send_email(subject, body)
@@ -335,27 +372,23 @@ def get_performance_report():
     if not TRADES_FILE.exists():
         return None
     
-    df = pd.read_csv(TRADES_FILE)
-    if df.empty:
+    try:
+        df = pd.read_csv(TRADES_FILE)
+        if df.empty:
+            return None
+        
+        total_trades = len(df)
+        wins = len(df[df['profit_dollars'] > 0])
+        total_profit = df['profit_dollars'].sum()
+        win_rate = (wins / total_trades * 100) if total_trades > 0 else 0
+        
+        return {
+            'total_trades': total_trades,
+            'win_rate': round(win_rate, 1),
+            'total_profit': round(total_profit, 2)
+        }
+    except Exception:
         return None
-    
-    total_trades = len(df)
-    wins = len(df[df['profit_dollars'] > 0])
-    total_profit = df['profit_dollars'].sum()
-    win_rate = (wins / total_trades * 100) if total_trades > 0 else 0
-    
-    # Calculate max drawdown
-    df['cumulative'] = df['profit_dollars'].cumsum()
-    running_max = df['cumulative'].cummax()
-    df['drawdown'] = running_max - df['cumulative']
-    max_drawdown = df['drawdown'].max()
-    
-    return {
-        'total_trades': total_trades,
-        'win_rate': round(win_rate, 1),
-        'total_profit': round(total_profit, 2),
-        'max_drawdown': round(max_drawdown, 2)
-    }
 
 # ============================================================
 # DASHBOARD DATA
@@ -433,6 +466,7 @@ def main():
                 print(f"   Risk: ${position['risk_dollars']} | Reward: ${position['target_dollars']}")
                 
                 send_trade_alert(signal, position)
+                existing_position = position
             else:
                 print("\n🔍 No signal - waiting for EMA crossover")
         else:
@@ -443,13 +477,16 @@ def main():
     if performance:
         print(f"\n📊 PERFORMANCE:")
         print(f"   Trades: {performance['total_trades']} | Win Rate: {performance['win_rate']}%")
-        print(f"   Total P&L: ${performance['total_profit']:.2f} | Max DD: ${performance['max_drawdown']:.2f}")
+        print(f"   Total P&L: ${performance['total_profit']:.2f}")
     
     # Update dashboard
     recent_trades = None
     if TRADES_FILE.exists():
-        df = pd.read_csv(TRADES_FILE)
-        recent_trades = df.tail(10).to_dict('records') if not df.empty else None
+        try:
+            df = pd.read_csv(TRADES_FILE)
+            recent_trades = df.tail(10).to_dict('records') if not df.empty else None
+        except Exception:
+            pass
     
     update_dashboard(
         current_price=current_price,
