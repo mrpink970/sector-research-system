@@ -3,3 +3,6 @@ Biotechnology,LABU,long,2026-04-09,174.55,2026-04-22,206.2,17,Bull,4.0,Neutral,5
 Semiconductors,SOXL,long,2026-04-09,68.12,2026-04-28,108.75,44,Strong Bull,6.0,Stop,1787.72,3.6899,1784.03,59.6447,19,trailing_stop
 Consumer Discretionary,WANT,long,2026-04-22,47.29,2026-05-04,45.69,70,Bull,4.0,Neutral,-112.0,2.5739,-114.57,-3.3834,12,signal_change
 Semiconductors,SOXL,long,2026-04-28,108.75,2026-05-07,149.4,40,Strong Bull,6.0,Stop,1626.0,2.5367,1623.46,37.3793,9,trailing_stop
+Semiconductors,SOXL,long,2026-05-07,162.12,2026-05-12,164.5094,32,Strong Bull,6.0,Stop,76.46,1.6807,74.78,1.4738,5,trailing_stop
+Semiconductors,SOXL,long,2026-05-12,177.62,2026-05-18,155.4392,30,Strong Bull,6.0,Stop,-665.42,2.0716,-667.5,-12.4878,6,trailing_stop
+Semiconductors,SOXL,long,2026-05-18,172.95,2026-05-19,141.24,28,Bull,4.0,Stop,-887.88,0.3138,-888.19,-18.3348,1,trailing_stop
