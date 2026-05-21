@@ -19,7 +19,7 @@ jobs:
           python-version: '3.11'
       
       - name: Install dependencies
-        run: pip install pandas openpyxl yfinance pyyaml
+        run: pip install pandas openpyxl yfinance pyyaml --upgrade
       
       - name: Create data directories
         run: |
@@ -27,6 +27,21 @@ jobs:
           mkdir -p data/stocks
           mkdir -p data/ai
           mkdir -p data/quantum
+      
+      # ============================================================
+      # SECTOR SYSTEM DATA PIPELINE (FIXED)
+      # ============================================================
+      - name: Collect market data (sector ETFs)
+        run: python scripts/collect_market_data.py
+      
+      - name: Calculate indicators
+        run: python scripts/calculate_indicators.py
+      
+      - name: Score sectors
+        run: python scripts/score_sectors.py
+      
+      - name: Rank sectors
+        run: python scripts/rank_sectors.py
       
       # ============================================================
       # 1. UPDATE 2 ETF DATA (Fetch latest prices into Excel)
@@ -45,7 +60,7 @@ jobs:
           MAIL_TO: ${{ secrets.MAIL_TO }}
       
       # ============================================================
-      # 3. RUN SECTOR SYSTEM
+      # 3. RUN SECTOR SYSTEM (PAPER TRADING)
       # ============================================================
       - name: Run Sector System
         run: python scripts/run_paper_trading.py
