@@ -2,6 +2,7 @@
 """
 Quantum Computing Paper Trading System - Stable EOD
 Updated: 25% trailing stop, min_score 18.0, no volatility penalty, trend filter
+Now saves full OHLCV historical data for dashboard
 """
 
 from pathlib import Path
@@ -17,6 +18,7 @@ SCORES_PATH = DATA_DIR / "scores.csv"
 POSITIONS_PATH = DATA_DIR / "positions.csv"
 TRADE_LOG_PATH = DATA_DIR / "trade_log.csv"
 PERFORMANCE_PATH = DATA_DIR / "performance.csv"
+HISTORICAL_QUOTES_PATH = DATA_DIR / "historical_quotes.csv"
 
 TICKERS = ["IONQ", "QBTS", "RGTI", "QUBT", "XNDU", "INFQ", "HQ"]
 STARTING_BALANCE = 5000.0
@@ -46,6 +48,19 @@ def calculate_score(ret_1d, ret_3d, ret_5d):
     
     return round(score, 2)
 
+def save_historical_ohlcv(closes, opens, highs, lows, volumes):
+    """Save full OHLCV data to CSV for dashboard use"""
+    df = pd.DataFrame(index=closes.index)
+    for t in TICKERS:
+        df[f"{t}_Open"] = opens[t].round(2)
+        df[f"{t}_High"] = highs[t].round(2)
+        df[f"{t}_Low"] = lows[t].round(2)
+        df[f"{t}_Close"] = closes[t].round(2)
+        df[f"{t}_Volume"] = volumes[t].astype(int)
+    
+    df.to_csv(HISTORICAL_QUOTES_PATH)
+    print(f"✅ Saved OHLCV history to {HISTORICAL_QUOTES_PATH}")
+
 def main():
     print("🔬 QUANTUM COMPUTING PAPER TRADING SYSTEM")
     print("=" * 60)
@@ -56,12 +71,26 @@ def main():
     
     print("\n📥 Fetching latest prices...")
     data = yf.download(TICKERS, period="6mo", progress=False)
+    
+    # Extract OHLCV components
     if isinstance(data.columns, pd.MultiIndex):
         closes = data['Close'][TICKERS]
+        opens = data['Open'][TICKERS]
+        highs = data['High'][TICKERS]
+        lows = data['Low'][TICKERS]
+        volumes = data['Volume'][TICKERS]
     else:
+        # Fallback for unexpected data structure
         closes = data[TICKERS]
+        opens = data[TICKERS]
+        highs = data[TICKERS]
+        lows = data[TICKERS]
+        volumes = pd.DataFrame(index=data.index, columns=TICKERS)
     
     print(f"✅ Data up to {closes.index[-1].date()}")
+    
+    # Save historical OHLCV data for dashboard
+    save_historical_ohlcv(closes, opens, highs, lows, volumes)
     
     # Calculate returns
     ret_1d = closes.pct_change() * 100
@@ -178,7 +207,7 @@ def main():
             if score >= MIN_SCORE:
                 price = float(current_prices[best])
                 
-                # Position sizing: 100% of cash as specified (no change)
+                # Position sizing: 100% of cash as specified
                 shares = int(cash // price)
                 
                 if shares > 0:
@@ -199,7 +228,7 @@ def main():
                     
                     if TREND_FILTER:
                         sma = float(latest_sma20[best])
-                        print(f"   ️20-day SMA: ${sma:.2f} (price above by {((price/sma)-1)*100:.1f}%)")
+                        print(f"   20-day SMA: ${sma:.2f} (price above by {((price/sma)-1)*100:.1f}%)")
                 else:
                     print(f"⚠️ Cannot afford {best} at ${price:.2f} (cash: ${cash:.2f})")
             else:
@@ -224,7 +253,7 @@ def main():
     
     total = STARTING_BALANCE + realized + open_pl
     
-    # Calculate win rate and avg loss (for comparison with your screenshot)
+    # Calculate win rate and avg loss
     if len(trade_log) > 0:
         wins = trade_log['gross_pl'] > 0
         win_rate = round((wins).mean() * 100, 1)
