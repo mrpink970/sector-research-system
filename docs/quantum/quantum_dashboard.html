@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Quantum System Dashboard</title>
+    <title>Quantum System Dashboard v2.0</title>
     <style>
         body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background: #f0f4f8; margin: 0; padding: 15px; color: #1a2a3a; max-width: 1200px; margin: 0 auto; }
         h1 { color: #1a4d7a; margin-bottom: 5px; }
@@ -23,11 +23,115 @@
         .score-low { color: #c2412c; font-weight: bold; }
         .small-note { font-size: 11px; color: #8ba0b0; margin-top: 8px; }
         .footer { text-align: center; font-size: 11px; color: #8ba0b0; margin-top: 20px; padding-top: 10px; border-top: 1px solid #e2edf2; }
+        
+        /* Reset Banner Styles */
+        .reset-banner {
+            background: linear-gradient(135deg, #1a4d7a 0%, #0d3b5e 100%);
+            color: white;
+            border-radius: 12px;
+            padding: 16px 20px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        .reset-banner-left {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        .reset-icon {
+            font-size: 2rem;
+        }
+        .reset-text h3 {
+            margin: 0 0 5px 0;
+            font-size: 1.1rem;
+        }
+        .reset-text p {
+            margin: 0;
+            font-size: 0.85rem;
+            opacity: 0.9;
+        }
+        .reset-badge {
+            background: #1e8a4c;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 0.85rem;
+        }
+        .params-grid {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            margin-top: 10px;
+        }
+        .param-item {
+            background: rgba(255,255,255,0.15);
+            border-radius: 8px;
+            padding: 5px 12px;
+            font-size: 0.8rem;
+        }
+        .param-label {
+            font-weight: normal;
+            opacity: 0.8;
+        }
+        .param-value {
+            font-weight: bold;
+        }
+        
+        /* Old vs New comparison */
+        .comparison-note {
+            background: #fff8e1;
+            border-left: 4px solid #eab308;
+            padding: 12px 16px;
+            margin: 12px 0;
+            font-size: 0.85rem;
+            border-radius: 8px;
+        }
+        .comparison-note strong {
+            color: #1a4d7a;
+        }
+        .old-value {
+            text-decoration: line-through;
+            color: #c2412c;
+        }
+        .new-value {
+            color: #1e8a4c;
+            font-weight: bold;
+        }
     </style>
 </head>
 <body>
-    <h1>🔬 Quantum Computing System</h1>
-    <p class="subtitle">7 Quantum Stocks • Single Position • 10% Trailing Stop</p>
+    <h1>🔬 Quantum Computing System <span style="font-size: 0.7rem; background: #1e8a4c; color: white; padding: 2px 8px; border-radius: 20px;">v2.0</span></h1>
+    <p class="subtitle">7 Quantum Stocks • Single Position • 25% Trailing Stop</p>
+
+    <!-- RESET BANNER -->
+    <div class="reset-banner">
+        <div class="reset-banner-left">
+            <div class="reset-icon">🔄</div>
+            <div class="reset-text">
+                <h3>System Reset — May 23, 2026</h3>
+                <p>Full system reset with improved parameters to achieve better outcomes</p>
+            </div>
+        </div>
+        <div class="reset-badge">🎯 Fresh Start</div>
+    </div>
+
+    <!-- Parameter Comparison -->
+    <div class="comparison-note">
+        <strong>⚙️ Parameter Changes (Reset Date: 2026-05-23)</strong>
+        <div class="params-grid" style="margin-top: 10px;">
+            <div class="param-item"><span class="param-label">Trailing Stop:</span> <span class="old-value">10%</span> → <span class="new-value">25%</span></div>
+            <div class="param-item"><span class="param-label">Min Score:</span> <span class="old-value">4.0</span> → <span class="new-value">18.0</span></div>
+            <div class="param-item"><span class="param-label">Volatility Penalty:</span> <span class="old-value">Yes</span> → <span class="new-value">Removed</span></div>
+            <div class="param-item"><span class="param-label">Trend Filter:</span> <span class="old-value">Off</span> → <span class="new-value">20-day SMA</span></div>
+            <div class="param-item"><span class="param-label">Score Weights:</span> <span class="old-value">30/25/20</span> → <span class="new-value">35/35/30</span></div>
+        </div>
+        <div class="small-note" style="margin-top: 8px;">📊 Previous system: -73% return. New system starting fresh from $5,000.</div>
+    </div>
 
     <!-- KPI Cards -->
     <div class="kpi-grid" id="kpiGrid"></div>
@@ -64,6 +168,7 @@
 <script>
     const BASE = "https://raw.githubusercontent.com/mrpink970/sector-research-system/main/data/quantum/";
     const STARTING_BALANCE = 5000;
+    const RESET_DATE = "2026-05-23";
 
     async function fetchCSV(url) {
         const r = await fetch(url + "?t=" + Date.now());
@@ -115,9 +220,9 @@
             const rankBody = document.getElementById('rankingsBody');
             rankBody.innerHTML = rankings.map((r, idx) => {
                 let scoreClass = "";
-                if (r.score >= 5) scoreClass = "score-high";
-                else if (r.score >= 2) scoreClass = "score-mid";
-                else if (r.score < 0) scoreClass = "score-low";
+                if (r.score >= 18) scoreClass = "score-high";
+                else if (r.score >= 12) scoreClass = "score-mid";
+                else if (r.score < 10) scoreClass = "score-low";
                 return `<tr>
                     <td>${idx + 1}</td>
                     <td><strong>${r.ticker}</strong></td>
@@ -139,7 +244,7 @@
                 }
             }
             
-            // Parse trades
+            // Parse trades - FILTER to only show trades after reset date
             let trades = [];
             if (tradesCSV) {
                 const tradeLines = tradesCSV.trim().split('\n');
@@ -151,12 +256,15 @@
                         for (let j = 0; j < headers.length; j++) {
                             trade[headers[j]] = isNaN(values[j]) ? values[j] : parseFloat(values[j]);
                         }
-                        trades.push(trade);
+                        // Only include trades after reset date
+                        if (trade.exit_date >= RESET_DATE || trade.entry_date >= RESET_DATE) {
+                            trades.push(trade);
+                        }
                     }
                 }
             }
             
-            // Calculate realized P&L from trades
+            // Calculate realized P&L from filtered trades
             let realizedPL = 0;
             let winningTrades = 0;
             for (const t of trades) {
@@ -189,7 +297,7 @@
             const totalReturnPct = (totalReturn / STARTING_BALANCE) * 100;
             const winRate = trades.length > 0 ? (winningTrades / trades.length) * 100 : 0;
             
-            // Parse performance file for win rate (more accurate)
+            // Parse performance file for win rate
             let perfWinRate = winRate;
             if (perfCSV) {
                 const perfLines = perfCSV.trim().split('\n');
@@ -203,8 +311,8 @@
             const kpiGrid = document.getElementById('kpiGrid');
             kpiGrid.innerHTML = `
                 <div class="kpi-card"><div class="kpi-label">💰 Cash Balance</div><div class="kpi-value">$${Math.max(0, remainingCash).toFixed(2)}</div><div class="small-note">Started: $${STARTING_BALANCE.toFixed(2)}</div></div>
-                <div class="kpi-card"><div class="kpi-label">📈 Total Equity</div><div class="kpi-value positive">$${totalEquity.toFixed(2)}</div><div class="small-note">Cash + Position Value</div></div>
-                <div class="kpi-card"><div class="kpi-label">🏆 Win Rate</div><div class="kpi-value">${perfWinRate.toFixed(1)}%</div><div class="small-note">${trades.length} closed trades</div></div>
+                <div class="kpi-card"><div class="kpi-label">📈 Total Equity</div><div class="kpi-value ${totalEquity >= STARTING_BALANCE ? 'positive' : ''}">$${totalEquity.toFixed(2)}</div><div class="small-note">Cash + Position Value</div></div>
+                <div class="kpi-card"><div class="kpi-label">🏆 Win Rate</div><div class="kpi-value">${perfWinRate.toFixed(1)}%</div><div class="small-note">${trades.length} closed trades (since reset)</div></div>
                 <div class="kpi-card"><div class="kpi-label">📊 Total Return</div><div class="kpi-value ${totalReturnPct >= 0 ? 'positive' : 'negative'}">${totalReturnPct >= 0 ? '+' : ''}${totalReturnPct.toFixed(1)}%</div><div class="small-note">${totalReturnPct >= 0 ? '+' : ''}$${totalReturn.toFixed(2)}</div></div>
                 <div class="kpi-card"><div class="kpi-label">📌 Open Positions</div><div class="kpi-value">${openPosition ? 1 : 0}</div><div class="small-note">${openPosition ? `Cost: $${openCost.toFixed(2)}` : 'No position'}</div></div>
             `;
@@ -224,26 +332,30 @@
                     </div>
                 `;
             } else {
-                positionDiv.innerHTML = `<div style="text-align:center; padding:20px;">📭 No open position<br><span class="small-note">In cash • Waiting for signal (min score: 4.0)</span></div>`;
+                positionDiv.innerHTML = `<div style="text-align:center; padding:20px;">📭 No open position<br><span class="small-note">In cash • Waiting for signal (min score: 18.0 + above 20-day SMA)</span></div>`;
             }
             
             // Performance Summary
+            const avgWin = trades.filter(t => t.gross_pl > 0).reduce((s,t) => s + (t.return_pct || 0), 0) / (trades.filter(t => t.gross_pl > 0).length || 1);
+            const avgLoss = Math.abs(trades.filter(t => t.gross_pl < 0).reduce((s,t) => s + (t.return_pct || 0), 0) / (trades.filter(t => t.gross_pl < 0).length || 1));
+            
             document.getElementById('perfContent').innerHTML = `
-                <div><strong>Starting Balance:</strong> $${STARTING_BALANCE.toFixed(2)}</div>
+                <div><strong>Starting Balance (Reset):</strong> $${STARTING_BALANCE.toFixed(2)}</div>
                 <div><strong>Cash Balance:</strong> $${Math.max(0, remainingCash).toFixed(2)}</div>
-                <div><strong>Total Equity:</strong> <span class="positive">$${totalEquity.toFixed(2)}</span></div>
-                <div><strong>Total Return:</strong> <span class="${totalReturnPct >= 0 ? 'positive' : 'negative'}">${totalReturnPct >= 0 ? '+' : ''}${totalReturnPct.toFixed(1)}% (${totalReturnPct >= 0 ? '+' : ''}$${totalReturn.toFixed(2)})</span></div>
+                <div><strong>Total Equity:</strong> <span class="${totalEquity >= STARTING_BALANCE ? 'positive' : 'negative'}">$${totalEquity.toFixed(2)}</span></div>
+                <div><strong>Total Return (since ${RESET_DATE}):</strong> <span class="${totalReturnPct >= 0 ? 'positive' : 'negative'}">${totalReturnPct >= 0 ? '+' : ''}${totalReturnPct.toFixed(1)}% (${totalReturnPct >= 0 ? '+' : ''}$${totalReturn.toFixed(2)})</span></div>
                 <hr>
                 <div><strong>Realized P&L:</strong> ${realizedPL >= 0 ? '+' : ''}$${realizedPL.toFixed(2)}</div>
                 <div><strong>Unrealized P&L:</strong> ${openPL >= 0 ? '+' : ''}$${openPL.toFixed(2)}</div>
-                ${trades.length > 0 ? `<div><strong>Avg Win:</strong> ${(trades.filter(t => t.gross_pl > 0).reduce((s,t) => s + t.return_pct, 0) / (trades.filter(t => t.gross_pl > 0).length || 1)).toFixed(1)}%</div>` : ''}
-                ${trades.length > 0 ? `<div><strong>Avg Loss:</strong> ${Math.abs(trades.filter(t => t.gross_pl < 0).reduce((s,t) => s + t.return_pct, 0) / (trades.filter(t => t.gross_pl < 0).length || 1)).toFixed(1)}%</div>` : ''}
+                ${trades.length > 0 && avgWin > 0 ? `<div><strong>Avg Win:</strong> ${avgWin.toFixed(1)}%</div>` : '<div><strong>Avg Win:</strong> 0.0%</div>'}
+                ${trades.length > 0 && avgLoss > 0 ? `<div><strong>Avg Loss:</strong> ${avgLoss.toFixed(1)}%</div>` : '<div><strong>Avg Loss:</strong> 0.0%</div>'}
+                <div class="small-note" style="margin-top: 8px;">📈 System v2.0 active since ${RESET_DATE}</div>
             `;
             
-            // Closed Trades Table
+            // Closed Trades Table (only post-reset)
             const tradesDiv = document.getElementById('tradesContent');
             if (trades.length === 0) {
-                tradesDiv.innerHTML = '<div class="small-note">No closed trades yet</div>';
+                tradesDiv.innerHTML = '<div class="small-note">No closed trades since system reset on 2026-05-23</div>';
             } else {
                 let tradeHtml = `<table><thead><tr><th>Ticker</th><th>Entry Date</th><th>Exit Date</th><th>Return %</th><th>P&L</th><th>Exit Reason</th></tr></thead><tbody>`;
                 for (let i = trades.length - 1; i >= 0; i--) {
@@ -263,7 +375,7 @@
                 tradesDiv.innerHTML = tradeHtml;
             }
             
-            document.getElementById('lastUpdated').innerHTML = `Last updated: ${new Date().toLocaleString()} | Data as of: ${lastDate}`;
+            document.getElementById('lastUpdated').innerHTML = `System Reset: ${RESET_DATE} | Last updated: ${new Date().toLocaleString()} | Data as of: ${lastDate}`;
             
         } catch (e) {
             console.error(e);
