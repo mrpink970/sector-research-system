@@ -327,9 +327,9 @@ def format_position_summary(positions: List[dict]) -> str:
         entry = pos.get('entry_price', 0)
         
         if 'system' in pos:
-            lines.append(f"      • {ticker} ({pos['system']}): {shares} shares @ ${entry:.2f}")
+            lines.append(f"      â¢ {ticker} ({pos['system']}): {shares} shares @ ${entry:.2f}")
         else:
-            lines.append(f"      • {ticker}: {shares} shares @ ${entry:.2f}")
+            lines.append(f"      â¢ {ticker}: {shares} shares @ ${entry:.2f}")
     
     if len(positions) > 5:
         lines.append(f"      ... and {len(positions) - 5} more")
@@ -383,7 +383,7 @@ def build_html_email(data: dict, config: dict) -> str:
 <body>
 <div class="container">
     <div class="header">
-        <h1>📊 Trading Systems Daily Summary</h1>
+        <h1>ð Trading Systems Daily Summary</h1>
         <p>{date_str} | Market Closed</p>
     </div>
 """
@@ -391,7 +391,7 @@ def build_html_email(data: dict, config: dict) -> str:
     # Sector System
     html += f"""
     <div class="system">
-        <h2>💰 {sector['name']}</h2>
+        <h2>ð° {sector['name']}</h2>
         <div class="metrics">
             <div class="metric">
                 <div class="metric-label">Total Equity</div>
@@ -409,11 +409,11 @@ def build_html_email(data: dict, config: dict) -> str:
             </div>
         </div>
         <div class="positions">
-            <div class="positions-title">📌 Open Positions ({sector['open_count']})</div>
+            <div class="positions-title">ð Open Positions ({sector['open_count']})</div>
             <pre style="margin: 0; font-family: monospace; font-size: 12px;">{format_position_summary(sector['open_positions'])}</pre>
         </div>
         <div class="dashboard-link">
-            <a href="{sector['dashboard_url']}">🔗 View Full Dashboard →</a>
+            <a href="{sector['dashboard_url']}">ð View Full Dashboard â</a>
         </div>
     </div>
 """
@@ -421,7 +421,7 @@ def build_html_email(data: dict, config: dict) -> str:
     # 2 ETF System
     html += f"""
     <div class="system">
-        <h2>📈 {two_etf['name']}</h2>
+        <h2>ð {two_etf['name']}</h2>
         <div class="metrics">
             <div class="metric">
                 <div class="metric-label">Total Equity</div>
@@ -439,11 +439,11 @@ def build_html_email(data: dict, config: dict) -> str:
             </div>
         </div>
         <div class="positions">
-            <div class="positions-title">📌 Open Positions ({two_etf['open_count']})</div>
+            <div class="positions-title">ð Open Positions ({two_etf['open_count']})</div>
             <pre style="margin: 0; font-family: monospace; font-size: 12px;">{format_position_summary(two_etf['open_positions'])}</pre>
         </div>
         <div class="dashboard-link">
-            <a href="{two_etf['dashboard_url']}">🔗 View Full Dashboard →</a>
+            <a href="{two_etf['dashboard_url']}">ð View Full Dashboard â</a>
         </div>
     </div>
 """
@@ -451,7 +451,7 @@ def build_html_email(data: dict, config: dict) -> str:
     # Stock System
     html += f"""
     <div class="system">
-        <h2>📊 {stock['name']}</h2>
+        <h2>ð {stock['name']}</h2>
         <div class="metrics">
             <div class="metric">
                 <div class="metric-label">Total Equity</div>
@@ -469,11 +469,11 @@ def build_html_email(data: dict, config: dict) -> str:
             </div>
         </div>
         <div class="positions">
-            <div class="positions-title">📌 Open Positions ({stock['open_count']})</div>
+            <div class="positions-title">ð Open Positions ({stock['open_count']})</div>
             <pre style="margin: 0; font-family: monospace; font-size: 12px;">{format_position_summary(stock['open_positions'])}</pre>
         </div>
         <div class="dashboard-link">
-            <a href="{stock['dashboard_url']}">🔗 View Full Dashboard →</a>
+            <a href="{stock['dashboard_url']}">ð View Full Dashboard â</a>
         </div>
     </div>
 """
@@ -481,7 +481,7 @@ def build_html_email(data: dict, config: dict) -> str:
     # AI System
     html += f"""
     <div class="system">
-        <h2>🤖 {ai['name']}</h2>
+        <h2>ð¤ {ai['name']}</h2>
         <div class="metrics">
             <div class="metric">
                 <div class="metric-label">Total Equity</div>
@@ -499,11 +499,11 @@ def build_html_email(data: dict, config: dict) -> str:
             </div>
         </div>
         <div class="positions">
-            <div class="positions-title">📌 Open Positions ({ai['open_count']})</div>
+            <div class="positions-title">ð Open Positions ({ai['open_count']})</div>
             <pre style="margin: 0; font-family: monospace; font-size: 12px;">{format_position_summary(ai['open_positions'])}</pre>
         </div>
         <div class="dashboard-link">
-            <a href="{ai['dashboard_url']}">🔗 View Full Dashboard →</a>
+            <a href="{ai['dashboard_url']}">ð View Full Dashboard â</a>
         </div>
     </div>
 """
@@ -513,7 +513,7 @@ def build_html_email(data: dict, config: dict) -> str:
     
     html += f"""
     <div class="system">
-        <h2>🔬 {quantum['name']}</h2>
+        <h2>ð¬ {quantum['name']}</h2>
         <div class="metrics">
             <div class="metric">
                 <div class="metric-label">Total Equity</div>
@@ -531,14 +531,14 @@ def build_html_email(data: dict, config: dict) -> str:
             </div>
         </div>
         <div class="positions">
-            <div class="positions-title">📌 Open Positions ({quantum['open_count']})</div>
+            <div class="positions-title">ð Open Positions ({quantum['open_count']})</div>
             <pre style="margin: 0; font-family: monospace; font-size: 12px;">{format_position_summary(quantum['open_positions'])}</pre>
         </div>
         <div class="dashboard-link">
-            <a href="{quantum['dashboard_url']}">🔗 View Full Dashboard →</a>
+            <a href="{quantum['dashboard_url']}">ð View Full Dashboard â</a>
         </div>
         <div class="dashboard-link-small">
-            <a href="{quantum_eod_url}">📊 View EOD OHLC Dashboard →</a>
+            <a href="{quantum_eod_url}">ð View EOD OHLC Dashboard â</a>
         </div>
     </div>
 """
@@ -547,7 +547,7 @@ def build_html_email(data: dict, config: dict) -> str:
     recipients = ", ".join(config.get('email_recipients', []))
     html += f"""
     <div class="footer">
-        <p>⚡ Automated daily summary | Data as of market close {date_str}</p>
+        <p>â¡ Automated daily summary | Data as of market close {date_str}</p>
         <p>Sent to: {recipients}</p>
     </div>
 </div>
@@ -563,7 +563,7 @@ def send_email(html_content: str, recipients: List[str]) -> bool:
     mail_password = os.environ.get("MAIL_PASSWORD")
     
     if not mail_username or not mail_password:
-        print("❌ Email credentials not found")
+        print("â Email credentials not found")
         return False
     
     date_str = datetime.now().strftime("%Y-%m-%d")
@@ -571,7 +571,7 @@ def send_email(html_content: str, recipients: List[str]) -> bool:
     msg = EmailMessage()
     msg.set_content("Please enable HTML to view this email.")
     msg.add_alternative(html_content, subtype='html')
-    msg["Subject"] = f"📊 Trading Systems Daily Summary - {date_str}"
+    msg["Subject"] = f"ð Trading Systems Daily Summary - {date_str}"
     msg["From"] = mail_username
     msg["To"] = recipients[0] if recipients else mail_username
     msg["Cc"] = recipients[1:] if len(recipients) > 1 else []
@@ -580,10 +580,10 @@ def send_email(html_content: str, recipients: List[str]) -> bool:
         with smtplib.SMTP_SSL("smtp.gmail.com", 465) as smtp:
             smtp.login(mail_username, mail_password)
             smtp.send_message(msg)
-        print(f"✅ Email sent to {len(recipients)} recipient(s)")
+        print(f"â Email sent to {len(recipients)} recipient(s)")
         return True
     except Exception as e:
-        print(f"❌ Failed to send email: {e}")
+        print(f"â Failed to send email: {e}")
         return False
 
 
@@ -597,12 +597,12 @@ def main():
     
     try:
         config = load_config()
-        print(f"✅ Loaded config from {CONFIG_PATH}")
+        print(f"â Loaded config from {CONFIG_PATH}")
     except Exception as e:
-        print(f"❌ Failed to load config: {e}")
+        print(f"â Failed to load config: {e}")
         return
     
-    print("\n📊 Collecting system data...")
+    print("\nð Collecting system data...")
     
     sector_data = get_sector_system_data(config)
     print(f"   Sector System: Total Equity ${sector_data['balance']:,.2f}")
@@ -619,7 +619,7 @@ def main():
     quantum_data = get_quantum_system_data(config)
     print(f"   Quantum System: Total Equity ${quantum_data['balance']:,.2f}")
     
-    print("\n📧 Building email...")
+    print("\nð§ Building email...")
     data = {
         'sector': sector_data,
         'two_etf': two_etf_data,
@@ -631,12 +631,12 @@ def main():
     
     recipients = config.get('email_recipients', [])
     if not recipients:
-        print("⚠️ No email recipients found")
+        print("â ï¸ No email recipients found")
         return
     
-    print(f"\n📨 Sending to {len(recipients)} recipient(s)...")
+    print(f"\nð¨ Sending to {len(recipients)} recipient(s)...")
     for r in recipients:
-        print(f"   • {r}")
+        print(f"   â¢ {r}")
     
     send_email(html_content, recipients)
     
