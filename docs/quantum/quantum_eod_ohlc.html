@@ -153,13 +153,13 @@
                 <tr><th>Ticker</th><th>Open</th><th>High</th><th>Low</th><th>Close</th><th>Change ($)</th><th>Change (%)</th><th>Volume</th></tr>
             </thead>
             <tbody id="tableBody">
-                <tr><td colspan="8" style="text-align: center; padding: 40px;">Loading historical OHLCV data......</td></tr>
+                <tr><td colspan="8" style="text-align: center; padding: 40px;">Loading OHLCV data...</td></tr>
             </tbody>
         </table>
     </div>
     
     <div class="note" id="note">
-        📊 Real OHLCV data from daily market close
+        📊 Full OHLCV data from historical_quotes.csv
     </div>
     
     <div class="footer">
@@ -198,7 +198,7 @@
                 <tr><td colspan="8" style="text-align: center; padding: 40px; color: #ef4444;">
                     ⚠️ Error loading historical price data.<br>
                     <span style="font-size: 0.75rem;">Make sure run_quantum_system.py has been executed to generate historical_quotes.csv</span>
-                </td></tr>
+                 </td></tr>
             `;
             document.getElementById('note').innerHTML = `❌ Failed to load historical_quotes.csv. Please run the quantum system first.`;
         }
@@ -211,7 +211,6 @@
         const lines = csvText.trim().split('\n');
         const headers = lines[0].split(',');
         
-        // Get last row (most recent data)
         const lastRow = lines[lines.length - 1].split(',');
         const prevRow = lines.length >= 3 ? lines[lines.length - 2].split(',') : lastRow;
         
@@ -222,7 +221,6 @@
         for (const tickerObj of TICKERS) {
             const ticker = tickerObj.ticker;
             
-            // Find column indices for this ticker
             const openCol = headers.indexOf(`${ticker}_Open`);
             const highCol = headers.indexOf(`${ticker}_High`);
             const lowCol = headers.indexOf(`${ticker}_Low`);
@@ -296,7 +294,7 @@
         }).join('');
         
         document.getElementById('tableBody').innerHTML = rowsHtml;
-        document.getElementById('note').innerHTML = `📊 Real OHLCV data from historical_quotes.csv (${data.date}) | 📈 Advancers: ${advancers} | 📉 Decliners: ${decliners}`;
+        document.getElementById('note').innerHTML = `📊 Full OHLCV data from historical_quotes.csv (${data.date}) | 📈 Advancers: ${advancers} | 📉 Decliners: ${decliners}`;
     }
     
     loadData();
