@@ -373,6 +373,8 @@ def build_html_email(data: dict, config: dict) -> str:
         .positions-title {{ font-weight: 700; margin-bottom: 8px; color: #4a627a; }}
         .dashboard-link {{ margin-top: 16px; }}
         .dashboard-link a {{ color: #2c7fb8; text-decoration: none; font-weight: 600; }}
+        .dashboard-link-small {{ margin-top: 8px; }}
+        .dashboard-link-small a {{ color: #6c7e8f; text-decoration: none; font-size: 12px; }}
         .footer {{ background: #f8fafc; padding: 16px 30px; text-align: center; font-size: 12px; color: #8ba0b0; }}
         .positive-text {{ color: #1e8a4c; }}
         .negative-text {{ color: #c2412c; }}
@@ -506,7 +508,9 @@ def build_html_email(data: dict, config: dict) -> str:
     </div>
 """
     
-    # Quantum System
+    # Quantum System (UPDATED with both dashboard links)
+    quantum_eod_url = "https://mrpink970.github.io/sector-research-system/docs/quantum/quantum_eod_ohlc.html"
+    
     html += f"""
     <div class="system">
         <h2>🔬 {quantum['name']}</h2>
@@ -532,6 +536,9 @@ def build_html_email(data: dict, config: dict) -> str:
         </div>
         <div class="dashboard-link">
             <a href="{quantum['dashboard_url']}">🔗 View Full Dashboard →</a>
+        </div>
+        <div class="dashboard-link-small">
+            <a href="{quantum_eod_url}">📊 View EOD OHLC Dashboard →</a>
         </div>
     </div>
 """
