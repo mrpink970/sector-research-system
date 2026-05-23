@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """
 Quantum Computing Paper Trading System - Stable EOD
+Saves full OHLCV data for dashboard
 """
 
 from pathlib import Path
@@ -16,6 +17,7 @@ SCORES_PATH = DATA_DIR / "scores.csv"
 POSITIONS_PATH = DATA_DIR / "positions.csv"
 TRADE_LOG_PATH = DATA_DIR / "trade_log.csv"
 PERFORMANCE_PATH = DATA_DIR / "performance.csv"
+HISTORICAL_QUOTES_PATH = DATA_DIR / "historical_quotes.csv"
 
 TICKERS = ["IONQ", "QBTS", "RGTI", "QUBT", "XNDU", "INFQ", "HQ"]
 STARTING_BALANCE = 5000.0
@@ -39,13 +41,40 @@ def main():
     
     print("\n📥 Fetching latest prices...")
     data = yf.download(TICKERS, period="6mo", progress=False)
+    
+    # Extract OHLCV components
     if isinstance(data.columns, pd.MultiIndex):
         closes = data['Close'][TICKERS]
+        opens = data['Open'][TICKERS]
+        highs = data['High'][TICKERS]
+        lows = data['Low'][TICKERS]
+        volumes = data['Volume'][TICKERS]
     else:
         closes = data[TICKERS]
+        opens = data[TICKERS]
+        highs = data[TICKERS]
+        lows = data[TICKERS]
+        volumes = pd.DataFrame(index=data.index, columns=TICKERS)
     
     print(f"✅ Data up to {closes.index[-1].date()}")
     
+    # ============================================================
+    # SAVE OHLCV DATA FOR DASHBOARD (FIXED FOR NaN VALUES)
+    # ============================================================
+    ohlcv_df = pd.DataFrame(index=closes.index)
+    for t in TICKERS:
+        ohlcv_df[f"{t}_Open"] = opens[t].round(2)
+        ohlcv_df[f"{t}_High"] = highs[t].round(2)
+        ohlcv_df[f"{t}_Low"] = lows[t].round(2)
+        ohlcv_df[f"{t}_Close"] = closes[t].round(2)
+        # Fix: replace NaN with 0 before converting to int
+        volume_series = volumes[t].fillna(0).astype(int)
+        ohlcv_df[f"{t}_Volume"] = volume_series
+    
+    ohlcv_df.to_csv(HISTORICAL_QUOTES_PATH)
+    print(f"✅ Saved OHLCV history to {HISTORICAL_QUOTES_PATH}")
+    
+    # Calculate returns
     ret_1d = closes.pct_change() * 100
     ret_3d = closes.pct_change(3) * 100
     ret_5d = closes.pct_change(5) * 100
