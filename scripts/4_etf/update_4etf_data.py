@@ -27,7 +27,7 @@ TICKERS = ['SOXL', 'TQQQ', 'SOXS', 'SQQQ']
 
 
 def fetch_ticker_data(ticker, days=30):
-    """Fetch data for a single ticker"""
+    """Fetch data for a single ticker - FIXED for yfinance version changes"""
     end_date = datetime.now()
     start_date = end_date - timedelta(days=days)
     
@@ -39,9 +39,18 @@ def fetch_ticker_data(ticker, days=30):
             print(f"    WARNING: No data for {ticker}")
             return None
         
-        # Reset index to get Date as column
+        # Reset index to get date as column
         data = data.reset_index()
-        data['Date'] = data['Date'].dt.strftime('%Y-%m-%d')
+        
+        # Handle different column names (yfinance version dependent)
+        if 'Date' in data.columns:
+            data['Date'] = pd.to_datetime(data['Date']).dt.strftime('%Y-%m-%d')
+        elif 'index' in data.columns:
+            data['Date'] = pd.to_datetime(data['index']).dt.strftime('%Y-%m-%d')
+        else:
+            # Use the first column as date (fallback)
+            first_col = data.columns[0]
+            data['Date'] = pd.to_datetime(data[first_col]).dt.strftime('%Y-%m-%d')
         
         return data
     except Exception as e:
