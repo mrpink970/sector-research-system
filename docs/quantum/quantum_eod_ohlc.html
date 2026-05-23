@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Quantum Stocks - EOD OHLC Dashboard</title>
+    <title>Quantum Stocks - OHLC Dashboard</title>
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -48,11 +48,6 @@
             border: 1px solid #1e293b;
             font-size: 0.85rem;
         }
-        .data-date strong {
-            color: #3b82f6;
-        }
-        
-        /* Table Styles */
         .table-wrapper {
             overflow-x: auto;
             border-radius: 16px;
@@ -89,10 +84,6 @@
         tr:last-child {
             border-bottom: none;
         }
-        td {
-            font-weight: 500;
-        }
-        
         .ticker-cell {
             display: flex;
             flex-direction: column;
@@ -105,17 +96,8 @@
             font-size: 0.7rem;
             color: #64748b;
         }
-        
-        .positive {
-            color: #22c55e;
-        }
-        .negative {
-            color: #ef4444;
-        }
-        .neutral {
-            color: #64748b;
-        }
-        
+        .positive { color: #22c55e; }
+        .negative { color: #ef4444; }
         .footer {
             text-align: center;
             font-size: 0.7rem;
@@ -124,7 +106,6 @@
             padding-top: 20px;
             border-top: 1px solid #1e293b;
         }
-        
         .refresh-btn {
             background: #1e293b;
             border: 1px solid #334155;
@@ -140,7 +121,6 @@
             background: #334155;
             color: white;
         }
-        
         .note {
             background: #1e293b;
             border-radius: 12px;
@@ -156,148 +136,150 @@
 <div class="container">
     <h1>
         ⚛️ Quantum Computing Stocks 
-        <span>End of Day · OHLC</span>
+        <span>OHLC Dashboard</span>
     </h1>
-    <div class="subtitle">Daily Open, High, Low, Close and percentage changes — manual refresh only</div>
+    <div class="subtitle">Daily Open, High, Low, Close, Volume and percentage changes</div>
     
     <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; margin-bottom: 20px;">
         <div class="data-date" id="dataDate">
             <strong>📅 Data Date:</strong> Loading...
         </div>
-        <button class="refresh-btn" onclick="refreshData()">⟳ Fetch Latest EOD Data</button>
+        <button class="refresh-btn" onclick="loadData()">⟳ Refresh</button>
     </div>
     
     <div class="table-wrapper">
-        <table id="ohlcTable">
+        <table>
             <thead>
-                <tr>
-                    <th>Ticker</th>
-                    <th>Open</th>
-                    <th>High</th>
-                    <th>Low</th>
-                    <th>Close</th>
-                    <th>Change ($)</th>
-                    <th>Change (%)</th>
-                </tr>
+                <tr><th>Ticker</th><th>Open</th><th>High</th><th>Low</th><th>Close</th><th>Change ($)</th><th>Change (%)</th><th>Volume</th></tr>
             </thead>
             <tbody id="tableBody">
-                <tr><td colspan="7" style="text-align: center; padding: 40px;">Click "Fetch Latest EOD Data" to load<br><span style="color:#475569; font-size:0.75rem;">Data from Yahoo Finance</span></td</tr>
+                <tr><td colspan="8" style="text-align: center; padding: 40px;">Loading historical OHLCV data......</td></tr>
             </tbody>
         </table>
     </div>
     
     <div class="note" id="note">
-        📊 End of day data only. Click refresh to get the latest closing prices.
+        📊 Real OHLCV data from daily market close
     </div>
     
     <div class="footer">
-        Data source: Yahoo Finance | OHLC = Open, High, Low, Close
+        Data source: Historical quotes CSV | OHLCV = Open, High, Low, Close, Volume
     </div>
 </div>
 
 <script>
-    // Quantum stock universe
     const TICKERS = [
-        { ticker: "IONQ", name: "IonQ Inc", ipo: "2021" },
-        { ticker: "QBTS", name: "D-Wave Quantum", ipo: "2021" },
-        { ticker: "RGTI", name: "Rigetti Computing", ipo: "2022" },
-        { ticker: "QUBT", name: "Quantum Computing Inc", ipo: "2018" },
-        { ticker: "XNDU", name: "Xanadu Quantum", ipo: "2026" },
-        { ticker: "INFQ", name: "Infleqtion", ipo: "2026" },
-        { ticker: "HQ", name: "Horizon Quantum", ipo: "2026" }
+        { ticker: "IONQ", name: "IonQ Inc" },
+        { ticker: "QBTS", name: "D-Wave Quantum" },
+        { ticker: "RGTI", name: "Rigetti Computing" },
+        { ticker: "QUBT", name: "Quantum Computing Inc" },
+        { ticker: "XNDU", name: "Xanadu Quantum" },
+        { ticker: "INFQ", name: "Infleqtion" },
+        { ticker: "HQ", name: "Horizon Quantum" }
     ];
     
-    async function fetchEODData() {
-        const symbols = TICKERS.map(t => t.ticker).join(",");
-        const url = `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${symbols}`;
+    const HISTORICAL_CSV_URL = "https://mrpink970.github.io/sector-research-system/data/quantum/historical_quotes.csv";
+    
+    async function loadData() {
+        const btn = document.querySelector('.refresh-btn');
+        btn.innerHTML = "⟳ Loading...";
+        btn.disabled = true;
         
         try {
-            const response = await fetch(url);
-            const data = await response.json();
+            const response = await fetch(HISTORICAL_CSV_URL + "?t=" + Date.now());
+            if (!response.ok) throw new Error("Failed to fetch historical_quotes.csv");
             
-            if (!data.quoteResponse || !data.quoteResponse.result) {
-                throw new Error("Invalid response");
-            }
+            const csvText = await response.text();
+            const data = parseHistoricalCSV(csvText);
+            renderTable(data);
+        } catch (error) {
+            console.error(error);
+            document.getElementById('tableBody').innerHTML = `
+                <tr><td colspan="8" style="text-align: center; padding: 40px; color: #ef4444;">
+                    ⚠️ Error loading historical price data.<br>
+                    <span style="font-size: 0.75rem;">Make sure run_quantum_system.py has been executed to generate historical_quotes.csv</span>
+                </td></tr>
+            `;
+            document.getElementById('note').innerHTML = `❌ Failed to load historical_quotes.csv. Please run the quantum system first.`;
+        }
+        
+        btn.innerHTML = "⟳ Refresh";
+        btn.disabled = false;
+    }
+    
+    function parseHistoricalCSV(csvText) {
+        const lines = csvText.trim().split('\n');
+        const headers = lines[0].split(',');
+        
+        // Get last row (most recent data)
+        const lastRow = lines[lines.length - 1].split(',');
+        const prevRow = lines.length >= 3 ? lines[lines.length - 2].split(',') : lastRow;
+        
+        const lastDate = lastRow[0];
+        
+        const result = {};
+        
+        for (const tickerObj of TICKERS) {
+            const ticker = tickerObj.ticker;
             
-            const results = data.quoteResponse.result;
-            const ohlcData = {};
-            let latestDate = null;
+            // Find column indices for this ticker
+            const openCol = headers.indexOf(`${ticker}_Open`);
+            const highCol = headers.indexOf(`${ticker}_High`);
+            const lowCol = headers.indexOf(`${ticker}_Low`);
+            const closeCol = headers.indexOf(`${ticker}_Close`);
+            const volumeCol = headers.indexOf(`${ticker}_Volume`);
             
-            for (const quote of results) {
-                const ticker = quote.symbol;
+            if (openCol !== -1 && closeCol !== -1) {
+                const open = parseFloat(lastRow[openCol]);
+                const high = parseFloat(lastRow[highCol]);
+                const low = parseFloat(lastRow[lowCol]);
+                const close = parseFloat(lastRow[closeCol]);
+                const volume = parseInt(lastRow[volumeCol]);
                 
-                // Yahoo provides these fields for EOD
-                const open = quote.regularMarketOpen || 0;
-                const dayHigh = quote.regularMarketDayHigh || 0;
-                const dayLow = quote.regularMarketDayLow || 0;
-                const currentPrice = quote.regularMarketPrice || quote.price || 0;
-                const previousClose = quote.regularMarketPreviousClose || quote.previousClose || 0;
+                const prevClose = parseFloat(prevRow[closeCol]);
+                const change = close - prevClose;
+                const changePercent = prevClose !== 0 ? (change / prevClose) * 100 : 0;
                 
-                const change = currentPrice - previousClose;
-                const changePercent = previousClose !== 0 ? (change / previousClose) * 100 : 0;
-                
-                ohlcData[ticker] = {
+                result[ticker] = {
                     open: open,
-                    high: dayHigh,
-                    low: dayLow,
-                    close: currentPrice,
-                    previousClose: previousClose,
+                    high: high,
+                    low: low,
+                    close: close,
+                    volume: volume,
                     change: change,
                     changePercent: changePercent
                 };
-                
-                // Get market date from regularMarketTime if available
-                if (quote.regularMarketTime && !latestDate) {
-                    latestDate = new Date(quote.regularMarketTime * 1000);
-                }
             }
-            
-            return { data: ohlcData, date: latestDate || new Date() };
-        } catch (error) {
-            console.error("Error fetching data:", error);
-            return null;
         }
+        
+        return { date: lastDate, data: result };
     }
     
-    function renderTable(eodResult) {
-        if (!eodResult || !eodResult.data) {
-            document.getElementById('tableBody').innerHTML = `
-                <tr><td colspan="7" style="text-align: center; padding: 40px; color: #ef4444;">
-                    ⚠️ Error loading data. Please try again.
-                </td></tr>
-            `;
-            return;
-        }
+    function formatVolume(vol) {
+        if (vol >= 1e6) return (vol / 1e6).toFixed(2) + 'M';
+        if (vol >= 1e3) return (vol / 1e3).toFixed(1) + 'K';
+        return vol.toString();
+    }
+    
+    function renderTable(data) {
+        document.getElementById('dataDate').innerHTML = `<strong>📅 Data Date:</strong> ${data.date}`;
         
-        const { data, date } = eodResult;
+        let advancers = 0, decliners = 0;
         
-        // Update date display
-        if (date) {
-            const dateStr = date.toLocaleDateString('en-US', { 
-                weekday: 'long', 
-                year: 'numeric', 
-                month: 'long', 
-                day: 'numeric' 
-            });
-            document.getElementById('dataDate').innerHTML = `<strong>📅 Data Date:</strong> ${dateStr}`;
-        }
-        
-        // Build table rows
         const rowsHtml = TICKERS.map(stock => {
-            const d = data[stock.ticker];
-            if (!d || d.close === 0) {
-                return `
-                    <tr>
-                        <td><div class="ticker-cell"><span class="ticker-symbol">${stock.ticker}</span><span class="ticker-name">${stock.name}</span></div></td>
-                        <td>—</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td>
-                    </tr>
-                `;
+            const d = data.data[stock.ticker];
+            if (!d || isNaN(d.close)) {
+                return `<tr><td><div class="ticker-cell"><span class="ticker-symbol">${stock.ticker}</span><span class="ticker-name">${stock.name}</span></div></td>
+                        <td colspan="7">No data</td></tr>`;
             }
             
-            const changeClass = d.change >= 0 ? 'positive' : (d.change < 0 ? 'negative' : 'neutral');
-            const changePercentClass = d.changePercent >= 0 ? 'positive' : (d.changePercent < 0 ? 'negative' : 'neutral');
+            const changeClass = d.change >= 0 ? 'positive' : 'negative';
+            const changePctClass = d.changePercent >= 0 ? 'positive' : 'negative';
             const changeSymbol = d.change >= 0 ? '+' : '';
-            const changePercentSymbol = d.changePercent >= 0 ? '+' : '';
+            const changePctSymbol = d.changePercent >= 0 ? '+' : '';
+            
+            if (d.changePercent > 0) advancers++;
+            else if (d.changePercent < 0) decliners++;
             
             return `
                 <tr>
@@ -307,53 +289,17 @@
                     <td class="negative">$${d.low.toFixed(2)}</td>
                     <td><strong>$${d.close.toFixed(2)}</strong></td>
                     <td class="${changeClass}">${changeSymbol}$${Math.abs(d.change).toFixed(2)}</td>
-                    <td class="${changePercentClass}">${changePercentSymbol}${d.changePercent.toFixed(2)}%</td>
+                    <td class="${changePctClass}">${changePctSymbol}${d.changePercent.toFixed(2)}%</td>
+                    <td>${formatVolume(d.volume)}</td>
                 </tr>
             `;
         }).join('');
         
         document.getElementById('tableBody').innerHTML = rowsHtml;
-        
-        // Update note with summary
-        let advancers = 0, decliners = 0;
-        for (const stock of TICKERS) {
-            const d = data[stock.ticker];
-            if (d && d.changePercent > 0) advancers++;
-            else if (d && d.changePercent < 0) decliners++;
-        }
-        
-        document.getElementById('note').innerHTML = `
-            📊 End of day data only. Last refresh: ${date ? date.toLocaleTimeString() : '—'} | 
-            📈 Advancers: ${advancers} | 📉 Decliners: ${decliners} | 
-            💡 Click refresh to get the latest closing prices from Yahoo Finance
-        `;
+        document.getElementById('note').innerHTML = `📊 Real OHLCV data from historical_quotes.csv (${data.date}) | 📈 Advancers: ${advancers} | 📉 Decliners: ${decliners}`;
     }
     
-    async function refreshData() {
-        const btn = document.querySelector('.refresh-btn');
-        const originalText = btn.innerHTML;
-        btn.innerHTML = '⟳ Fetching...';
-        btn.disabled = true;
-        
-        const data = await fetchEODData();
-        renderTable(data);
-        
-        btn.innerHTML = originalText;
-        btn.disabled = false;
-    }
-    
-    // No auto-refresh - manual only
-    // Just show empty state until user clicks refresh
-    function init() {
-        document.getElementById('tableBody').innerHTML = `
-            <tr><td colspan="7" style="text-align: center; padding: 40px;">
-                👆 Click "Fetch Latest EOD Data" to load today's OHLC data<br>
-                <span style="color:#475569; font-size:0.75rem;">Open, High, Low, Close and percentage changes</span>
-            </td></tr>
-        `;
-    }
-    
-    init();
+    loadData();
 </script>
 </body>
 </html>
