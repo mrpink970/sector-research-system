@@ -1,8 +1,8 @@
 name: MES Paper Trading System
 
 on:
-  schedule:
-    - cron: '0 10-16 * * 1-5'   # Every hour from 10 AM to 4 PM ET
+  # schedule:
+  #   - cron: '0 10-16 * * 1-5'   # Disabled - MES system on hold
   workflow_dispatch:
 
 jobs:
