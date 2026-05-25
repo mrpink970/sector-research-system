@@ -14,6 +14,10 @@ import yaml
 from pathlib import Path
 from datetime import datetime
 import json
+import sys
+
+# Add parent directory to path for imports
+sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 # Paths
 CONFIG_PATH = Path("config/ttp_config.yaml")
@@ -22,15 +26,40 @@ SIGNALS_PATH = DATA_DIR / "signals.csv"
 TRADES_PATH = DATA_DIR / "trades.csv"
 TRAILING_LOG_PATH = DATA_DIR / "trailing_stop_log.csv"
 
-# Import TTP compliance module
+# Import TTP compliance module with multiple fallbacks
+compliance_available = False
+can_enter_swing_trade = None
+get_upcoming_events = None
+
 try:
-    from scripts.ttp.compliance import can_enter_swing_trade, get_upcoming_events
+    # Try relative import first
+    from .compliance import can_enter_swing_trade as _can_enter, get_upcoming_events as _get_events
+    can_enter_swing_trade = _can_enter
+    get_upcoming_events = _get_events
+    compliance_available = True
+    print("✅ Compliance module loaded (relative import)")
 except ImportError:
-    print("⚠️ Compliance module not found. Creating dummy functions.")
-    def can_enter_swing_trade(config):
-        return True, "Compliance module not available"
-    def get_upcoming_events(config):
-        return {'earnings': []}
+    try:
+        # Try absolute import
+        from scripts.ttp.compliance import can_enter_swing_trade as _can_enter, get_upcoming_events as _get_events
+        can_enter_swing_trade = _can_enter
+        get_upcoming_events = _get_events
+        compliance_available = True
+        print("✅ Compliance module loaded (absolute import)")
+    except ImportError:
+        try:
+            # Try direct import (if in same directory)
+            from compliance import can_enter_swing_trade as _can_enter, get_upcoming_events as _get_events
+            can_enter_swing_trade = _can_enter
+            get_upcoming_events = _get_events
+            compliance_available = True
+            print("✅ Compliance module loaded (direct import)")
+        except ImportError:
+            print("⚠️ Compliance module not found. Creating dummy functions.")
+            def can_enter_swing_trade(config):
+                return True, "Compliance module not available - skipping checks"
+            def get_upcoming_events(config):
+                return {'earnings': []}
 
 
 def load_config():
@@ -615,7 +644,10 @@ def main():
     print("\n🔍 No open position. Checking compliance for new entry...")
     
     # === TTP COMPLIANCE CHECK ===
-    can_enter, compliance_reason = can_enter_swing_trade(config)
+    if compliance_available:
+        can_enter, compliance_reason = can_enter_swing_trade(config)
+    else:
+        can_enter, compliance_reason = True, "Compliance checks skipped (module not loaded)"
     
     if not can_enter:
         print(f"\n⚠️ COMPLIANCE RESTRICTION: {compliance_reason}")
@@ -725,12 +757,13 @@ def main():
         save_signal(data, is_green, conditions, positions)
         send_email(is_green, data, conditions, positions)
     
-    # Display upcoming compliance events
-    events = get_upcoming_events(config)
-    if events['earnings']:
-        print("\n📅 Upcoming earnings (watch for compliance blocks):")
-        for e in events['earnings'][:3]:
-            print(f"   {e['symbol']}: {e['date']} ({e['days']} days)")
+    # Display upcoming compliance events if module is available
+    if compliance_available:
+        events = get_upcoming_events(config)
+        if events['earnings']:
+            print("\n📅 Upcoming earnings (watch for compliance blocks):")
+            for e in events['earnings'][:3]:
+                print(f"   {e['symbol']}: {e['date']} ({e['days']} days)")
     
     print("\n✅ Signal saved and email sent")
     print("=" * 50)
