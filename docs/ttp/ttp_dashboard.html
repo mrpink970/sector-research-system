@@ -115,6 +115,14 @@
             color: #64748b;
             font-size: 12px;
         }
+        .compliance-warning {
+            background: #7c2d12;
+            border-left: 4px solid #f97316;
+            padding: 12px;
+            margin-bottom: 16px;
+            border-radius: 8px;
+            font-size: 13px;
+        }
     </style>
 </head>
 <body>
@@ -174,10 +182,11 @@
             <div class="signal-title">⚠️ Today's Rules</div>
             <ul class="rules-list" id="rulesList">
                 <li>✅ Max daily loss: $60</li>
-                <li>✅ Max single trade profit: $150</li>
+                <li>✅ Max single trade profit: $150 (50% of $300 target)</li>
                 <li>✅ Stop loss: -2%</li>
-                <li>✅ Take profit: +6%</li>
-                <li>✅ Sell both shares at target</li>
+                <li>✅ Take profit: +8%</li>
+                <li>✅ Trailing stop activates at +3%</li>
+                <li>✅ Minimum 5 trades required to pass</li>
             </ul>
             <div id="dailyLossUsed" style="margin-top: 12px; padding-top: 12px; border-top: 1px solid #334155;">
                 Daily loss used today: <strong>$0</strong>
@@ -189,16 +198,16 @@
         <div class="signal-title">📜 Trade History</div>
         <table class="data-table" id="tradeHistory">
             <thead>
-                <tr><th>Date</th><th>Entry</th><th>Exit</th><th>Profit</th><th>Status</th></tr>
+                <tr><th>Date</th><th>Entry</th><th>Exit</th><th>Profit</th><th>Exit Reason</th><th>Status</th></tr>
             </thead>
             <tbody id="tradeHistoryBody">
-                <tr><td colspan="5" style="text-align: center;">No trades yet</td></tr>
+                <tr><td colspan="6" style="text-align: center;">No trades yet</td></tr>
             </tbody>
         </table>
     </div>
 
     <div class="footer">
-        Data updates every 15 minutes during market hours | Last update: <span id="lastUpdate">--</span>
+        Data updates every 90 seconds during market hours | Last update: <span id="lastUpdate">--</span>
     </div>
 </div>
 
@@ -244,12 +253,15 @@
         // Get open position from trades.csv
         const openPosition = trades.find(t => t.status === 'open');
         
+        // Get completed trades
+        const completedTrades = trades.filter(t => t.status === 'completed');
+        
         // Get latest signal for reference
         const latestSignal = signals.length > 0 ? signals[signals.length - 1] : null;
 
         const totalProfit = progress.total_profit || 0;
         const remaining = Math.max(0, 300 - totalProfit);
-        const tradesCount = progress.trades_completed || 0;
+        const tradesCount = completedTrades.length;
         const progressPercent = (totalProfit / 300) * 100;
 
         document.getElementById('balance').innerHTML = `$${(2000 + totalProfit).toFixed(2)}`;
@@ -259,7 +271,10 @@
         document.getElementById('progressPercent').innerHTML = `${progressPercent.toFixed(0)}%`;
         document.getElementById('progressBar').style.width = `${Math.min(100, progressPercent)}%`;
         document.getElementById('progressBar').innerHTML = `${progressPercent.toFixed(0)}%`;
-        document.getElementById('progressDetail').innerHTML = `${tradesCount} of 5-6 trades completed (need ~$${remaining.toFixed(0)} more)`;
+        
+        const tradesNeeded = Math.max(0, 5 - tradesCount);
+        const profitNeeded = remaining;
+        document.getElementById('progressDetail').innerHTML = `${tradesCount} of 5 trades completed | Need $${profitNeeded.toFixed(0)} more profit | ${tradesNeeded} more trades`;
 
         const signalCard = document.getElementById('signalCard');
         const signalContent = document.getElementById('signalContent');
@@ -269,20 +284,24 @@
             signalCard.className = 'signal-card signal-green';
             const entryDate = openPosition.entry_date ? openPosition.entry_date.split('T')[0] : '--';
             const entryTime = openPosition.entry_date ? openPosition.entry_date.split('T')[1]?.split('.')[0] : '--';
+            const currentStop = openPosition.stop_price || (openPosition.entry_price * 0.98);
+            const currentTarget = openPosition.target_price || (openPosition.entry_price * 1.08);
             signalContent.innerHTML = `
                 <div class="signal-action">🟢 OPEN POSITION</div>
                 <div class="trade-details">
                     <table style="width:100%">
-                        <tr><td style="width:40%">Ticker:</td><td><strong>${openPosition.ticker || 'SOXX'}</strong></td></tr>
+                        <tr><td style="width:40%">Ticker:</td><td><strong>${openPosition.ticker || 'SOXX'}</strong></td>
+                        <tr>
                         <tr><td>Entry Date:</td><td>${entryDate} ${entryTime}</td></tr>
                         <tr><td>Entry Price:</td><td><strong>$${openPosition.entry_price?.toFixed(2)}</strong></td></tr>
                         <tr><td>Shares:</td><td>${openPosition.shares}</td></tr>
-                        <tr><td>Stop Loss:</td><td>$${openPosition.stop_price?.toFixed(2)} (-2%)</td></tr>
-                        <tr><td>Take Profit:</td><td>$${openPosition.target_price?.toFixed(2)} (+6%)</td></tr>
+                        <tr><td>Stop Loss:</td><td>$${currentStop.toFixed(2)} (-2%)</td></tr>
+                        <tr><td>Take Profit:</td><td>$${currentTarget.toFixed(2)} (+8%)</td></tr>
+                        <tr><td>Max Profit Limit:</td><td><strong>$150 (50% of target)</strong></td></tr>
                     </table>
                 </div>
                 <div style="margin-top: 16px; padding: 12px; background: #064e3b; border-radius: 8px;">
-                    ⚡ Position open. Set stop loss and take profit at above levels.
+                    ⚡ Position open. Stop loss and take profit set. System will auto-close at $150 profit.
                 </div>
             `;
         } 
@@ -296,22 +315,42 @@
                         <tr><td style="width:40%">Action:</td><td><strong>BUY 2 SHARES SOXX</strong></td></tr>
                         <tr><td>Entry Price:</td><td>$${latestSignal.price?.toFixed(2)}</td></tr>
                         <tr><td>Stop Loss:</td><td>$${latestSignal.stop_price?.toFixed(2)} (-2%)</td></tr>
-                        <tr><td>Take Profit:</td><td>$${latestSignal.target_price?.toFixed(2)} (+6%)</td></tr>
+                        <tr><td>Take Profit:</td><td>$${latestSignal.target_price?.toFixed(2)} (+8%)</td></tr>
                         <tr><td>Expected Net Profit:</td><td>$${latestSignal.net_profit?.toFixed(2)}</td></tr>
                         <tr><td>Session:</td><td>${latestSignal.session || '--'}</td></tr>
+                        <tr><td>Max Profit Limit:</td><td><strong>$150 (50% of target)</strong></td></tr>
                     </table>
                 </div>
                 <div style="margin-top: 16px; padding: 12px; background: #064e3b; border-radius: 8px;">
-                    ⚡ Sell both shares at +6%. No partial sells.
+                    ⚡ Sell both shares at +8%. System will auto-close at $150 profit.
+                </div>
+            `;
+        } else if (latestSignal && latestSignal.signal === 'FAST_BREAKOUT') {
+            signalCard.className = 'signal-card signal-green';
+            signalContent.innerHTML = `
+                <div class="signal-action">⚡ FAST BREAKOUT - BUY NOW (Tighter Stops)</div>
+                <div class="trade-details">
+                    <table style="width:100%">
+                        <tr><td style="width:40%">Action:</td><td><strong>BUY 2 SHARES SOXX</strong></td></tr>
+                        <tr><td>Entry Price:</td><td>$${latestSignal.price?.toFixed(2)}</td></tr>
+                        <tr><td>Stop Loss:</td><td>$${latestSignal.stop_price?.toFixed(2)} (-1.5%)</td></tr>
+                        <tr><td>Take Profit:</td><td>$${latestSignal.target_price?.toFixed(2)} (+3%)</td></tr>
+                        <tr><td>Max Profit Limit:</td><td><strong>$150 (50% of target)</strong></td></tr>
+                    </table>
+                </div>
+                <div style="margin-top: 16px; padding: 12px; background: #064e3b; border-radius: 8px;">
+                    ⚡ FAST SYSTEM - Execute within 5 minutes. Tighter stops.
                 </div>
             `;
         } else {
             signalCard.className = 'signal-card signal-red';
+            let reasonText = latestSignal?.conditions || 'No buy signal detected';
             signalContent.innerHTML = `
                 <div class="signal-action">🔴 NO SIGNAL / WAIT</div>
                 <div class="trade-details">
-                    <p>No open position. No buy signal detected.</p>
+                    <p>${reasonText}</p>
                     <p style="margin-top: 12px; color: #94a3b8;">System checks every 15 minutes during market hours.</p>
+                    <p style="margin-top: 8px; color: #f97316;">📋 TTP Compliance: Cannot enter if earnings within 1 day</p>
                 </div>
             `;
         }
@@ -319,14 +358,16 @@
         // Open Position Details card (redundant but keeps layout)
         const openPosDiv = document.getElementById('openPosition');
         if (openPosition) {
+            const currentStop = openPosition.stop_price || (openPosition.entry_price * 0.98);
+            const currentTarget = openPosition.target_price || (openPosition.entry_price * 1.08);
             openPosDiv.innerHTML = `
                 <div class="trade-details">
                     <table style="width:100%">
                         <tr><td>Ticker:</td><td><strong>${openPosition.ticker || 'SOXX'}</strong></td></tr>
                         <tr><td>Entry:</td><td>$${openPosition.entry_price?.toFixed(2)}</td></tr>
                         <tr><td>Shares:</td><td>${openPosition.shares}</td></tr>
-                        <tr><td>Stop:</td><td>$${openPosition.stop_price?.toFixed(2)}</td></tr>
-                        <tr><td>Target:</td><td>$${openPosition.target_price?.toFixed(2)}</td></tr>
+                        <tr><td>Stop:</td><td>$${currentStop.toFixed(2)}</td></tr>
+                        <tr><td>Target:</td><td>$${currentTarget.toFixed(2)}</td></tr>
                     </table>
                 </div>
             `;
@@ -334,24 +375,43 @@
             openPosDiv.innerHTML = '<p style="color: #64748b;">📭 No open position</p>';
         }
 
-        // Trade History - show completed trades only
-        const completedTrades = trades.filter(t => t.status === 'completed');
+        // Trade History - show completed trades with exit reason
         const tradeBody = document.getElementById('tradeHistoryBody');
         if (completedTrades.length === 0) {
-            tradeBody.innerHTML = '<tr><td colspan="5" style="text-align: center;">No trades yet</td></tr>';
+            tradeBody.innerHTML = '<tr><td colspan="6" style="text-align: center;">No trades yet</td></tr>';
         } else {
-            tradeBody.innerHTML = completedTrades.slice().reverse().map(t => `
-                <tr>
-                    <td>${t.entry_date?.split('T')[0] || '--'}</td>
-                    <td>$${t.entry_price?.toFixed(2) || '--'}</td>
-                    <td>$${t.exit_price?.toFixed(2) || '--'}</td>
-                    <td class="${(t.profit || 0) >= 0 ? 'positive' : 'negative'}">${(t.profit || 0) >= 0 ? '+' : ''}$${t.profit?.toFixed(2) || '0'}</td>
-                    <td>Closed</td>
-                </tr>
-            `).join('');
+            tradeBody.innerHTML = completedTrades.slice().reverse().map(t => {
+                let exitReasonDisplay = t.exit_reason || '--';
+                if (exitReasonDisplay === 'MAX_PROFIT_LIMIT') exitReasonDisplay = '💰 Max Profit Hit ($150)';
+                if (exitReasonDisplay === 'TRAILING_STOP') exitReasonDisplay = '🔒 Trailing Stop';
+                if (exitReasonDisplay === 'STOP_LOSS') exitReasonDisplay = '🛑 Stop Loss';
+                if (exitReasonDisplay === 'TAKE_PROFIT') exitReasonDisplay = '🎯 Take Profit';
+                return `
+                    <tr>
+                        <td>${t.entry_date?.split('T')[0] || '--'}</td>
+                        <td>$${t.entry_price?.toFixed(2) || '--'}</td>
+                        <td>$${t.exit_price?.toFixed(2) || '--'}</td>
+                        <td class="${(t.profit || 0) >= 0 ? 'positive' : 'negative'}">${(t.profit || 0) >= 0 ? '+' : ''}$${t.profit?.toFixed(2) || '0'}</td>
+                        <td>${exitReasonDisplay}</td>
+                        <td>Closed</td>
+                    </tr>
+                `;
+            }).join('');
         }
 
         document.getElementById('lastUpdate').innerHTML = new Date().toLocaleString();
+        
+        // Calculate daily loss (simplified - from today's losing trades)
+        const today = new Date().toISOString().split('T')[0];
+        const todayLosses = completedTrades.filter(t => {
+            const exitDate = t.exit_date?.split('T')[0];
+            return exitDate === today && (t.profit || 0) < 0;
+        });
+        const dailyLoss = todayLosses.reduce((sum, t) => sum + Math.abs(t.profit || 0), 0);
+        document.getElementById('dailyLossUsed').innerHTML = `Daily loss used today: <strong>$${dailyLoss.toFixed(2)}</strong> / $60 limit`;
+        if (dailyLoss >= 60) {
+            document.getElementById('dailyLossUsed').style.color = '#ef4444';
+        }
     }
 
     loadDashboard();
