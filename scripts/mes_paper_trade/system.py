@@ -25,7 +25,7 @@ import yaml
 # ============================================================
 # CONFIGURATION
 # ============================================================
-CONFIG_PATH = Path("scripts/mes_paper_trade/mes_config.yaml")
+CONFIG_PATH = Path("config/mes_config.yaml")
 DATA_DIR = Path("data/mes_paper")
 POSITIONS_FILE = DATA_DIR / "positions.csv"
 TRADES_FILE = DATA_DIR / "trades.csv"
@@ -58,9 +58,10 @@ BLOCKED_EVENTS = ['FOMC', 'Nonfarm Payrolls', 'CPI', 'PPI', 'Fed Chair']
 
 
 def load_config():
-    """Load MES configuration"""
-    if CONFIG_PATH.exists():
-        with open(CONFIG_PATH, 'r') as f:
+    """Load MES configuration from config folder"""
+    config_path = Path("config/mes_config.yaml")
+    if config_path.exists():
+        with open(config_path, 'r') as f:
             config = yaml.safe_load(f)
             return config
     return None
