@@ -59,9 +59,8 @@ BLOCKED_EVENTS = ['FOMC', 'Nonfarm Payrolls', 'CPI', 'PPI', 'Fed Chair']
 
 def load_config():
     """Load MES configuration from config folder"""
-    config_path = Path("config/mes_config.yaml")
-    if config_path.exists():
-        with open(config_path, 'r') as f:
+    if CONFIG_PATH.exists():
+        with open(CONFIG_PATH, 'r') as f:
             config = yaml.safe_load(f)
             return config
     return None
@@ -75,7 +74,7 @@ def get_config_value(key, default):
         value = config
         for k in keys:
             value = value.get(k, default)
-            if value is default:
+            if value == default:
                 break
         return value
     return default
@@ -129,10 +128,10 @@ def get_today_pnl():
         return 0
     
     today = datetime.now().strftime("%Y-%m-%d")
-    today_trades = df[df['exit_time'].str.startswith(today) if 'exit_time' in df.columns else pd.Series()]
-    
-    if 'profit_dollars' in df.columns and len(today_trades) > 0:
-        return today_trades['profit_dollars'].sum()
+    if 'exit_time' in df.columns:
+        today_trades = df[df['exit_time'].str.startswith(today) if len(df) > 0 else pd.Series()]
+        if 'profit_dollars' in df.columns and len(today_trades) > 0:
+            return today_trades['profit_dollars'].sum()
     
     return 0
 
@@ -182,6 +181,16 @@ def get_max_daily_profit_pct():
     return (max_daily / total_profit) * 100
 
 
+def get_peak_equity():
+    """Get peak equity from daily log"""
+    log = load_daily_log()
+    if not log:
+        return ACCOUNT_SIZE
+    
+    peaks = [entry.get('peak_equity', ACCOUNT_SIZE) for entry in log]
+    return max(peaks) if peaks else ACCOUNT_SIZE
+
+
 def check_prop_firm_rules():
     """Check all prop firm rules before trading"""
     today_pnl = get_today_pnl()
@@ -193,6 +202,7 @@ def check_prop_firm_rules():
     max_drawdown = get_config_value('system.max_drawdown', MAX_DRAWDOWN)
     min_days = get_config_value('system.min_trading_days', MIN_TRADING_DAYS)
     max_daily_pct_limit = get_config_value('system.max_daily_profit_pct', MAX_DAILY_PROFIT_PCT)
+    profit_target = get_config_value('system.profit_target', 5000)
     
     # Check daily loss limit
     if today_pnl <= -daily_limit:
@@ -210,21 +220,10 @@ def check_prop_firm_rules():
         return False, f"Consistency rule: max daily profit {max_daily_pct:.1f}% > {max_daily_pct_limit}%"
     
     # Check if we've already passed (profit target met)
-    profit_target = get_config_value('system.profit_target', 5000)
     if total_profit >= profit_target and trading_days >= min_days:
         return True, "READY FOR REVIEW - Target met!"
     
     return True, "OK to trade"
-
-
-def get_peak_equity():
-    """Get peak equity from daily log"""
-    log = load_daily_log()
-    if not log:
-        return ACCOUNT_SIZE
-    
-    peaks = [entry.get('peak_equity', ACCOUNT_SIZE) for entry in log]
-    return max(peaks) if peaks else ACCOUNT_SIZE
 
 
 def update_progress():
@@ -239,13 +238,14 @@ def update_progress():
     profit_target = get_config_value('system.profit_target', 5000)
     min_days = get_config_value('system.min_trading_days', MIN_TRADING_DAYS)
     daily_limit = get_config_value('system.daily_loss_limit', DAILY_LOSS_LIMIT)
+    max_drawdown_limit = get_config_value('system.max_drawdown', MAX_DRAWDOWN)
     
     progress = {
         'timestamp': datetime.now().isoformat(),
         'total_profit': round(total_profit, 2),
         'profit_target': profit_target,
         'profit_remaining': round(max(0, profit_target - total_profit), 2),
-        'percent_complete': round(min(100, (total_profit / profit_target) * 100), 1),
+        'percent_complete': round(min(100, (total_profit / profit_target) * 100), 1) if profit_target > 0 else 0,
         'trading_days': trading_days,
         'min_days_required': min_days,
         'today_pnl': round(today_pnl, 2),
@@ -255,7 +255,7 @@ def update_progress():
         'peak_equity': round(peak_equity, 2),
         'current_equity': round(current_equity, 2),
         'drawdown_from_peak': round(peak_equity - current_equity, 2),
-        'max_drawdown_limit': get_config_value('system.max_drawdown', MAX_DRAWDOWN),
+        'max_drawdown_limit': max_drawdown_limit,
         'can_trade': check_prop_firm_rules()[0]
     }
     
@@ -271,8 +271,6 @@ def update_progress():
 
 def is_high_impact_event_today():
     """Check if today has a high-impact economic event"""
-    # Simplified check - would need an API for full calendar
-    # For now, check day of week and known dates
     today = datetime.now()
     
     # First Friday of month = Nonfarm Payrolls
@@ -295,24 +293,33 @@ def is_high_impact_event_today():
 # ============================================================
 
 def get_mes_price():
-    """Get current MES price"""
+    """Get current MES futures price using MES=F ticker"""
     try:
-        ticker = yf.Ticker("ES=F")
+        ticker = yf.Ticker("MES=F")
         data = ticker.history(period="1d", interval="5m")
         if data is not None and len(data) > 0:
             return round(float(data['Close'].iloc[-1]), 2)
+        
+        # If 5m data fails, try 1m
+        data = ticker.history(period="1d", interval="1m")
+        if data is not None and len(data) > 0:
+            return round(float(data['Close'].iloc[-1]), 2)
+        
+        print("❌ No MES=F price data available")
         return None
     except Exception as e:
-        print(f"Error fetching price: {e}")
+        print(f"Error fetching MES price: {e}")
         return None
 
 
 def get_historical_data():
     """Get historical 1-hour data for EMA calculation"""
     try:
-        data = yf.download("ES=F", period="7d", interval="1h")
+        # Download MES futures data
+        data = yf.download("MES=F", period="7d", interval="1h", progress=False)
         
         if data is None or data.empty:
+            print("❌ No MES=F historical data available")
             return None
         
         # Flatten MultiIndex if present
@@ -320,6 +327,12 @@ def get_historical_data():
             data.columns = data.columns.get_level_values(0)
         
         data = data.dropna()
+        
+        # Verify we have enough data points
+        if len(data) < 25:
+            print(f"⚠️ Only {len(data)} data points, need 25+ for EMA calculation")
+            return None
+            
         return data
     except Exception as e:
         print(f"Error fetching historical data: {e}")
@@ -433,7 +446,9 @@ def calculate_position_size(current_price, atr):
     
     max_risk_dollars = account_size * (risk_per_trade_pct / 100)
     
-    if USE_ATR_STOPS:
+    use_atr = get_config_value('entry_conditions.use_atr_stops', USE_ATR_STOPS)
+    
+    if use_atr:
         stop_points = atr * ATR_MULTIPLIER
         stop_points = max(stop_points, 5)  # Minimum 5 points stop
         stop_points = min(stop_points, 15)  # Maximum 15 points stop
@@ -442,7 +457,8 @@ def calculate_position_size(current_price, atr):
     
     risk_per_contract = stop_points * POINT_VALUE
     contracts = int(max_risk_dollars / risk_per_contract)
-    contracts = max(1, min(contracts, get_config_value('system.max_contracts', 10)))
+    max_contracts = get_config_value('system.max_contracts', 10)
+    contracts = max(1, min(contracts, max_contracts))
     
     return contracts, stop_points
 
@@ -483,14 +499,15 @@ def save_position(position):
 def open_paper_trade(signal, price, atr):
     """Open a new paper trade with dynamic sizing"""
     contracts, stop_points = calculate_position_size(price, atr)
+    risk_reward = get_config_value('exit_rules.risk_reward_ratio', 2.0)
     
     if signal == 'BUY':
         stop_price = price - stop_points
-        target_points = stop_points * 2  # 1:2 risk:reward
+        target_points = stop_points * risk_reward
         target_price = price + target_points
     else:
         stop_price = price + stop_points
-        target_points = stop_points * 2
+        target_points = stop_points * risk_reward
         target_price = price - target_points
     
     position = {
@@ -583,7 +600,6 @@ def close_paper_trade(position, exit_price, exit_reason):
         df.to_csv(POSITIONS_FILE, index=False)
     
     # Update daily log with new P&L
-    total_profit = get_total_profit()
     update_progress()
     
     return trade_record
@@ -770,6 +786,9 @@ def main():
     current_price = get_mes_price()
     if current_price is None:
         print("❌ Could not fetch MES price")
+        # Still update dashboard with error
+        progress = update_progress()
+        update_dashboard(None, None, None, None, progress)
         return
     
     print(f"\n📊 Current MES price: ${current_price:.2f}")
@@ -828,7 +847,8 @@ def main():
         
         if data is not None and not data.empty:
             # Calculate ATR for dynamic stops
-            atr = calculate_atr(data) if USE_ATR_STOPS else STOP_POINTS
+            use_atr = get_config_value('entry_conditions.use_atr_stops', USE_ATR_STOPS)
+            atr = calculate_atr(data) if use_atr else STOP_POINTS
             print(f"   Current ATR: {atr:.2f} points")
             
             signal, signal_details = check_signal(data)
