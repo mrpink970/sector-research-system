@@ -21,10 +21,13 @@ jobs:
           python-version: '3.11'
       
       - name: Install dependencies
-        run: pip install yfinance pandas
+        run: pip install yfinance pandas numpy pyyaml
       
       - name: Create data directory
         run: mkdir -p data/mes_paper docs
+      
+      - name: Set PYTHONPATH
+        run: echo "PYTHONPATH=${{ github.workspace }}" >> $GITHUB_ENV
       
       - name: Run MES Paper Trading System
         run: python scripts/mes_paper_trade/system.py
