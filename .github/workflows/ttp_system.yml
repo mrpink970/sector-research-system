@@ -23,22 +23,54 @@ jobs:
       - name: Install dependencies
         run: pip install pandas yfinance pyyaml
       
-      - name: Create data directory
-        run: mkdir -p data/ttp
+      - name: Create data directories
+        run: |
+          mkdir -p data/ttp
+          mkdir -p data/ttp/cache
+      
+      - name: Restore earnings cache
+        uses: actions/cache@v3
+        with:
+          path: data/ttp/cache
+          key: ttp-earnings-cache-${{ github.run_id }}
+          restore-keys: |
+            ttp-earnings-cache-
       
       - name: Collect SOXX data
         run: python scripts/ttp/collect_data.py
       
-      - name: Generate signal
+      - name: Generate signal (with compliance checks)
         run: python scripts/ttp/generate_signal.py
         env:
           MAIL_USERNAME: ${{ secrets.MAIL_USERNAME }}
           MAIL_PASSWORD: ${{ secrets.MAIL_PASSWORD }}
+      
+      - name: Show TTP evaluation status
+        run: |
+          python -c "
+from scripts.ttp.trade_manager import print_review_status, get_performance_summary
+print_review_status()
+print()
+print('PERFORMANCE SUMMARY')
+print('=' * 50)
+perf = get_performance_summary()
+for k, v in perf.items():
+    print(f'  {k}: {v}')
+"
       
       - name: Commit and push updates
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add data/ttp/
-          git diff --staged --quiet || git commit -m "TTP system update $(date '+%Y-%m-%d %H:%M')"
+          git add docs/ttp/
+          git diff --staged --quiet || git commit -m "TTP system update $(date '+%Y-%m-%d %H:%M') - SOXX Green Day"
           git push
+      
+      - name: Upload data artifacts (for debugging)
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ttp-system-data
+          path: data/ttp/
+          retention-days: 7
