@@ -17,27 +17,23 @@ entry_conditions:
   above_ma20: true
 
 exit_rules:
-  stop_loss_pct: 2.0           # Initial stop loss at -2%
-  take_profit_pct: 8.0         # Initial take profit at +8%
-  trailing_stop_pct: 2.0       # Trailing stop activates after price moves +3%
-  trailing_activation_pct: 3.0 # Start trailing once price is up 3%
-  
-  # HARD RULES (TTP compliance)
-  max_profit_per_trade: 150    # 50% of $300 target - HARD STOP
-  max_loss_per_trade: 40       # Stops before hitting daily loss limit
+  stop_loss_pct: 2.0
+  take_profit_pct: 8.0
+  trailing_stop_pct: 2.0
+  trailing_activation_pct: 3.0
+  max_profit_per_trade: 150   # HARD STOP - 50% of $300 target
 
 trade_management:
   shares_per_trade: 2
-  min_trades_to_pass: 5        # TTP FLEX Swing requirement
+  min_trades_to_pass: 5
 
 commission:
   per_share: 0.005
   min_per_order: 0.75
 
-# TTP Compliance Checks
+# TTP Compliance Checks (FLEX Swing specific)
 compliance:
-  # Earnings: Cannot hold overnight before earnings for SOXX components
-  earnings_restricted_days: 1  # Close 1 day before earnings
+  earnings_restricted_days: 1
   earnings_symbols:
     - "NVDA"
     - "AMD"
@@ -49,12 +45,6 @@ compliance:
     - "LRCX"
     - "AMAT"
     - "KLAC"
-  
-  # Dividends: Cannot hold overnight before ex-dividend
-  dividend_restricted_days: 1  # Close 1 day before ex-dividend
-  
-  # Volume requirement for overnight holds (min 500k shares/day over 14 days)
-  min_avg_volume_overnight: 500000
 
 # Data collection times (ET)
 data_times:
