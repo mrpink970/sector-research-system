@@ -1,0 +1,28 @@
+# MES Paper Trading System - Prop Firm Configuration
+system:
+  name: "MES EMA Crossover - Prop Firm Ready"
+  instrument: "MES"
+  account_size: 100000
+  profit_target: 5000
+  daily_loss_limit: 3000
+  max_drawdown: 10000
+  min_trading_days: 5
+  max_daily_profit_pct: 30
+  risk_per_trade_pct: 1.0
+  max_contracts: 10
+
+entry_conditions:
+  ema_fast: 9
+  ema_slow: 21
+  timeframe: "1h"
+  use_atr_stops: true
+  atr_period: 14
+  atr_multiplier: 1.5
+
+exit_rules:
+  risk_reward_ratio: 2.0
+
+trading_hours:
+  start: "09:30"
+  end: "16:00"
+  timezone: "ET"
