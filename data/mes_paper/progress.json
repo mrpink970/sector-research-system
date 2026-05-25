@@ -1,0 +1,18 @@
+{
+  "timestamp": "2026-05-25T20:19:57.960227",
+  "total_profit": 0,
+  "profit_target": 5000,
+  "profit_remaining": 5000,
+  "percent_complete": 0.0,
+  "trading_days": 0,
+  "min_days_required": 5,
+  "today_pnl": 0,
+  "daily_loss_limit": 3000,
+  "max_daily_profit_pct": 0,
+  "max_allowed_pct": 30,
+  "peak_equity": 100000,
+  "current_equity": 100000,
+  "drawdown_from_peak": 0,
+  "max_drawdown_limit": 10000,
+  "can_trade": true
+}
