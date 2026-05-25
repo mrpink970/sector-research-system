@@ -11,7 +11,6 @@ import pandas as pd
 import yaml
 from pathlib import Path
 from datetime import datetime
-import json
 import sys
 
 # Add parent directory to path for imports
@@ -200,7 +199,7 @@ def calculate_positions(data: dict, config: dict, is_fast: bool = False) -> dict
     }
 
 
-def send_email(data: dict, signal_type: str, conditions: list, positions: dict, 
+def send_email(data: dict, config: dict, signal_type: str, conditions: list, positions: dict, 
                has_open_position: bool, open_position: dict = None, 
                compliance_restricted: bool = False, compliance_reason: str = "",
                session: str = "morning", session_label: str = ""):
@@ -218,19 +217,14 @@ def send_email(data: dict, signal_type: str, conditions: list, positions: dict,
     # Determine email subject and priority
     if compliance_restricted:
         subject = f"⚠️ TTP COMPLIANCE - No Entry ({session_label})"
-        priority = "HIGH"
     elif signal_type == "FAST_BREAKOUT" and not has_open_position:
         subject = f"⚡ FAST BREAKOUT - BUY SOXX NOW ({session_label})"
-        priority = "HIGH"
     elif signal_type == "GREEN" and not has_open_position:
         subject = f"🟢 GREEN DAY - BUY SOXX ({session_label})"
-        priority = "NORMAL"
     elif signal_type == "RED":
         subject = f"🔴 NO SIGNAL - WAIT ({session_label})"
-        priority = "LOW"
     else:
         subject = f"📊 SOXX Market Update ({session_label})"
-        priority = "LOW"
     
     # Build email body
     body_lines = []
@@ -314,7 +308,7 @@ def send_email(data: dict, signal_type: str, conditions: list, positions: dict,
             body_lines.append("🔴 RED DAY - NO TRADE 🔴")
             body_lines.append("")
             body_lines.append("   Conditions not met for entry.")
-            
+        
         # Add conditions breakdown
         if conditions:
             body_lines.append("")
@@ -336,21 +330,30 @@ def send_email(data: dict, signal_type: str, conditions: list, positions: dict,
     body_lines.append("")
     body_lines.append("🎯 TTP EVALUATION STATUS:")
     
-    # Try to get progress from trade_manager
-    try:
-        from scripts.ttp.trade_manager import check_ready_for_review
-        status = check_ready_for_review()
-        body_lines.append(f"   Profit: ${status['total_profit']:.2f} / ${status['profit_target']}")
-        body_lines.append(f"   Trades: {status['trades_completed']} / {status['min_trades_required']}")
-        if status['ready_for_review']:
-            body_lines.append("   ✅ READY FOR TTP REVIEW!")
-        else:
-            if status['profit_remaining'] > 0:
-                body_lines.append(f"   Need ${status['profit_remaining']:.2f} more profit")
-            if status['trades_needed'] > 0:
-                body_lines.append(f"   Need {status['trades_needed']} more trades")
-    except:
-        body_lines.append("   (Load trade_manager.py for status)")
+    # Read progress from CSV
+    progress_path = DATA_DIR / "progress.csv"
+    total_profit = 0
+    trades_completed = 0
+    
+    if progress_path.exists():
+        try:
+            df = pd.read_csv(progress_path)
+            if not df.empty:
+                total_profit = df.iloc[-1].get('total_profit', 0)
+                trades_completed = df.iloc[-1].get('trades_completed', 0)
+        except:
+            pass
+    
+    body_lines.append(f"   Profit: ${total_profit:.2f} / $300")
+    body_lines.append(f"   Trades: {trades_completed} / 5")
+    
+    if total_profit >= 300 and trades_completed >= 5:
+        body_lines.append("   ✅ READY FOR TTP REVIEW!")
+    else:
+        if total_profit < 300:
+            body_lines.append(f"   Need ${300 - total_profit:.2f} more profit")
+        if trades_completed < 5:
+            body_lines.append(f"   Need {5 - trades_completed} more trades")
     
     body_lines.append("")
     body_lines.append("─" * 60)
@@ -359,7 +362,7 @@ def send_email(data: dict, signal_type: str, conditions: list, positions: dict,
     # Upcoming compliance events
     if compliance_available:
         events = get_upcoming_events(config)
-        if events['earnings']:
+        if events and events.get('earnings'):
             body_lines.append("📅 UPCOMING EARNINGS (will block entry):")
             for e in events['earnings'][:3]:
                 body_lines.append(f"   {e['symbol']}: {e['date']} ({e['days']} days)")
@@ -458,6 +461,7 @@ def main():
         print(f"\n📧 Sending {session_label} email...")
         send_email(
             data=data,
+            config=config,  # <-- FIXED: Pass config here
             signal_type=signal_type,
             conditions=conditions,
             positions=positions,
