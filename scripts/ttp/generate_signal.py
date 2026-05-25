@@ -3,6 +3,7 @@
 Trade The Pool - SOXX Signal Generator (with Email)
 Determines Green Day status and fast breakouts
 Includes TRAILING STOP logic for active positions
+Includes TTP COMPLIANCE CHECKS and MAX PROFIT HARD STOP
 """
 
 import os
@@ -20,6 +21,16 @@ DATA_DIR = Path("data/ttp")
 SIGNALS_PATH = DATA_DIR / "signals.csv"
 TRADES_PATH = DATA_DIR / "trades.csv"
 TRAILING_LOG_PATH = DATA_DIR / "trailing_stop_log.csv"
+
+# Import TTP compliance module
+try:
+    from scripts.ttp.compliance import can_enter_swing_trade, get_upcoming_events
+except ImportError:
+    print("⚠️ Compliance module not found. Creating dummy functions.")
+    def can_enter_swing_trade(config):
+        return True, "Compliance module not available"
+    def get_upcoming_events(config):
+        return {'earnings': []}
 
 
 def load_config():
@@ -54,6 +65,23 @@ def load_open_position():
         return None
     
     return open_trades.iloc[-1].to_dict()
+
+
+def check_max_profit_limit(position: dict, current_price: float, config: dict) -> tuple:
+    """
+    HARD STOP at $150 profit per trade (50% of $300 target)
+    Returns: (should_exit, exit_price, exit_reason)
+    """
+    max_profit = config['exit_rules'].get('max_profit_per_trade', 150)
+    entry_price = position['entry_price']
+    shares = position['shares']
+    
+    unrealized_profit = (current_price - entry_price) * shares
+    
+    if unrealized_profit >= max_profit:
+        return True, current_price, f"MAX_PROFIT_LIMIT (${unrealized_profit:.2f} >= ${max_profit})"
+    
+    return False, None, None
 
 
 def update_trailing_stop(position: dict, current_price: float, config: dict) -> dict:
@@ -91,7 +119,7 @@ def update_trailing_stop(position: dict, current_price: float, config: dict) -> 
     return position
 
 
-def check_trailing_stop_exit(position: dict, current_price: float, config: dict) -> tuple[bool, float, str]:
+def check_trailing_stop_exit(position: dict, current_price: float, config: dict) -> tuple:
     """
     Check if trailing stop has been hit
     Returns: (should_exit, exit_price, exit_reason)
@@ -104,7 +132,7 @@ def check_trailing_stop_exit(position: dict, current_price: float, config: dict)
     return False, None, None
 
 
-def check_initial_exit(position: dict, current_price: float, config: dict) -> tuple[bool, float, str]:
+def check_initial_exit(position: dict, current_price: float, config: dict) -> tuple:
     """
     Check initial stop loss and take profit
     """
@@ -117,7 +145,7 @@ def check_initial_exit(position: dict, current_price: float, config: dict) -> tu
         return True, stop_loss, "STOP_LOSS"
     
     # Check take profit
-    if current_price >= take_profit:
+    if take_profit and current_price >= take_profit:
         return True, take_profit, "TAKE_PROFIT"
     
     return False, None, None
@@ -172,7 +200,7 @@ def close_position(exit_price: float, exit_reason: str, position: dict):
     print(f"   🔴 POSITION CLOSED: {exit_reason} at ${exit_price:.2f}")
 
 
-def check_green_day(data: dict, config: dict) -> tuple[bool, list]:
+def check_green_day(data: dict, config: dict) -> tuple:
     """Check if conditions meet Green Day criteria"""
     conditions = []
     all_met = True
@@ -201,7 +229,7 @@ def check_green_day(data: dict, config: dict) -> tuple[bool, list]:
     return all_met, conditions
 
 
-def check_fast_breakout(data: dict, recent_data: list) -> tuple[bool, dict]:
+def check_fast_breakout(data: dict, recent_data: list) -> tuple:
     """Check for fast breakout on 15-minute timeframe"""
     if not recent_data or len(recent_data) < 3:
         return False, {}
@@ -383,7 +411,7 @@ def send_email(is_green: bool, data: dict, conditions: list, positions: dict, is
 
 ═══════════════════════════════════════════════════════════
   Trailing stop locks in profits as price rises.
-  No need to manually adjust stop loss.
+  Max profit per trade hard stop: ${positions.get('max_profit_limit', 150)} (50% of $300 target)
 ═══════════════════════════════════════════════════════════
 """
     else:
@@ -476,9 +504,62 @@ def send_trailing_stop_email(position: dict, new_stop: float, current_price: flo
         print(f"❌ Failed to send email: {e}")
 
 
+def send_compliance_block_email(data: dict, compliance_reason: str):
+    """Send notification when compliance blocks entry"""
+    mail_username = os.environ.get("MAIL_USERNAME")
+    mail_password = os.environ.get("MAIL_PASSWORD")
+    
+    if not mail_username or not mail_password:
+        return
+    
+    date_str = datetime.now().strftime("%Y-%m-%d %H:%M ET")
+    
+    subject = f"⚠️ TTP COMPLIANCE - Entry Blocked ({date_str})"
+    body = f"""
+═══════════════════════════════════════════════════════════
+  TTP COMPLIANCE RESTRICTION - ENTRY BLOCKED
+═══════════════════════════════════════════════════════════
+
+⚠️ SWING TRADE ENTRY BLOCKED - {date_str}
+
+📊 SOXX DATA:
+   Price: ${data['price']:.2f}
+   1h Return: {data['return_1h_pct']:.2f}%
+   RSI: {data['rsi']:.1f}
+
+🚫 COMPLIANCE REASON:
+   {compliance_reason}
+
+📋 TTP RULES:
+   - Cannot hold overnight when component stocks have earnings within 1 day
+   - Cannot hold overnight before SOXX ex-dividend date
+
+🔗 DASHBOARD: https://mrpink970.github.io/sector-research-system/docs/ttp/ttp_dashboard.html
+
+═══════════════════════════════════════════════════════════
+  System will check again at next interval.
+  No action required.
+═══════════════════════════════════════════════════════════
+"""
+    
+    msg = EmailMessage()
+    msg.set_content(body)
+    msg["Subject"] = subject
+    msg["From"] = mail_username
+    msg["To"] = mail_username
+    
+    try:
+        with smtplib.SMTP_SSL("smtp.gmail.com", 465) as smtp:
+            smtp.login(mail_username, mail_password)
+            smtp.send_message(msg)
+        print(f"✅ Compliance block email sent")
+    except Exception as e:
+        print(f"❌ Failed to send email: {e}")
+
+
 def main():
     print("=" * 50)
-    print("TTP SOXX Signal Generator (with Trailing Stop)")
+    print("TTP SOXX Signal Generator (with Trailing Stop & Compliance)")
     print("=" * 50)
     
     config = load_config()
@@ -495,7 +576,7 @@ def main():
     # Check for existing open position
     open_position = load_open_position()
     
-    # If there's an open position, manage trailing stop
+    # If there's an open position, manage trailing stop and check max profit
     if open_position:
         print(f"\n📌 Open position exists:")
         print(f"   Entry: ${open_position['entry_price']:.2f}")
@@ -504,11 +585,15 @@ def main():
         # Update trailing stop
         updated_position = update_trailing_stop(open_position, current_price, config)
         
-        # Check if stop was hit
-        should_exit, exit_price, exit_reason = check_trailing_stop_exit(updated_position, current_price, config)
+        # === CHECK MAX PROFIT LIMIT FIRST (HARD STOP at $150) ===
+        should_exit, exit_price, exit_reason = check_max_profit_limit(updated_position, current_price, config)
         
         if not should_exit:
-            # Also check initial stop/take profit
+            # Check trailing stop
+            should_exit, exit_price, exit_reason = check_trailing_stop_exit(updated_position, current_price, config)
+        
+        if not should_exit:
+            # Check initial stop/take profit
             should_exit, exit_price, exit_reason = check_initial_exit(updated_position, current_price, config)
         
         if should_exit:
@@ -526,16 +611,39 @@ def main():
         print("\n" + "=" * 50)
         return
     
-    # No open position - check for new signals
-    print("\n🔍 No open position. Checking for signals...")
+    # No open position - check TTP compliance before entering
+    print("\n🔍 No open position. Checking compliance for new entry...")
     
-    # Check standard Green Day conditions
-    is_green, conditions = check_green_day(data, config)
+    # === TTP COMPLIANCE CHECK ===
+    can_enter, compliance_reason = can_enter_swing_trade(config)
+    
+    if not can_enter:
+        print(f"\n⚠️ COMPLIANCE RESTRICTION: {compliance_reason}")
+        print("   Cannot enter swing trade at this time")
+        
+        # Send notification email
+        positions = {
+            'entry_price': data['price'],
+            'stop_price': 0,
+            'target_price': 0,
+            'shares': config['trade_management']['shares_per_trade'],
+            'net_profit': 0
+        }
+        send_compliance_block_email(data, compliance_reason)
+        save_signal(data, False, [f"COMPLIANCE: {compliance_reason}"], positions)
+        print("\n" + "=" * 50)
+        return
+    
+    print(f"✅ Compliance passed: {compliance_reason}")
     
     # Check for fast breakout
     is_fast = False
     fast_details = {}
     
+    # Check standard Green Day conditions
+    is_green, conditions = check_green_day(data, config)
+    
+    # If not green, check for fast breakout
     if not is_green:
         recent_data = load_recent_data_points()
         is_fast, fast_details = check_fast_breakout(data, recent_data)
@@ -547,6 +655,8 @@ def main():
     for c in conditions:
         print(f"   {c}")
     
+    max_profit_limit = config['exit_rules'].get('max_profit_per_trade', 150)
+    
     if is_fast:
         print("\n⚡ SIGNAL: FAST BREAKOUT - BUY NOW")
         positions = calculate_positions(data, config, is_fast=True)
@@ -555,6 +665,7 @@ def main():
         print(f"   Buy: {positions['shares']} shares @ ${positions['entry_price']:.2f}")
         print(f"   Stop Loss: ${positions['stop_price']:.2f} (-{positions['stop_loss_pct']}%)")
         print(f"   Take Profit: ${positions['target_price']:.2f} (+{positions['target_pct']}%)")
+        print(f"   ⚠️ HARD STOP: Will close automatically at ${max_profit_limit} profit")
         
         # Save as open position
         position_record = {
@@ -580,6 +691,7 @@ def main():
         print(f"   Buy: {positions['shares']} shares @ ${positions['entry_price']:.2f}")
         print(f"   Initial Stop: ${positions['stop_price']:.2f} (-{positions['stop_loss_pct']}%)")
         print(f"   Take Profit: ${positions['target_price']:.2f} (+{positions['target_pct']}%)")
+        print(f"   ⚠️ HARD STOP: Will close automatically at ${max_profit_limit} profit")
         print(f"\n   📈 Trailing Stop Rules:")
         print(f"   - After price moves up +3%, trailing stop activates")
         print(f"   - Stop trails 2% below highest price")
@@ -607,11 +719,18 @@ def main():
             'entry_price': data['price'],
             'stop_price': 0,
             'target_price': 0,
-            'shares': 2,
+            'shares': config['trade_management']['shares_per_trade'],
             'net_profit': 0
         }
         save_signal(data, is_green, conditions, positions)
         send_email(is_green, data, conditions, positions)
+    
+    # Display upcoming compliance events
+    events = get_upcoming_events(config)
+    if events['earnings']:
+        print("\n📅 Upcoming earnings (watch for compliance blocks):")
+        for e in events['earnings'][:3]:
+            print(f"   {e['symbol']}: {e['date']} ({e['days']} days)")
     
     print("\n✅ Signal saved and email sent")
     print("=" * 50)
