@@ -21,17 +21,26 @@ jobs:
           python-version: '3.11'
       
       - name: Install dependencies
-        run: pip install pandas yfinance pyyaml
+        run: |
+          pip install --upgrade pip
+          pip install pandas yfinance pyyaml
       
       - name: Create data directories
-        run: |
-          mkdir -p data/ttp
-          mkdir -p data/ttp/cache
+        run: mkdir -p data/ttp
       
-      - name: Collect SOXX data
+      - name: Set PYTHONPATH
+        run: echo "PYTHONPATH=${{ github.workspace }}" >> $GITHUB_ENV
+      
+      - name: List directory structure (for debugging)
+        run: |
+          echo "Current directory: $(pwd)"
+          echo "Contents of scripts/ttp:"
+          ls -la scripts/ttp/ || echo "Directory not found"
+      
+      - name: Run TTP System - Collect Data
         run: python scripts/ttp/collect_data.py
       
-      - name: Generate signal
+      - name: Run TTP System - Generate Signal
         run: python scripts/ttp/generate_signal.py
         env:
           MAIL_USERNAME: ${{ secrets.MAIL_USERNAME }}
@@ -40,7 +49,7 @@ jobs:
       - name: Commit and push updates
         run: |
           git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config.user email "github-actions[bot]@users.noreply.github.com"
           git add data/ttp/
           git add docs/ttp/
           git diff --staged --quiet || git commit -m "TTP system update $(date '+%Y-%m-%d %H:%M')"
