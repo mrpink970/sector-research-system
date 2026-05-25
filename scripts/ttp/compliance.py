@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 """
 TTP Compliance Module
-Checks earnings, dividends, and volume restrictions
+Checks earnings, dividends, and volume restrictions for swing trading
 """
 
 import yfinance as yf
-from datetime import datetime, timedelta
+from datetime import datetime
 from typing import Tuple, List, Dict, Optional
 import json
 from pathlib import Path
@@ -75,8 +75,11 @@ def check_earnings_restriction(config: dict, current_date: datetime = None) -> T
     if current_date is None:
         current_date = datetime.now()
     
-    earnings_symbols = config['compliance']['earnings_symbols']
-    restricted_days = config['compliance']['earnings_restricted_days']
+    earnings_symbols = config.get('compliance', {}).get('earnings_symbols', [])
+    restricted_days = config.get('compliance', {}).get('earnings_restricted_days', 1)
+    
+    if not earnings_symbols:
+        return True, "No earnings symbols configured"
     
     earnings_dates = get_earnings_dates(earnings_symbols)
     
@@ -123,8 +126,30 @@ def can_enter_swing_trade(config: dict) -> Tuple[bool, str]:
     return True, "OK to enter"
 
 
+def get_upcoming_events(config: dict) -> dict:
+    """Get upcoming compliance events for display"""
+    earnings_symbols = config.get('compliance', {}).get('earnings_symbols', [])
+    earnings_dates = get_earnings_dates(earnings_symbols)
+    
+    upcoming = []
+    for symbol, date in earnings_dates.items():
+        if date and date > datetime.now():
+            days = (date - datetime.now()).days
+            upcoming.append({'symbol': symbol, 'date': date.date(), 'days': days})
+    
+    upcoming.sort(key=lambda x: x['days'])
+    
+    return {'earnings': upcoming[:5]}
+
+
 if __name__ == "__main__":
     config = load_config()
     can_enter, reason = can_enter_swing_trade(config)
     print(f"Can enter: {can_enter}")
     print(f"Reason: {reason}")
+    
+    events = get_upcoming_events(config)
+    if events['earnings']:
+        print("\nUpcoming earnings:")
+        for e in events['earnings']:
+            print(f"  {e['symbol']}: {e['date']} ({e['days']} days)")
