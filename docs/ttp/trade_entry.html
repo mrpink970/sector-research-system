@@ -81,6 +81,14 @@
         .info-text { font-size: 12px; color: #94a3b8; margin-bottom: 16px; padding: 8px; background: #0f172a; border-radius: 8px; text-align: center; }
         .csv-preview { font-size: 11px; max-height: 200px; overflow: auto; }
         .preview-row { background: #0f172a; border-radius: 8px; padding: 8px; margin-top: 12px; font-size: 12px; }
+        .compliance-note {
+            background: #7c2d12;
+            border-left: 4px solid #f97316;
+            padding: 12px;
+            margin-bottom: 16px;
+            border-radius: 8px;
+            font-size: 13px;
+        }
     </style>
 </head>
 <body>
@@ -92,11 +100,17 @@
             The system will calculate the actual dollar prices<br>
             Then copy/paste to GitHub → data/ttp/trades.csv
         </div>
+        <div class="compliance-note">
+            ⚠️ TTP COMPLIANCE REMINDER:<br>
+            • Max profit per trade: $150 (50% of $300 target)<br>
+            • Minimum 5 trades required to pass evaluation<br>
+            • Cannot hold overnight before earnings or ex-dividend
+        </div>
     </div>
 
     <div class="status-bar">
         <div class="status-card">
-            <div class="status-label">Target</div>
+            <div class="status-label">Target Remaining</div>
             <div class="status-value" id="targetRemaining">$300</div>
         </div>
         <div class="status-card">
@@ -104,8 +118,12 @@
             <div class="status-value positive" id="totalProfit">$0</div>
         </div>
         <div class="status-card">
-            <div class="status-label">Trades</div>
+            <div class="status-label">Trades Completed</div>
             <div class="status-value" id="tradeCount">0</div>
+        </div>
+        <div class="status-card">
+            <div class="status-label">Trades Needed</div>
+            <div class="status-value" id="tradesNeeded">5</div>
         </div>
     </div>
 
@@ -117,7 +135,7 @@
     <div class="card">
         <h3>🟢 Open New Trade</h3>
         <div class="label">Entry Price ($)</div>
-        <input type="number" id="entryPrice" step="0.01" placeholder="e.g., 497.01">
+        <input type="number" id="entryPrice" step="0.01" placeholder="e.g., 515.00">
         <div class="label">Shares</div>
         <select id="shares">
             <option value="1">1 Share</option>
@@ -127,7 +145,7 @@
         <div class="label">Stop Loss (%)</div>
         <input type="number" id="stopPercent" step="0.1" value="2.0" placeholder="e.g., 2.0">
         <div class="label">Take Profit (%)</div>
-        <input type="number" id="targetPercent" step="0.1" value="6.0" placeholder="e.g., 6.0">
+        <input type="number" id="targetPercent" step="0.1" value="8.0" placeholder="e.g., 8.0">
         <button onclick="previewTrade()">🔍 Preview Calculations</button>
         <div id="preview" class="preview-row" style="display:none;"></div>
         <button onclick="openTrade()" style="margin-top:8px;">📋 Open Trade (Copy to Clipboard)</button>
@@ -136,7 +154,15 @@
     <div class="card" id="closeForm" style="display: none;">
         <h3>🔴 Close Trade</h3>
         <div class="label">Exit Price ($)</div>
-        <input type="number" id="exitPrice" step="0.01" placeholder="e.g., 526.83">
+        <input type="number" id="exitPrice" step="0.01" placeholder="e.g., 556.20">
+        <div class="label">Exit Reason (select one)</div>
+        <select id="exitReason">
+            <option value="TAKE_PROFIT">🎯 Take Profit (+8%)</option>
+            <option value="STOP_LOSS">🛑 Stop Loss (-2%)</option>
+            <option value="TRAILING_STOP">🔒 Trailing Stop</option>
+            <option value="MAX_PROFIT_LIMIT">💰 Max Profit Limit ($150)</option>
+            <option value="MANUAL">✋ Manual Close</option>
+        </select>
         <button onclick="closeTrade()">📋 Close Trade (Copy to Clipboard)</button>
     </div>
 
@@ -155,7 +181,7 @@
 
 <script>
     const REPO_OWNER = "mrpink970";
-    const REPO_NAME = "prop_systems";
+    const REPO_NAME = "sector-research-system";
     const TRADES_URL = `https://raw.githubusercontent.com/${REPO_OWNER}/${REPO_NAME}/main/data/ttp/trades.csv`;
 
     let trades = [];
@@ -200,6 +226,10 @@
         
         const stopPrice = entryPrice * (1 - stopPercent / 100);
         const targetPrice = entryPrice * (1 + targetPercent / 100);
+        const shares = parseInt(document.getElementById('shares').value);
+        const profitAtTarget = (targetPrice - entryPrice) * shares;
+        const maxProfitAllowed = 150;
+        const exceedsLimit = profitAtTarget > maxProfitAllowed;
         
         document.getElementById('preview').style.display = 'block';
         document.getElementById('preview').innerHTML = `
@@ -209,7 +239,9 @@
             Take Profit (${targetPercent}%): $${targetPrice.toFixed(2)}<br>
             Risk per share: $${(entryPrice - stopPrice).toFixed(2)}<br>
             Reward per share: $${(targetPrice - entryPrice).toFixed(2)}<br>
-            Risk:Reward: 1:${((targetPrice - entryPrice) / (entryPrice - stopPrice)).toFixed(2)}
+            Risk:Reward: 1:${((targetPrice - entryPrice) / (entryPrice - stopPrice)).toFixed(2)}<br>
+            <strong>Profit at target (${shares} shares): $${profitAtTarget.toFixed(2)}</strong><br>
+            ${exceedsLimit ? '<span style="color:#f97316;">⚠️ WARNING: Profit exceeds $150 max limit! Reduce shares or lower target.</span>' : '<span style="color:#22c55e;">✅ Profit within $150 max limit.</span>'}
         `;
     }
 
@@ -226,8 +258,15 @@
         
         const stopPrice = entryPrice * (1 - stopPercent / 100);
         const targetPrice = entryPrice * (1 + targetPercent / 100);
+        const profitAtTarget = (targetPrice - entryPrice) * shares;
         
-        const csvLine = `SOXX,${new Date().toISOString()},${entryPrice.toFixed(2)},${shares},${stopPrice.toFixed(2)},${targetPrice.toFixed(2)},open,,,`;
+        if (profitAtTarget > 150) {
+            if (!confirm(`⚠️ WARNING: Profit at target will be $${profitAtTarget.toFixed(2)} which exceeds the $150 max profit per trade rule. Continue anyway?`)) {
+                return;
+            }
+        }
+        
+        const csvLine = `SOXX,${new Date().toISOString()},${entryPrice.toFixed(2)},${shares},${stopPrice.toFixed(2)},${targetPrice.toFixed(2)},open,,,,`;
         
         navigator.clipboard.writeText(csvLine);
         alert('✅ CSV line copied!\n\n' + csvLine + '\n\nGo to GitHub → data/ttp/trades.csv → Paste at bottom → Commit');
@@ -240,6 +279,7 @@
     
     function closeTrade() {
         const exitPrice = parseFloat(document.getElementById('exitPrice').value);
+        const exitReason = document.getElementById('exitReason').value;
         
         if (!exitPrice || !currentOpenTrade) {
             alert('Please fill in exit price');
@@ -248,7 +288,7 @@
         
         const profit = (exitPrice - currentOpenTrade.entry_price) * currentOpenTrade.shares;
         
-        const csvLine = `${currentOpenTrade.ticker},${currentOpenTrade.entry_date},${currentOpenTrade.entry_price},${currentOpenTrade.shares},${currentOpenTrade.stop_price},${currentOpenTrade.target_price},completed,${new Date().toISOString()},${exitPrice.toFixed(2)},${profit.toFixed(2)}`;
+        const csvLine = `${currentOpenTrade.ticker},${currentOpenTrade.entry_date},${currentOpenTrade.entry_price},${currentOpenTrade.shares},${currentOpenTrade.stop_price},${currentOpenTrade.target_price},completed,${new Date().toISOString()},${exitPrice.toFixed(2)},${profit.toFixed(2)},${exitReason}`;
         
         navigator.clipboard.writeText(csvLine);
         alert('✅ CSV line copied!\n\nREPLACE the open trade line in trades.csv with:\n\n' + csvLine);
@@ -278,25 +318,29 @@
         const closedTrades = trades.filter(t => t.status === 'completed');
         const totalProfit = closedTrades.reduce((sum, t) => sum + (t.profit || 0), 0);
         const remainingTarget = Math.max(0, 300 - totalProfit);
+        const tradesNeeded = Math.max(0, 5 - closedTrades.length);
         
         document.getElementById('totalProfit').innerHTML = `$${totalProfit.toFixed(2)}`;
         document.getElementById('targetRemaining').innerHTML = `$${remainingTarget.toFixed(2)}`;
         document.getElementById('tradeCount').innerHTML = closedTrades.length;
+        document.getElementById('tradesNeeded').innerHTML = tradesNeeded;
         
         const openDiv = document.getElementById('openPositionDisplay');
         if (currentOpenTrade) {
+            const currentStop = currentOpenTrade.stop_price || (currentOpenTrade.entry_price * 0.98);
+            const currentTarget = currentOpenTrade.target_price || (currentOpenTrade.entry_price * 1.08);
             openDiv.innerHTML = `
                 <div class="trade-row">
                     <span><strong>${currentOpenTrade.ticker}</strong></span>
-                    <span>Entry: $${currentOpenTrade.entry_price}</span>
+                    <span>Entry: $${currentOpenTrade.entry_price?.toFixed(2)}</span>
                     <span>${currentOpenTrade.shares} shares</span>
-                    <span>Stop: $${currentOpenTrade.stop_price}</span>
-                    <span>Target: $${currentOpenTrade.target_price}</span>
+                    <span>Stop: $${currentStop.toFixed(2)}</span>
+                    <span>Target: $${currentTarget.toFixed(2)}</span>
                 </div>
             `;
             document.getElementById('closeForm').style.display = 'block';
         } else {
-            openDiv.innerHTML = '<p style="color: #64748b;">No open position</p>';
+            openDiv.innerHTML = '<p style="color: #64748b;">📭 No open position</p>';
             document.getElementById('closeForm').style.display = 'none';
         }
         
@@ -304,23 +348,32 @@
         if (closedTrades.length === 0) {
             historyDiv.innerHTML = '<p style="color: #64748b;">No completed trades yet</p>';
         } else {
-            historyDiv.innerHTML = closedTrades.slice(-10).reverse().map(t => `
-                <div class="trade-row">
-                    <span><strong>${t.entry_date?.split(' ')[0] || '--'}</strong></span>
-                    <span>${t.ticker}</span>
-                    <span>Entry: $${t.entry_price}</span>
-                    <span>Exit: $${t.exit_price}</span>
-                    <span class="${(t.profit || 0) >= 0 ? 'profit-positive' : 'profit-negative'}">
-                        ${(t.profit || 0) >= 0 ? '+' : ''}$${t.profit?.toFixed(2) || '0'}
-                    </span>
-                </div>
-            `).join('');
+            historyDiv.innerHTML = closedTrades.slice(-10).reverse().map(t => {
+                let exitReasonDisplay = t.exit_reason || '--';
+                if (exitReasonDisplay === 'MAX_PROFIT_LIMIT') exitReasonDisplay = '💰 Max Profit ($150)';
+                if (exitReasonDisplay === 'TAKE_PROFIT') exitReasonDisplay = '🎯 Take Profit';
+                if (exitReasonDisplay === 'STOP_LOSS') exitReasonDisplay = '🛑 Stop Loss';
+                if (exitReasonDisplay === 'TRAILING_STOP') exitReasonDisplay = '🔒 Trailing Stop';
+                return `
+                    <div class="trade-row">
+                        <span><strong>${t.entry_date?.split('T')[0] || '--'}</strong></span>
+                        <span>${t.ticker}</span>
+                        <span>Entry: $${t.entry_price?.toFixed(2)}</span>
+                        <span>Exit: $${t.exit_price?.toFixed(2)}</span>
+                        <span class="${(t.profit || 0) >= 0 ? 'profit-positive' : 'profit-negative'}">
+                            ${(t.profit || 0) >= 0 ? '+' : ''}$${t.profit?.toFixed(2) || '0'}
+                        </span>
+                        <span style="font-size: 11px;">${exitReasonDisplay}</span>
+                    </div>
+                `;
+            }).join('');
         }
     }
     
     function refreshData() { loadData(); }
     
     loadData();
+    setInterval(loadData, 60000);
 </script>
 </body>
 </html>
