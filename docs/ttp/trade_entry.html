@@ -89,11 +89,25 @@
             border-radius: 8px;
             font-size: 13px;
         }
+        .back-link {
+            display: inline-block;
+            color: #38bdf8;
+            text-decoration: none;
+            margin-bottom: 20px;
+        }
+        .back-link:hover {
+            text-decoration: underline;
+        }
+        .btn-success { background: #22c55e; }
+        .btn-success:hover { background: #16a34a; }
+        .btn-warning { background: #f97316; }
+        .btn-warning:hover { background: #ea580c; }
     </style>
 </head>
 <body>
 <div class="container">
     <div class="card">
+        <a href="ttp_dashboard.html" class="back-link">← Back to Main Dashboard</a>
         <h1>📝 TTP Trade Entry</h1>
         <div class="info-text">
             📋 Enter percentage (%) for stop loss and take profit<br>
@@ -259,6 +273,7 @@
         const stopPrice = entryPrice * (1 - stopPercent / 100);
         const targetPrice = entryPrice * (1 + targetPercent / 100);
         const profitAtTarget = (targetPrice - entryPrice) * shares;
+        const initialStop = stopPrice;
         
         if (profitAtTarget > 150) {
             if (!confirm(`⚠️ WARNING: Profit at target will be $${profitAtTarget.toFixed(2)} which exceeds the $150 max profit per trade rule. Continue anyway?`)) {
@@ -266,7 +281,8 @@
             }
         }
         
-        const csvLine = `SOXX,${new Date().toISOString()},${entryPrice.toFixed(2)},${shares},${stopPrice.toFixed(2)},${targetPrice.toFixed(2)},open,,,,`;
+        // CSV format: ticker,entry_date,entry_price,shares,stop_price,target_price,status,exit_date,exit_price,profit,initial_stop,highest_price,exit_reason
+        const csvLine = `SOXX,${new Date().toISOString()},${entryPrice.toFixed(2)},${shares},${stopPrice.toFixed(2)},${targetPrice.toFixed(2)},open,,,,${initialStop.toFixed(2)},${entryPrice.toFixed(2)},`;
         
         navigator.clipboard.writeText(csvLine);
         alert('✅ CSV line copied!\n\n' + csvLine + '\n\nGo to GitHub → data/ttp/trades.csv → Paste at bottom → Commit');
@@ -287,8 +303,11 @@
         }
         
         const profit = (exitPrice - currentOpenTrade.entry_price) * currentOpenTrade.shares;
+        const highestPrice = currentOpenTrade.highest_price || currentOpenTrade.entry_price;
+        const initialStop = currentOpenTrade.initial_stop || currentOpenTrade.stop_price;
         
-        const csvLine = `${currentOpenTrade.ticker},${currentOpenTrade.entry_date},${currentOpenTrade.entry_price},${currentOpenTrade.shares},${currentOpenTrade.stop_price},${currentOpenTrade.target_price},completed,${new Date().toISOString()},${exitPrice.toFixed(2)},${profit.toFixed(2)},${exitReason}`;
+        // CSV format: ticker,entry_date,entry_price,shares,stop_price,target_price,status,exit_date,exit_price,profit,initial_stop,highest_price,exit_reason
+        const csvLine = `${currentOpenTrade.ticker},${currentOpenTrade.entry_date},${currentOpenTrade.entry_price},${currentOpenTrade.shares},${currentOpenTrade.stop_price},${currentOpenTrade.target_price},completed,${new Date().toISOString()},${exitPrice.toFixed(2)},${profit.toFixed(2)},${initialStop},${highestPrice},${exitReason}`;
         
         navigator.clipboard.writeText(csvLine);
         alert('✅ CSV line copied!\n\nREPLACE the open trade line in trades.csv with:\n\n' + csvLine);
@@ -329,6 +348,7 @@
         if (currentOpenTrade) {
             const currentStop = currentOpenTrade.stop_price || (currentOpenTrade.entry_price * 0.98);
             const currentTarget = currentOpenTrade.target_price || (currentOpenTrade.entry_price * 1.08);
+            const highestPrice = currentOpenTrade.highest_price || currentOpenTrade.entry_price;
             openDiv.innerHTML = `
                 <div class="trade-row">
                     <span><strong>${currentOpenTrade.ticker}</strong></span>
@@ -336,6 +356,7 @@
                     <span>${currentOpenTrade.shares} shares</span>
                     <span>Stop: $${currentStop.toFixed(2)}</span>
                     <span>Target: $${currentTarget.toFixed(2)}</span>
+                    <span>High: $${highestPrice.toFixed(2)}</span>
                 </div>
             `;
             document.getElementById('closeForm').style.display = 'block';
