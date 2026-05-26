@@ -204,7 +204,7 @@
                 <li>✅ Max daily loss: $60</li>
                 <li>✅ Max single trade profit: $150 (50% of $300 target)</li>
                 <li>✅ Stop loss: -2%</li>
-                <li>✅ Take profit: +8%</li>
+                <li>✅ Take profit: +6%</li>
                 <li>✅ Trailing stop activates at +3%</li>
                 <li>✅ Minimum 5 trades required to pass</li>
             </ul>
@@ -270,13 +270,8 @@
 
         const progress = progressData.length > 0 ? progressData[progressData.length - 1] : { total_profit: 0, trades_completed: 0 };
         
-        // Get open position from trades.csv
         const openPosition = trades.find(t => t.status === 'open');
-        
-        // Get completed trades
         const completedTrades = trades.filter(t => t.status === 'completed');
-        
-        // Get latest signal for reference
         const latestSignal = signals.length > 0 ? signals[signals.length - 1] : null;
 
         const totalProfit = progress.total_profit || 0;
@@ -299,13 +294,12 @@
         const signalCard = document.getElementById('signalCard');
         const signalContent = document.getElementById('signalContent');
 
-        // PRIORITY: Show open position from trades.csv if exists
         if (openPosition) {
             signalCard.className = 'signal-card signal-green';
             const entryDate = openPosition.entry_date ? openPosition.entry_date.split('T')[0] : '--';
             const entryTime = openPosition.entry_date ? openPosition.entry_date.split('T')[1]?.split('.')[0] : '--';
             const currentStop = openPosition.stop_price || (openPosition.entry_price * 0.98);
-            const currentTarget = openPosition.target_price || (openPosition.entry_price * 1.08);
+            const currentTarget = openPosition.target_price || (openPosition.entry_price * 1.06);
             const highestPrice = openPosition.highest_price || openPosition.entry_price;
             const initialStop = openPosition.initial_stop || (openPosition.entry_price * 0.98);
             const lockedProfit = ((currentStop - openPosition.entry_price) * openPosition.shares).toFixed(2);
@@ -315,7 +309,7 @@
                 <div class="trade-details">
                     <table style="width:100%">
                         <tr><td style="width:40%">Ticker:</td><td><strong>${openPosition.ticker || 'SOXX'}</strong></td>
-                        <tr>
+                        </tr>
                         <tr><td>Entry Date:</td><td>${entryDate} ${entryTime}</td>
                         </tr>
                         <tr><td>Entry Price:</td><td><strong>$${openPosition.entry_price?.toFixed(2)}</strong></td>
@@ -330,7 +324,7 @@
                         </tr>
                         <tr><td>Locked Profit:</td><td class="locked-profit">+$${lockedProfit}</td>
                         </tr>
-                        <tr><td>Take Profit Target:</td><td>$${currentTarget.toFixed(2)} (+8%)</td>
+                        <tr><td>Take Profit Target:</td><td>$${currentTarget.toFixed(2)} (+6%)</td>
                         </tr>
                         <tr><td>Max Profit Limit:</td><td><strong>$150 (50% of target)</strong></td>
                         </tr>
@@ -341,7 +335,6 @@
                 </div>
             `;
         } 
-        // No open position - show latest signal from signals.csv
         else if (latestSignal && latestSignal.signal === 'GREEN') {
             signalCard.className = 'signal-card signal-green';
             signalContent.innerHTML = `
@@ -354,7 +347,7 @@
                         </tr>
                         <tr><td>Stop Loss:</td><td>$${latestSignal.stop_price?.toFixed(2)} (-2%)</td>
                         </tr>
-                        <tr><td>Take Profit:</td><td>$${latestSignal.target_price?.toFixed(2)} (+8%)</td>
+                        <tr><td>Take Profit:</td><td>$${latestSignal.target_price?.toFixed(2)} (+6%)</td>
                         </tr>
                         <tr><td>Expected Net Profit:</td><td>$${latestSignal.net_profit?.toFixed(2)}</td>
                         </tr>
@@ -365,7 +358,7 @@
                     </table>
                 </div>
                 <div style="margin-top: 16px; padding: 12px; background: #064e3b; border-radius: 8px;">
-                    ⚡ Sell both shares at +8%. System auto-closes at $150 profit.
+                    ⚡ Sell both shares at +6%. System auto-closes at $150 profit.
                 </div>
             `;
         } else if (latestSignal && latestSignal.signal === 'FAST_BREAKOUT') {
@@ -403,11 +396,10 @@
             `;
         }
 
-        // Open Position Details card
         const openPosDiv = document.getElementById('openPosition');
         if (openPosition) {
             const currentStop = openPosition.stop_price || (openPosition.entry_price * 0.98);
-            const currentTarget = openPosition.target_price || (openPosition.entry_price * 1.08);
+            const currentTarget = openPosition.target_price || (openPosition.entry_price * 1.06);
             const highestPrice = openPosition.highest_price || openPosition.entry_price;
             const initialStop = openPosition.initial_stop || (openPosition.entry_price * 0.98);
             const lockedProfit = ((currentStop - openPosition.entry_price) * openPosition.shares).toFixed(2);
@@ -429,7 +421,7 @@
                         </tr>
                         <tr><td>Locked Profit:</td><td class="locked-profit">+$${lockedProfit}</td>
                         </tr>
-                        <tr><td>Target:</td><td>$${currentTarget.toFixed(2)}</td>
+                        <tr><td>Target:</td><td>$${currentTarget.toFixed(2)} (+6%)</td>
                         </tr>
                     </table>
                 </div>
@@ -438,7 +430,6 @@
             openPosDiv.innerHTML = '<p style="color: #64748b;">📭 No open position</p>';
         }
 
-        // Trade History
         const tradeBody = document.getElementById('tradeHistoryBody');
         if (completedTrades.length === 0) {
             tradeBody.innerHTML = '<tr><td colspan="6" style="text-align: center;">No trades yet</td></tr>';
@@ -464,7 +455,6 @@
 
         document.getElementById('lastUpdate').innerHTML = new Date().toLocaleString();
         
-        // Calculate daily loss
         const today = new Date().toISOString().split('T')[0];
         const todayLosses = completedTrades.filter(t => {
             const exitDate = t.exit_date?.split('T')[0];
