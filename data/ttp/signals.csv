@@ -24,3 +24,4 @@ timestamp,session,signal,price,stop_price,target_price,shares,net_profit,conditi
 2026-05-25 16:20:47,close,HOLD,537.07,,,,,,True,True
 2026-05-25 18:20:47,off_hours,HOLD,537.07,,,,,,True,True
 2026-05-25 20:47:29,off_hours,HOLD,537.07,,,,,,True,True
+2026-05-26 13:22:34,afternoon,RED,537.07,0.0,0.0,2.0,0.0,❌ 1h return: -0.44% < 0.5% | ❌ Below MA20 ($539.27) | ❌ RSI: 40.0 < 50,,
