@@ -1,3 +1,1 @@
-ticker,entry_date,entry_price,shares,stop_price,target_price,status,exit_date,exit_price,profit,initial_stop,highest_price,exit_reason
-SOXX,2026-05-20T14:27:06.057Z,514.98,2,529.04,556.18,completed,2026-05-26T12:46:42.223Z,555.25,80.54,TAKE_PROFIT,,
-SOXX,2026-05-26T13:56:48.965Z,563.84,2,552.56,597.67,open,,,,552.56,563.84,
+ticker,entry_date,entry_price,shares,stop_price,target_price,status,exit_date,exit_price,profit,initial_stop,highest_price,exit_reason,stop_ticks,target_ticks,trailing_activation_ticks
