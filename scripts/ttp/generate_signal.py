@@ -4,6 +4,7 @@ Trade The Pool - SOXX Signal Generator (with Email)
 Determines Green Day status and fast breakouts
 Includes TRAILING STOP logic for active positions
 Includes TTP COMPLIANCE CHECKS and MAX PROFIT HARD STOP
+Includes PRE-MARKET DATA support for manual morning runs
 """
 
 import os
@@ -393,7 +394,7 @@ def save_signal(data: dict, is_green: bool, conditions: list, positions: dict, i
 
 
 def send_email(is_green: bool, data: dict, conditions: list, positions: dict, is_fast: bool = False):
-    """Send email notification"""
+    """Send email notification for regular session signals"""
     mail_username = os.environ.get("MAIL_USERNAME")
     mail_password = os.environ.get("MAIL_PASSWORD")
     
@@ -516,6 +517,143 @@ def send_email(is_green: bool, data: dict, conditions: list, positions: dict, is
         print(f"❌ Failed to send email: {e}")
 
 
+def send_premarket_email(data: dict, conditions: list, positions: dict, is_fast: bool = False, no_signal: bool = False):
+    """Send pre-market alert email to prepare for market open"""
+    mail_username = os.environ.get("MAIL_USERNAME")
+    mail_password = os.environ.get("MAIL_PASSWORD")
+    
+    if not mail_username or not mail_password:
+        print("❌ Email credentials not found")
+        return
+    
+    date_str = datetime.now().strftime("%Y-%m-%d %H:%M ET")
+    dashboard_url = "https://mrpink970.github.io/sector-research-system/docs/ttp/ttp_dashboard.html"
+    trade_entry_url = "https://mrpink970.github.io/sector-research-system/docs/ttp/trade_entry.html"
+    
+    if no_signal:
+        subject = f"🔴 PRE-MARKET: No Signal - Sit Out Today ({date_str})"
+        body = f"""
+═══════════════════════════════════════════════════════════
+  TTP PRE-MARKET SIGNAL - NO TRADE SETUP
+═══════════════════════════════════════════════════════════
+
+📅 {date_str}
+
+🔴 NO SIGNAL DETECTED
+
+📊 SOXX PRE-MARKET DATA:
+   Price: ${data['price']:.2f}
+   1h Return: {data['return_1h_pct']:.2f}%
+   RSI: {data['rsi']:.1f}
+   Above MA20: {data['above_ma20']}
+
+❌ CONDITIONS NOT MET:
+{chr(10).join(conditions)}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📋 PLAN FOR TODAY:
+   Wait for better conditions
+   Check again at 10:00 AM
+
+🔗 DASHBOARD: {dashboard_url}
+
+═══════════════════════════════════════════════════════════
+"""
+    elif is_fast:
+        subject = f"⚡ PRE-MARKET: FAST BREAKOUT SETUP - Prepare to Buy ({date_str})"
+        body = f"""
+═══════════════════════════════════════════════════════════
+  TTP PRE-MARKET SIGNAL - FAST BREAKOUT SETUP
+═══════════════════════════════════════════════════════════
+
+📅 {date_str}
+
+⚡ FAST BREAKOUT SETUP DETECTED
+
+📊 SOXX PRE-MARKET DATA:
+   Price: ${data['price']:.2f}
+   1h Return: {data['return_1h_pct']:.2f}%
+   RSI: {data['rsi']:.1f}
+   Above MA20: YES
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📈 TRADE PLAN FOR MARKET OPEN:
+   Action: BUY {positions['shares']} SHARES SOXX
+   Entry: At market open (or limit order)
+   Stop Loss: ${positions['stop_price']:.2f} (-{positions['stop_loss_pct']}%)
+   Take Profit: ${positions['target_price']:.2f} (+{positions['target_pct']}%)
+
+✅ CONDITIONS MET:
+{chr(10).join(conditions)}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+⚠️ FAST SYSTEM - TIGHTER STOPS (1.5%)
+   Execute within first 5 minutes of open
+
+🔗 TRADE ENTRY: {trade_entry_url}
+🔗 DASHBOARD: {dashboard_url}
+
+═══════════════════════════════════════════════════════════
+"""
+    else:
+        subject = f"🟢 PRE-MARKET: Green Day Expected - Prepare to Buy ({date_str})"
+        body = f"""
+═══════════════════════════════════════════════════════════
+  TTP PRE-MARKET SIGNAL - GREEN DAY EXPECTED
+═══════════════════════════════════════════════════════════
+
+📅 {date_str}
+
+🟢 GREEN DAY SETUP DETECTED
+
+📊 SOXX PRE-MARKET DATA:
+   Price: ${data['price']:.2f}
+   1h Return: {data['return_1h_pct']:.2f}%
+   RSI: {data['rsi']:.1f}
+   Above MA20: YES
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📈 TRADE PLAN FOR MARKET OPEN:
+   Action: BUY {positions['shares']} SHARES SOXX
+   Entry: At market open
+   Stop Loss: ${positions['stop_price']:.2f} (-{positions['stop_loss_pct']}%)
+   Take Profit: ${positions['target_price']:.2f} (+{positions['target_pct']}%)
+
+   📈 TRAILING STOP RULES:
+   - Initial stop at -2%
+   - After +3% move, trailing stop activates
+   - Stop trails 2% below highest price
+
+✅ CONDITIONS MET:
+{chr(10).join(conditions)}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🔗 TRADE ENTRY: {trade_entry_url}
+🔗 DASHBOARD: {dashboard_url}
+
+═══════════════════════════════════════════════════════════
+"""
+    
+    msg = EmailMessage()
+    msg.set_content(body)
+    msg["Subject"] = subject
+    msg["From"] = mail_username
+    msg["To"] = mail_username
+    
+    try:
+        with smtplib.SMTP_SSL("smtp.gmail.com", 465) as smtp:
+            smtp.login(mail_username, mail_password)
+            smtp.send_message(msg)
+        print(f"✅ Pre-market email sent: {subject}")
+    except Exception as e:
+        print(f"❌ Failed to send email: {e}")
+
+
 def send_trailing_stop_email(position: dict, new_stop: float, current_price: float):
     """Send notification when trailing stop moves up"""
     mail_username = os.environ.get("MAIL_USERNAME")
@@ -620,7 +758,7 @@ def send_compliance_block_email(data: dict, compliance_reason: str):
 
 def main():
     print("=" * 50)
-    print("TTP SOXX Signal Generator (with Trailing Stop & Compliance)")
+    print("TTP SOXX Signal Generator (with Pre-Market Support)")
     print("=" * 50)
     
     config = load_config()
@@ -631,7 +769,10 @@ def main():
         return
     
     current_price = data['price']
+    session = data.get('session', 'unknown')
+    
     print(f"Current SOXX price: ${current_price:.2f}")
+    print(f"Session: {session}")
     print(f"Time: {data['timestamp']}")
     
     # Check for existing open position
@@ -647,15 +788,13 @@ def main():
         # Update trailing stop with current price
         updated_position = update_trailing_stop(open_position, current_price, config)
         
-        # === CHECK MAX PROFIT LIMIT FIRST (HARD STOP at $150) ===
+        # Check exits
         should_exit, exit_price, exit_reason = check_max_profit_limit(updated_position, current_price, config)
         
         if not should_exit:
-            # Check trailing stop
             should_exit, exit_price, exit_reason = check_trailing_stop_exit(updated_position, current_price, config)
         
         if not should_exit:
-            # Check initial stop/take profit
             should_exit, exit_price, exit_reason = check_initial_exit(updated_position, current_price, config)
         
         if should_exit:
@@ -704,7 +843,7 @@ def main():
     
     print(f"✅ Compliance passed: {compliance_reason}")
     
-    # Check for fast breakout
+    # Check for signals
     is_fast = False
     fast_details = {}
     
@@ -724,74 +863,64 @@ def main():
         print(f"   {c}")
     
     max_profit_limit = config['exit_rules'].get('max_profit_per_trade', 150)
+    positions = calculate_positions(data, config, is_fast=False)
     
-    if is_fast:
-        print("\n⚡ SIGNAL: FAST BREAKOUT - BUY NOW")
-        positions = calculate_positions(data, config, is_fast=True)
+    # Send appropriate email based on session
+    if session == "premarket":
+        # Pre-market session - send preparation email
+        if is_fast:
+            print("\n⚡ PRE-MARKET SIGNAL: FAST BREAKOUT SETUP")
+            send_premarket_email(data, conditions, positions, is_fast=True, no_signal=False)
+        elif is_green:
+            print("\n🟢 PRE-MARKET SIGNAL: GREEN DAY EXPECTED")
+            send_premarket_email(data, conditions, positions, is_fast=False, no_signal=False)
+        else:
+            print("\n🔴 PRE-MARKET SIGNAL: NO SETUP")
+            send_premarket_email(data, conditions, positions, is_fast=False, no_signal=True)
         
-        print(f"\n📈 Trade Plan (Tighter Stops):")
-        print(f"   Buy: {positions['shares']} shares @ ${positions['entry_price']:.2f}")
-        print(f"   Stop Loss: ${positions['stop_price']:.2f} (-{positions['stop_loss_pct']}%)")
-        print(f"   Take Profit: ${positions['target_price']:.2f} (+{positions['target_pct']}%)")
-        print(f"   ⚠️ HARD STOP: Will close automatically at ${max_profit_limit} profit")
-        
-        # Save as open position with tracking fields
-        position_record = {
-            'ticker': 'SOXX',
-            'entry_date': datetime.now().isoformat(),
-            'entry_price': positions['entry_price'],
-            'shares': positions['shares'],
-            'stop_price': positions['stop_price'],
-            'target_price': positions['target_price'],
-            'initial_stop': positions['stop_price'],
-            'highest_price': positions['entry_price'],
-            'status': 'open'
-        }
-        save_open_position(position_record)
-        save_signal(data, True, conditions, positions, is_fast=True)
-        send_email(True, data, conditions, positions, is_fast=True)
-        
-    elif is_green:
-        print("\n🟢 SIGNAL: GREEN DAY - READY TO BUY")
-        positions = calculate_positions(data, config, is_fast=False)
-        
-        print(f"\n📈 Trade Plan:")
-        print(f"   Buy: {positions['shares']} shares @ ${positions['entry_price']:.2f}")
-        print(f"   Initial Stop: ${positions['stop_price']:.2f} (-{positions['stop_loss_pct']}%)")
-        print(f"   Take Profit: ${positions['target_price']:.2f} (+{positions['target_pct']}%)")
-        print(f"   ⚠️ HARD STOP: Will close automatically at ${max_profit_limit} profit")
-        print(f"\n   📈 Trailing Stop Rules:")
-        print(f"   - After price moves up +3%, trailing stop activates")
-        print(f"   - Stop trails 2% below highest price")
-        print(f"   - Stop only moves UP, never down")
-        
-        # Save as open position with tracking fields
-        position_record = {
-            'ticker': 'SOXX',
-            'entry_date': datetime.now().isoformat(),
-            'entry_price': positions['entry_price'],
-            'shares': positions['shares'],
-            'stop_price': positions['stop_price'],
-            'target_price': positions['target_price'],
-            'initial_stop': positions['stop_price'],
-            'highest_price': positions['entry_price'],
-            'status': 'open'
-        }
-        save_open_position(position_record)
-        save_signal(data, is_green, conditions, positions)
-        send_email(is_green, data, conditions, positions)
+        # Save signal for dashboard
+        save_signal(data, is_green, conditions, positions, is_fast)
         
     else:
-        print("\n🔴 SIGNAL: RED DAY - WAIT")
-        positions = {
-            'entry_price': data['price'],
-            'stop_price': 0,
-            'target_price': 0,
-            'shares': config['trade_management']['shares_per_trade'],
-            'net_profit': 0
-        }
-        save_signal(data, is_green, conditions, positions)
-        send_email(is_green, data, conditions, positions)
+        # Regular session - send execution email
+        if is_fast:
+            print("\n⚡ SIGNAL: FAST BREAKOUT - BUY NOW")
+            position_record = {
+                'ticker': 'SOXX',
+                'entry_date': datetime.now().isoformat(),
+                'entry_price': positions['entry_price'],
+                'shares': positions['shares'],
+                'stop_price': positions['stop_price'],
+                'target_price': positions['target_price'],
+                'initial_stop': positions['stop_price'],
+                'highest_price': positions['entry_price'],
+                'status': 'open'
+            }
+            save_open_position(position_record)
+            save_signal(data, True, conditions, positions, is_fast=True)
+            send_email(True, data, conditions, positions, is_fast=True)
+            
+        elif is_green:
+            print("\n🟢 SIGNAL: GREEN DAY - READY TO BUY")
+            position_record = {
+                'ticker': 'SOXX',
+                'entry_date': datetime.now().isoformat(),
+                'entry_price': positions['entry_price'],
+                'shares': positions['shares'],
+                'stop_price': positions['stop_price'],
+                'target_price': positions['target_price'],
+                'initial_stop': positions['stop_price'],
+                'highest_price': positions['entry_price'],
+                'status': 'open'
+            }
+            save_open_position(position_record)
+            save_signal(data, is_green, conditions, positions)
+            send_email(is_green, data, conditions, positions)
+            
+        else:
+            print("\n🔴 SIGNAL: RED DAY - WAIT")
+            save_signal(data, is_green, conditions, positions)
+            send_email(is_green, data, conditions, positions)
     
     # Display upcoming compliance events if module is available
     if compliance_available:
@@ -801,7 +930,7 @@ def main():
             for e in events['earnings'][:3]:
                 print(f"   {e['symbol']}: {e['date']} ({e['days']} days)")
     
-    print("\n✅ Signal saved and email sent")
+    print("\n✅ Signal complete")
     print("=" * 50)
 
 
