@@ -1,14 +1,7 @@
 #!/usr/bin/env python3
 """
-MES Automated Paper Trading System - PROP FIRM READY
-Features:
-- Daily loss limit enforcement
-- Max drawdown protection  
-- Minimum trading days tracking
-- Consistency rule (max daily profit %)
-- Dynamic position sizing
-- ATR-based stops
-- Economic calendar checks
+MES Automated Paper Trading System - MY FUNDED FUTURES OPTIMIZED
+Specifically configured to pass $50K Core evaluation in 1 month
 """
 
 import os
@@ -35,34 +28,35 @@ PROGRESS_FILE = DATA_DIR / "progress.json"
 
 os.makedirs(DATA_DIR, exist_ok=True)
 
-# Default parameters (will be overridden by config)
-CONTRACTS = 6
+# EVALUATION PARAMETERS (My Funded Futures $50K Core)
+ACCOUNT_SIZE = 50000
+PROFIT_TARGET = 3000
+MAX_DRAWDOWN = 2000          # EOD trailing drawdown
+MAX_DAILY_PROFIT = 1500      # 50% consistency rule
+MIN_TRADING_DAYS = 2
+DAILY_LOSS_LIMIT = 2000      # EOD loss limit
+
+# TRADE PARAMETERS (Conservative for evaluation)
+CONTRACTS = 2                # Start with 2 MES during eval
+POINT_VALUE = 5.0
 STOP_POINTS = 8.0
 TARGET_POINTS = 16.0
-POINT_VALUE = 5.0
-ACCOUNT_SIZE = 100000
-DAILY_LOSS_LIMIT = 3000
-MAX_DRAWDOWN = 10000
-MAX_DAILY_PROFIT_PCT = 30  # Consistency rule: no single day >30% of total profit
-MIN_TRADING_DAYS = 5
-USE_ATR_STOPS = True
-ATR_PERIOD = 14
-ATR_MULTIPLIER = 1.5
+RISK_REWARD_RATIO = 2.0
 
 # EMA Parameters
 EMA_FAST = 9
 EMA_SLOW = 21
 
-# Economic events that block trading
-BLOCKED_EVENTS = ['FOMC', 'Nonfarm Payrolls', 'CPI', 'PPI', 'Fed Chair']
+# Trading hours (ET)
+TRADING_START_HOUR = 9
+TRADING_END_HOUR = 16
 
 
 def load_config():
-    """Load MES configuration from config folder"""
+    """Load MES configuration"""
     if CONFIG_PATH.exists():
         with open(CONFIG_PATH, 'r') as f:
-            config = yaml.safe_load(f)
-            return config
+            return yaml.safe_load(f)
     return None
 
 
@@ -81,7 +75,7 @@ def get_config_value(key, default):
 
 
 # ============================================================
-# PROP FIRM TRACKING
+# EVALUATION TRACKING
 # ============================================================
 
 def load_daily_log():
@@ -92,11 +86,10 @@ def load_daily_log():
     return []
 
 
-def save_daily_log_entry(date, daily_pnl, peak_equity, current_equity):
+def save_daily_log_entry(date, daily_pnl, peak_equity, current_equity, day_count):
     """Save daily P&L entry"""
     entries = load_daily_log()
     
-    # Check if today already logged
     today_str = date.strftime("%Y-%m-%d")
     existing = [e for e in entries if e.get('date') == today_str]
     
@@ -106,12 +99,14 @@ def save_daily_log_entry(date, daily_pnl, peak_equity, current_equity):
                 e['daily_pnl'] = daily_pnl
                 e['peak_equity'] = peak_equity
                 e['current_equity'] = current_equity
+                e['day_count'] = day_count
     else:
         entries.append({
             'date': today_str,
             'daily_pnl': daily_pnl,
             'peak_equity': peak_equity,
-            'current_equity': current_equity
+            'current_equity': current_equity,
+            'day_count': day_count
         })
     
     df = pd.DataFrame(entries)
@@ -161,8 +156,8 @@ def get_trading_days_count():
     return df['date'].nunique()
 
 
-def get_max_daily_profit_pct():
-    """Get max daily profit as percentage of total profit (consistency rule)"""
+def get_max_daily_profit():
+    """Get maximum daily profit (for consistency rule)"""
     if not TRADES_FILE.exists():
         return 0
     
@@ -172,13 +167,8 @@ def get_max_daily_profit_pct():
     
     df['date'] = pd.to_datetime(df['exit_time']).dt.date
     daily_profits = df.groupby('date')['profit_dollars'].sum()
-    total_profit = daily_profits.sum()
     
-    if total_profit == 0:
-        return 0
-    
-    max_daily = daily_profits.max()
-    return (max_daily / total_profit) * 100
+    return daily_profits.max() if len(daily_profits) > 0 else 0
 
 
 def get_peak_equity():
@@ -191,37 +181,38 @@ def get_peak_equity():
     return max(peaks) if peaks else ACCOUNT_SIZE
 
 
-def check_prop_firm_rules():
-    """Check all prop firm rules before trading"""
+def check_evaluation_rules():
+    """Check all evaluation rules before trading"""
     today_pnl = get_today_pnl()
     total_profit = get_total_profit()
     trading_days = get_trading_days_count()
-    max_daily_pct = get_max_daily_profit_pct()
-    
-    daily_limit = get_config_value('system.daily_loss_limit', DAILY_LOSS_LIMIT)
-    max_drawdown = get_config_value('system.max_drawdown', MAX_DRAWDOWN)
-    min_days = get_config_value('system.min_trading_days', MIN_TRADING_DAYS)
-    max_daily_pct_limit = get_config_value('system.max_daily_profit_pct', MAX_DAILY_PROFIT_PCT)
-    profit_target = get_config_value('system.profit_target', 5000)
-    
-    # Check daily loss limit
-    if today_pnl <= -daily_limit:
-        return False, f"Daily loss limit hit: ${today_pnl:.2f} <= -${daily_limit}"
-    
-    # Check max drawdown (from peak)
-    peak_equity = get_peak_equity()
+    max_daily_profit = get_max_daily_profit()
     current_equity = ACCOUNT_SIZE + total_profit
+    peak_equity = get_peak_equity()
     drawdown = peak_equity - current_equity
-    if drawdown >= max_drawdown:
-        return False, f"Max drawdown hit: ${drawdown:.2f} >= ${max_drawdown}"
     
-    # Check consistency rule (if we have enough profit)
-    if total_profit > 1000 and max_daily_pct > max_daily_pct_limit:
-        return False, f"Consistency rule: max daily profit {max_daily_pct:.1f}% > {max_daily_pct_limit}%"
+    # Rule 1: Max drawdown (EOD trailing)
+    if drawdown >= MAX_DRAWDOWN:
+        return False, f"MAX DRAWDOWN HIT: ${drawdown:.2f} loss from peak of ${peak_equity:.0f}"
     
-    # Check if we've already passed (profit target met)
-    if total_profit >= profit_target and trading_days >= min_days:
+    # Rule 2: Daily loss limit (EOD)
+    if today_pnl <= -DAILY_LOSS_LIMIT:
+        return False, f"DAILY LOSS LIMIT HIT: -${abs(today_pnl):.2f} today"
+    
+    # Rule 3: Consistency rule (no single day >50% of target)
+    if total_profit > 0 and max_daily_profit > MAX_DAILY_PROFIT:
+        remaining_needed = PROFIT_TARGET - total_profit
+        if remaining_needed > 0:
+            return False, f"CONSISTENCY RULE: Best day ${max_daily_profit:.0f} > ${MAX_DAILY_PROFIT}"
+    
+    # Rule 4: Profit target reached
+    if total_profit >= PROFIT_TARGET and trading_days >= MIN_TRADING_DAYS:
         return True, "READY FOR REVIEW - Target met!"
+    
+    # Rule 5: Stop trading if we're close to drawdown
+    remaining_buffer = MAX_DRAWDOWN - drawdown
+    if remaining_buffer < 500:
+        return False, f"LOW BUFFER: Only ${remaining_buffer:.0f} left before drawdown"
     
     return True, "OK to trade"
 
@@ -231,32 +222,33 @@ def update_progress():
     total_profit = get_total_profit()
     trading_days = get_trading_days_count()
     today_pnl = get_today_pnl()
-    max_daily_pct = get_max_daily_profit_pct()
+    max_daily_profit = get_max_daily_profit()
     peak_equity = get_peak_equity()
     current_equity = ACCOUNT_SIZE + total_profit
+    drawdown = peak_equity - current_equity
     
-    profit_target = get_config_value('system.profit_target', 5000)
-    min_days = get_config_value('system.min_trading_days', MIN_TRADING_DAYS)
-    daily_limit = get_config_value('system.daily_loss_limit', DAILY_LOSS_LIMIT)
-    max_drawdown_limit = get_config_value('system.max_drawdown', MAX_DRAWDOWN)
+    # Calculate days remaining (assuming 2 trades/day at 60% win rate)
+    trades_needed = max(0, (PROFIT_TARGET - total_profit) / (CONTRACTS * TARGET_POINTS * POINT_VALUE * 0.6))
+    days_remaining = int(trades_needed / 2) + 1
     
     progress = {
         'timestamp': datetime.now().isoformat(),
         'total_profit': round(total_profit, 2),
-        'profit_target': profit_target,
-        'profit_remaining': round(max(0, profit_target - total_profit), 2),
-        'percent_complete': round(min(100, (total_profit / profit_target) * 100), 1) if profit_target > 0 else 0,
+        'profit_target': PROFIT_TARGET,
+        'profit_remaining': round(max(0, PROFIT_TARGET - total_profit), 2),
+        'percent_complete': round(min(100, (total_profit / PROFIT_TARGET) * 100), 1),
         'trading_days': trading_days,
-        'min_days_required': min_days,
+        'min_days_required': MIN_TRADING_DAYS,
         'today_pnl': round(today_pnl, 2),
-        'daily_loss_limit': daily_limit,
-        'max_daily_profit_pct': round(max_daily_pct, 1),
-        'max_allowed_pct': 30,
+        'max_daily_profit': round(max_daily_profit, 2),
+        'max_allowed_daily': MAX_DAILY_PROFIT,
         'peak_equity': round(peak_equity, 2),
         'current_equity': round(current_equity, 2),
-        'drawdown_from_peak': round(peak_equity - current_equity, 2),
-        'max_drawdown_limit': max_drawdown_limit,
-        'can_trade': check_prop_firm_rules()[0]
+        'drawdown': round(drawdown, 2),
+        'max_drawdown': MAX_DRAWDOWN,
+        'remaining_buffer': round(MAX_DRAWDOWN - drawdown, 2),
+        'estimated_days_remaining': days_remaining,
+        'can_trade': check_evaluation_rules()[0]
     }
     
     with open(PROGRESS_FILE, 'w') as f:
@@ -266,97 +258,49 @@ def update_progress():
 
 
 # ============================================================
-# ECONOMIC CALENDAR CHECK
+# DATA FETCHING (Using SPY as proxy for strategy validation)
 # ============================================================
 
-def is_high_impact_event_today():
-    """Check if today has a high-impact economic event"""
-    today = datetime.now()
-    
-    # First Friday of month = Nonfarm Payrolls
-    if today.weekday() == 4 and today.day <= 7:
-        return True, "Nonfarm Payrolls (first Friday)"
-    
-    # Wednesday before third Thursday of month = FOMC (approx)
-    if today.weekday() == 2 and 12 <= today.day <= 20:
-        return True, "Possible FOMC meeting"
-    
-    # CPI/PPI around 10th-15th
-    if 10 <= today.day <= 15:
-        return True, "Possible CPI/PPI release"
-    
-    return False, None
-
-
-# ============================================================
-# DATA FETCHING
-# ============================================================
-
-def get_mes_price():
-    """Get current MES futures price using MES=F ticker"""
+def get_current_price():
+    """Get current price using SPY as proxy for MES"""
     try:
-        ticker = yf.Ticker("MES=F")
+        ticker = yf.Ticker("SPY")
         data = ticker.history(period="1d", interval="5m")
         if data is not None and len(data) > 0:
             return round(float(data['Close'].iloc[-1]), 2)
-        
-        # If 5m data fails, try 1m
-        data = ticker.history(period="1d", interval="1m")
-        if data is not None and len(data) > 0:
-            return round(float(data['Close'].iloc[-1]), 2)
-        
-        print("❌ No MES=F price data available")
         return None
     except Exception as e:
-        print(f"Error fetching MES price: {e}")
+        print(f"Error fetching price: {e}")
         return None
 
 
 def get_historical_data():
     """Get historical 1-hour data for EMA calculation"""
     try:
-        # Download MES futures data
-        data = yf.download("MES=F", period="7d", interval="1h", progress=False)
+        data = yf.download("SPY", period="7d", interval="1h", progress=False)
         
         if data is None or data.empty:
-            print("❌ No MES=F historical data available")
             return None
         
-        # Flatten MultiIndex if present
         if hasattr(data.columns, 'get_level_values'):
             data.columns = data.columns.get_level_values(0)
         
         data = data.dropna()
-        
-        # Verify we have enough data points
-        if len(data) < 25:
-            print(f"⚠️ Only {len(data)} data points, need 25+ for EMA calculation")
-            return None
-            
         return data
     except Exception as e:
         print(f"Error fetching historical data: {e}")
         return None
 
 
-def calculate_atr(data, period=ATR_PERIOD):
-    """Calculate Average True Range"""
-    if data is None or data.empty or len(data) < period:
-        return STOP_POINTS
+def check_trading_hours():
+    """Check if current time is within trading window"""
+    now = datetime.now()
+    current_hour = now.hour
     
-    high = data['High']
-    low = data['Low']
-    close = data['Close'].shift(1)
-    
-    tr1 = high - low
-    tr2 = abs(high - close)
-    tr3 = abs(low - close)
-    
-    tr = pd.concat([tr1, tr2, tr3], axis=1).max(axis=1)
-    atr = tr.rolling(window=period).mean().iloc[-1]
-    
-    # Convert to points (MES moves in 0.25 increments, but ATR in index points)
-    return round(atr, 2)
+    # Only trade 9 AM - 4 PM ET
+    if TRADING_START_HOUR <= current_hour < TRADING_END_HOUR:
+        return True
+    return False
 
 
 # ============================================================
@@ -388,7 +332,6 @@ def check_signal(data):
         if len(closes) < 25:
             return None, {}
         
-        # Calculate EMAs for recent points
         ema_9_list = []
         ema_21_list = []
         
@@ -412,7 +355,6 @@ def check_signal(data):
         prev_slow = ema_21_list[-2]
         current_price = round(closes[-1], 2)
         
-        # Bullish crossover
         if prev_fast <= prev_slow and curr_fast > curr_slow:
             return 'BUY', {
                 'price': current_price,
@@ -420,7 +362,6 @@ def check_signal(data):
                 'ema_slow': curr_slow
             }
         
-        # Bearish crossover
         if prev_fast >= prev_slow and curr_fast < curr_slow:
             return 'SELL', {
                 'price': current_price,
@@ -433,34 +374,6 @@ def check_signal(data):
     except Exception as e:
         print(f"Error checking signal: {e}")
         return None, {}
-
-
-# ============================================================
-# POSITION SIZING
-# ============================================================
-
-def calculate_position_size(current_price, atr):
-    """Dynamic position sizing based on risk"""
-    account_size = get_config_value('system.account_size', ACCOUNT_SIZE)
-    risk_per_trade_pct = get_config_value('system.risk_per_trade_pct', 1.0)  # 1% risk per trade
-    
-    max_risk_dollars = account_size * (risk_per_trade_pct / 100)
-    
-    use_atr = get_config_value('entry_conditions.use_atr_stops', USE_ATR_STOPS)
-    
-    if use_atr:
-        stop_points = atr * ATR_MULTIPLIER
-        stop_points = max(stop_points, 5)  # Minimum 5 points stop
-        stop_points = min(stop_points, 15)  # Maximum 15 points stop
-    else:
-        stop_points = STOP_POINTS
-    
-    risk_per_contract = stop_points * POINT_VALUE
-    contracts = int(max_risk_dollars / risk_per_contract)
-    max_contracts = get_config_value('system.max_contracts', 10)
-    contracts = max(1, min(contracts, max_contracts))
-    
-    return contracts, stop_points
 
 
 # ============================================================
@@ -496,32 +409,27 @@ def save_position(position):
     updated.to_csv(POSITIONS_FILE, index=False)
 
 
-def open_paper_trade(signal, price, atr):
-    """Open a new paper trade with dynamic sizing"""
-    contracts, stop_points = calculate_position_size(price, atr)
-    risk_reward = get_config_value('exit_rules.risk_reward_ratio', 2.0)
-    
+def open_paper_trade(signal, price):
+    """Open a new paper trade"""
     if signal == 'BUY':
-        stop_price = price - stop_points
-        target_points = stop_points * risk_reward
-        target_price = price + target_points
+        stop_price = price - STOP_POINTS
+        target_price = price + TARGET_POINTS
     else:
-        stop_price = price + stop_points
-        target_points = stop_points * risk_reward
-        target_price = price - target_points
+        stop_price = price + STOP_POINTS
+        target_price = price - TARGET_POINTS
     
     position = {
         'ticker': 'MES',
         'entry_time': datetime.now().isoformat(),
         'direction': signal,
         'entry_price': round(price, 2),
-        'contracts': contracts,
+        'contracts': CONTRACTS,
         'stop_price': round(stop_price, 2),
         'target_price': round(target_price, 2),
-        'stop_points': round(stop_points, 2),
-        'target_points': round(target_points, 2),
-        'risk_dollars': round(stop_points * POINT_VALUE * contracts, 2),
-        'target_dollars': round(target_points * POINT_VALUE * contracts, 2),
+        'stop_points': STOP_POINTS,
+        'target_points': TARGET_POINTS,
+        'risk_dollars': round(STOP_POINTS * POINT_VALUE * CONTRACTS, 2),
+        'target_dollars': round(TARGET_POINTS * POINT_VALUE * CONTRACTS, 2),
         'status': 'OPEN'
     }
     
@@ -574,7 +482,6 @@ def close_paper_trade(position, exit_price, exit_reason):
         'exit_reason': exit_reason
     }
     
-    # Save to trades history
     trades_df = pd.DataFrame([trade_record])
     
     if TRADES_FILE.exists():
@@ -585,7 +492,6 @@ def close_paper_trade(position, exit_price, exit_reason):
     
     updated.to_csv(TRADES_FILE, index=False)
     
-    # Update position status
     position['status'] = 'CLOSED'
     position['exit_time'] = datetime.now().isoformat()
     position['exit_price'] = exit_price
@@ -598,9 +504,6 @@ def close_paper_trade(position, exit_price, exit_reason):
                 df.loc[i] = pd.Series(position)
                 break
         df.to_csv(POSITIONS_FILE, index=False)
-    
-    # Update daily log with new P&L
-    update_progress()
     
     return trade_record
 
@@ -669,8 +572,10 @@ R:R: {risk_reward}
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-⚠️ DO NOT move your stop loss.
-⚠️ Take profit at target - no partials.
+⚠️ My Funded Futures Rules:
+   - Daily consistency: max ${MAX_DAILY_PROFIT} profit per day
+   - Max drawdown: ${MAX_DRAWDOWN} from peak
+   - Current progress: ${get_total_profit():.0f} / ${PROFIT_TARGET}
 
 ═══════════════════════════════════════════════════════════
 """
@@ -678,8 +583,8 @@ R:R: {risk_reward}
     send_email(subject, body)
 
 
-def send_exit_alert(trade_record):
-    """Send exit alert email"""
+def send_exit_alert(trade_record, progress):
+    """Send exit alert email with evaluation status"""
     date_str = datetime.now().strftime("%Y-%m-%d %H:%M ET")
     profit_symbol = "+" if trade_record['profit_dollars'] > 0 else ""
     
@@ -697,6 +602,15 @@ ENTRY: ${trade_record['entry_price']}
 EXIT: ${trade_record['exit_price']}
 PROFIT: {profit_symbol}${trade_record['profit_dollars']:.2f}
 
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📊 EVALUATION PROGRESS:
+   Total Profit: ${progress['total_profit']:.0f} / ${PROFIT_TARGET}
+   Trading Days: {progress['trading_days']} / {MIN_TRADING_DAYS}
+   Drawdown: ${progress['drawdown']:.0f} / ${MAX_DRAWDOWN}
+
+⚠️ Remaining to pass: ${progress['profit_remaining']:.0f}
+
 ═══════════════════════════════════════════════════════════
 """
     
@@ -704,36 +618,35 @@ PROFIT: {profit_symbol}${trade_record['profit_dollars']:.2f}
 
 
 def send_status_email(progress):
-    """Send daily status email with prop firm progress"""
+    """Send daily status email"""
     date_str = datetime.now().strftime("%Y-%m-%d %H:%M ET")
     
-    subject = f"📊 MES System Status - {progress['percent_complete']:.0f}% to Target"
+    subject = f"📊 MES Evaluation - {progress['percent_complete']:.0f}% to ${PROFIT_TARGET}"
     
     body = f"""
 ═══════════════════════════════════════════════════════════
-  MES PAPER TRADING - PROP FIRM PROGRESS
+  MY FUNDED FUTURES - $50K CORE EVALUATION
 ═══════════════════════════════════════════════════════════
 
 TIME: {date_str}
 
-🎯 TARGET PROGRESS:
-   Profit: ${progress['total_profit']:.2f} / ${progress['profit_target']}
-   Complete: {progress['percent_complete']:.1f}%
+🎯 PROFIT TARGET:
+   Current: ${progress['total_profit']:.2f}
+   Target: ${PROFIT_TARGET}
    Remaining: ${progress['profit_remaining']:.2f}
+   Complete: {progress['percent_complete']:.1f}%
 
 📅 TRADING DAYS:
-   Days Traded: {progress['trading_days']} / {progress['min_days_required']}
+   Days Traded: {progress['trading_days']} / {MIN_TRADING_DAYS}
    Today's P&L: ${progress['today_pnl']:.2f}
-   Daily Limit: ${progress['daily_loss_limit']}
 
-📈 CONSISTENCY:
-   Max Daily Profit: {progress['max_daily_profit_pct']:.1f}% (limit 30%)
-   
-⚠️ DRAWDOWN:
-   Peak Equity: ${progress['peak_equity']:.2f}
-   Current Equity: ${progress['current_equity']:.2f}
-   Drawdown: ${progress['drawdown_from_peak']:.2f}
-   Max Allowed: ${progress['max_drawdown_limit']}
+⚠️ RULES CHECK:
+   Max Daily Profit: ${progress['max_daily_profit']:.0f} / ${MAX_DAILY_PROFIT}
+   Drawdown: ${progress['drawdown']:.0f} / ${MAX_DRAWDOWN}
+   Buffer Remaining: ${progress['remaining_buffer']:.0f}
+
+📈 ESTIMATED COMPLETION:
+   ~{progress['estimated_days_remaining']} more trading days at current pace
 
 ✅ CAN TRADE: {'YES' if progress['can_trade'] else 'NO'}
 
@@ -768,55 +681,53 @@ def update_dashboard(current_price, signal, position, recent_trades, progress):
 
 def main():
     print("=" * 60)
-    print("MES PAPER TRADING SYSTEM - PROP FIRM READY")
+    print("MES PAPER TRADING - MY FUNDED FUTURES $50K CORE")
     print("=" * 60)
     
-    # Load configuration
-    daily_limit = get_config_value('system.daily_loss_limit', DAILY_LOSS_LIMIT)
-    max_dd = get_config_value('system.max_drawdown', MAX_DRAWDOWN)
-    profit_target = get_config_value('system.profit_target', 5000)
+    print(f"\n📋 EVALUATION RULES:")
+    print(f"   Profit Target: ${PROFIT_TARGET}")
+    print(f"   Max Drawdown: ${MAX_DRAWDOWN}")
+    print(f"   Max Daily Profit: ${MAX_DAILY_PROFIT}")
+    print(f"   Min Trading Days: {MIN_TRADING_DAYS}")
+    print(f"   Contracts: {CONTRACTS} MES")
     
-    print(f"\n📋 PROP FIRM RULES:")
-    print(f"   Daily Loss Limit: ${daily_limit}")
-    print(f"   Max Drawdown: ${max_dd}")
-    print(f"   Profit Target: ${profit_target}")
-    print(f"   Min Trading Days: {get_config_value('system.min_trading_days', MIN_TRADING_DAYS)}")
-    
-    # Get current price
-    current_price = get_mes_price()
-    if current_price is None:
-        print("❌ Could not fetch MES price")
-        # Still update dashboard with error
+    # Check trading hours
+    if not check_trading_hours():
+        print(f"\n⏸️ Outside trading hours ({TRADING_START_HOUR}:00-{TRADING_END_HOUR}:00 ET)")
+        print("   System will check again next hour")
+        
+        # Still update progress
         progress = update_progress()
         update_dashboard(None, None, None, None, progress)
         return
     
-    print(f"\n📊 Current MES price: ${current_price:.2f}")
+    # Get current price
+    current_price = get_current_price()
+    if current_price is None:
+        print("❌ Could not fetch price data")
+        progress = update_progress()
+        update_dashboard(None, None, None, None, progress)
+        return
+    
+    print(f"\n📊 Current price (SPY): ${current_price:.2f}")
     print(f"   Time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     
-    # Update progress first
+    # Update progress
     progress = update_progress()
     
-    # Check prop firm rules
-    can_trade, rule_status = check_prop_firm_rules()
-    print(f"\n📋 Prop Firm Status: {rule_status}")
+    # Check evaluation rules
+    can_trade, rule_status = check_evaluation_rules()
+    print(f"\n📋 Evaluation Status: {rule_status}")
     
     if not can_trade:
         print(f"\n❌ TRADING BLOCKED: {rule_status}")
         send_status_email(progress)
+        update_dashboard(current_price, None, None, None, progress)
         
-        # Still update dashboard
-        update_dashboard(current_price, None, None, None, progress)
-        print("\n✅ Dashboard updated (trading blocked)")
-        return
-    
-    # Check economic calendar
-    has_event, event_name = is_high_impact_event_today()
-    if has_event:
-        print(f"\n⚠️ HIGH IMPACT EVENT: {event_name}")
-        print("   Skipping trades today")
-        send_status_email(progress)
-        update_dashboard(current_price, None, None, None, progress)
+        # Check if ready for review
+        if "READY FOR REVIEW" in rule_status:
+            print("\n✅✅✅ READY TO REQUEST REVIEW! ✅✅✅")
+            print("   Go to My Funded Futures dashboard and request evaluation completion")
         return
     
     # Check existing position
@@ -831,10 +742,7 @@ def main():
             trade_record = close_paper_trade(existing_position, exit_price, exit_reason)
             print(f"\n🔴 POSITION CLOSED: {exit_reason}")
             print(f"   Profit: ${trade_record['profit_dollars']:.2f}")
-            send_exit_alert(trade_record)
-            
-            # Update progress after closing
-            progress = update_progress()
+            send_exit_alert(trade_record, update_progress())
         else:
             print(f"\n✅ Position still active")
             print(f"   Stop: ${existing_position['stop_price']:.2f}")
@@ -842,15 +750,19 @@ def main():
     
     # Check for new signals
     else:
+        # Check daily profit limit before entering new trade
+        today_pnl = get_today_pnl()
+        if today_pnl >= MAX_DAILY_PROFIT:
+            print(f"\n⚠️ Daily profit limit reached: ${today_pnl:.0f} / ${MAX_DAILY_PROFIT}")
+            print("   No more trades today (consistency rule)")
+            send_status_email(progress)
+            update_dashboard(current_price, None, None, None, progress)
+            return
+        
         print("\n🔍 Checking for EMA crossover signal...")
         data = get_historical_data()
         
         if data is not None and not data.empty:
-            # Calculate ATR for dynamic stops
-            use_atr = get_config_value('entry_conditions.use_atr_stops', USE_ATR_STOPS)
-            atr = calculate_atr(data) if use_atr else STOP_POINTS
-            print(f"   Current ATR: {atr:.2f} points")
-            
             signal, signal_details = check_signal(data)
             
             if signal:
@@ -858,7 +770,7 @@ def main():
                 print(f"   Fast EMA (9): {signal_details['ema_fast']:.2f}")
                 print(f"   Slow EMA (21): {signal_details['ema_slow']:.2f}")
                 
-                position = open_paper_trade(signal, signal_details['price'], atr)
+                position = open_paper_trade(signal, signal_details['price'])
                 
                 print(f"\n📈 PAPER TRADE OPENED:")
                 print(f"   Direction: {signal}")
@@ -874,7 +786,7 @@ def main():
         else:
             print("\n❌ Could not fetch historical data")
     
-    # Get recent trades for dashboard
+    # Get recent trades
     recent_trades = None
     if TRADES_FILE.exists():
         try:
@@ -883,9 +795,9 @@ def main():
         except Exception:
             pass
     
-    # Send daily status at end of day (after 4 PM)
+    # Send status at end of day
     current_hour = datetime.now().hour
-    if current_hour >= 16:
+    if current_hour >= 15:
         send_status_email(progress)
     
     # Update dashboard
@@ -899,7 +811,7 @@ def main():
     
     print("\n" + "=" * 60)
     print("✅ System run complete")
-    print(f"   Total Profit: ${progress['total_profit']:.2f}")
+    print(f"   Total Profit: ${progress['total_profit']:.2f} / ${PROFIT_TARGET}")
     print(f"   Trading Days: {progress['trading_days']}")
     print("=" * 60)
 
