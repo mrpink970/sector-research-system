@@ -98,10 +98,19 @@
         .back-link:hover {
             text-decoration: underline;
         }
-        .btn-success { background: #22c55e; }
-        .btn-success:hover { background: #16a34a; }
-        .btn-warning { background: #f97316; }
-        .btn-warning:hover { background: #ea580c; }
+        .tick-box {
+            background: #0f172a;
+            border-radius: 8px;
+            padding: 12px;
+            margin-top: 8px;
+            margin-bottom: 16px;
+            border-left: 4px solid #38bdf8;
+        }
+        .tick-value {
+            font-family: monospace;
+            font-size: 18px;
+            font-weight: 700;
+        }
     </style>
 </head>
 <body>
@@ -110,15 +119,14 @@
         <a href="ttp_dashboard.html" class="back-link">← Back to Main Dashboard</a>
         <h1>📝 TTP Trade Entry</h1>
         <div class="info-text">
-            📋 Enter percentage (%) for stop loss and take profit<br>
-            The system will calculate the actual dollar prices<br>
-            Then copy/paste to GitHub → data/ttp/trades.csv
+            Enter your trade details. The system calculates dollar prices AND ticks.<br>
+            Use the TICK values to set your stop loss in the TTP platform.
         </div>
         <div class="compliance-note">
             ⚠️ TTP COMPLIANCE REMINDER:<br>
             • Max profit per trade: $150 (50% of $300 target)<br>
             • Minimum 5 trades required to pass evaluation<br>
-            • Cannot hold overnight before earnings or ex-dividend
+            • Set stop loss using TICKS, not percentages
         </div>
     </div>
 
@@ -149,7 +157,7 @@
     <div class="card">
         <h3>🟢 Open New Trade</h3>
         <div class="label">Entry Price ($)</div>
-        <input type="number" id="entryPrice" step="0.01" placeholder="e.g., 515.00">
+        <input type="number" id="entryPrice" step="0.01" placeholder="e.g., 565.51">
         <div class="label">Shares</div>
         <select id="shares">
             <option value="1">1 Share</option>
@@ -159,7 +167,10 @@
         <div class="label">Stop Loss (%)</div>
         <input type="number" id="stopPercent" step="0.1" value="2.0" placeholder="e.g., 2.0">
         <div class="label">Take Profit (%)</div>
-        <input type="number" id="targetPercent" step="0.1" value="8.0" placeholder="e.g., 8.0">
+        <input type="number" id="targetPercent" step="0.1" value="6.0" placeholder="e.g., 6.0">
+        
+        <div id="tickDisplay"></div>
+        
         <button onclick="previewTrade()">🔍 Preview Calculations</button>
         <div id="preview" class="preview-row" style="display:none;"></div>
         <button onclick="openTrade()" style="margin-top:8px;">📋 Open Trade (Copy to Clipboard)</button>
@@ -168,10 +179,10 @@
     <div class="card" id="closeForm" style="display: none;">
         <h3>🔴 Close Trade</h3>
         <div class="label">Exit Price ($)</div>
-        <input type="number" id="exitPrice" step="0.01" placeholder="e.g., 556.20">
+        <input type="number" id="exitPrice" step="0.01" placeholder="e.g., 599.44">
         <div class="label">Exit Reason (select one)</div>
         <select id="exitReason">
-            <option value="TAKE_PROFIT">🎯 Take Profit (+8%)</option>
+            <option value="TAKE_PROFIT">🎯 Take Profit (+6%)</option>
             <option value="STOP_LOSS">🛑 Stop Loss (-2%)</option>
             <option value="TRAILING_STOP">🔒 Trailing Stop</option>
             <option value="MAX_PROFIT_LIMIT">💰 Max Profit Limit ($150)</option>
@@ -197,9 +208,44 @@
     const REPO_OWNER = "mrpink970";
     const REPO_NAME = "sector-research-system";
     const TRADES_URL = `https://raw.githubusercontent.com/${REPO_OWNER}/${REPO_NAME}/main/data/ttp/trades.csv`;
+    const TICK_SIZE = 0.01; // SOXX trades in $0.01 increments
+    const STOP_PERCENT = 2.0;
+    const TARGET_PERCENT = 6.0;
+    const TRAILING_ACTIVATION_PERCENT = 3.0;
 
     let trades = [];
     let currentOpenTrade = null;
+
+    function calculateTicks(entryPrice, percentMove) {
+        const dollarMove = entryPrice * (percentMove / 100);
+        const ticks = Math.round(dollarMove / TICK_SIZE);
+        return ticks;
+    }
+
+    function updateTickDisplay() {
+        const entryPrice = parseFloat(document.getElementById('entryPrice').value);
+        if (!entryPrice || isNaN(entryPrice)) {
+            document.getElementById('tickDisplay').innerHTML = '';
+            return;
+        }
+        
+        const stopPercent = parseFloat(document.getElementById('stopPercent').value) || STOP_PERCENT;
+        const targetPercent = parseFloat(document.getElementById('targetPercent').value) || TARGET_PERCENT;
+        
+        const stopTicks = calculateTicks(entryPrice, stopPercent);
+        const targetTicks = calculateTicks(entryPrice, targetPercent);
+        const trailingTicks = calculateTicks(entryPrice, TRAILING_ACTIVATION_PERCENT);
+        
+        document.getElementById('tickDisplay').innerHTML = `
+            <div class="tick-box">
+                <strong>📊 TICK CALCULATIONS (for TTP Platform):</strong><br>
+                Stop Loss (${stopPercent}%): <span class="tick-value" style="color: #ef4444;">${stopTicks.toLocaleString()} ticks</span> below entry<br>
+                Take Profit (${targetPercent}%): <span class="tick-value" style="color: #22c55e;">${targetTicks.toLocaleString()} ticks</span> above entry<br>
+                Trailing Activation (${TRAILING_ACTIVATION_PERCENT}%): <span class="tick-value" style="color: #f97316;">${trailingTicks.toLocaleString()} ticks</span> above entry<br>
+                <span style="font-size: 11px; color: #94a3b8;">SOXX tick size = $0.01 (1 cent)</span>
+            </div>
+        `;
+    }
 
     async function fetchCSV(url) {
         try {
@@ -245,12 +291,17 @@
         const maxProfitAllowed = 150;
         const exceedsLimit = profitAtTarget > maxProfitAllowed;
         
+        const stopTicks = calculateTicks(entryPrice, stopPercent);
+        const targetTicks = calculateTicks(entryPrice, targetPercent);
+        const trailingTicks = calculateTicks(entryPrice, TRAILING_ACTIVATION_PERCENT);
+        
         document.getElementById('preview').style.display = 'block';
         document.getElementById('preview').innerHTML = `
             <strong>📊 Calculated Values:</strong><br>
             Entry: $${entryPrice.toFixed(2)}<br>
-            Stop Loss (${stopPercent}%): $${stopPrice.toFixed(2)}<br>
-            Take Profit (${targetPercent}%): $${targetPrice.toFixed(2)}<br>
+            Stop Loss (${stopPercent}%): $${stopPrice.toFixed(2)} (${stopTicks.toLocaleString()} ticks below)<br>
+            Take Profit (${targetPercent}%): $${targetPrice.toFixed(2)} (${targetTicks.toLocaleString()} ticks above)<br>
+            Trailing Activation (${TRAILING_ACTIVATION_PERCENT}%): ${trailingTicks.toLocaleString()} ticks above entry<br>
             Risk per share: $${(entryPrice - stopPrice).toFixed(2)}<br>
             Reward per share: $${(targetPrice - entryPrice).toFixed(2)}<br>
             Risk:Reward: 1:${((targetPrice - entryPrice) / (entryPrice - stopPrice)).toFixed(2)}<br>
@@ -275,20 +326,26 @@
         const profitAtTarget = (targetPrice - entryPrice) * shares;
         const initialStop = stopPrice;
         
+        // Calculate ticks
+        const stopTicks = calculateTicks(entryPrice, stopPercent);
+        const targetTicks = calculateTicks(entryPrice, targetPercent);
+        const trailingTicks = calculateTicks(entryPrice, TRAILING_ACTIVATION_PERCENT);
+        
         if (profitAtTarget > 150) {
             if (!confirm(`⚠️ WARNING: Profit at target will be $${profitAtTarget.toFixed(2)} which exceeds the $150 max profit per trade rule. Continue anyway?`)) {
                 return;
             }
         }
         
-        // CSV format: ticker,entry_date,entry_price,shares,stop_price,target_price,status,exit_date,exit_price,profit,initial_stop,highest_price,exit_reason
-        const csvLine = `SOXX,${new Date().toISOString()},${entryPrice.toFixed(2)},${shares},${stopPrice.toFixed(2)},${targetPrice.toFixed(2)},open,,,,${initialStop.toFixed(2)},${entryPrice.toFixed(2)},`;
+        // CSV format with tick columns
+        const csvLine = `SOXX,${new Date().toISOString()},${entryPrice.toFixed(2)},${shares},${stopPrice.toFixed(2)},${targetPrice.toFixed(2)},open,,,,${initialStop.toFixed(2)},${entryPrice.toFixed(2)},,${stopTicks},${targetTicks},${trailingTicks}`;
         
         navigator.clipboard.writeText(csvLine);
         alert('✅ CSV line copied!\n\n' + csvLine + '\n\nGo to GitHub → data/ttp/trades.csv → Paste at bottom → Commit');
         
         document.getElementById('entryPrice').value = '';
         document.getElementById('preview').style.display = 'none';
+        document.getElementById('tickDisplay').innerHTML = '';
         
         setTimeout(() => loadData(), 1000);
     }
@@ -305,9 +362,11 @@
         const profit = (exitPrice - currentOpenTrade.entry_price) * currentOpenTrade.shares;
         const highestPrice = currentOpenTrade.highest_price || currentOpenTrade.entry_price;
         const initialStop = currentOpenTrade.initial_stop || currentOpenTrade.stop_price;
+        const stopTicks = currentOpenTrade.stop_ticks || '';
+        const targetTicks = currentOpenTrade.target_ticks || '';
+        const trailingTicks = currentOpenTrade.trailing_activation_ticks || '';
         
-        // CSV format: ticker,entry_date,entry_price,shares,stop_price,target_price,status,exit_date,exit_price,profit,initial_stop,highest_price,exit_reason
-        const csvLine = `${currentOpenTrade.ticker},${currentOpenTrade.entry_date},${currentOpenTrade.entry_price},${currentOpenTrade.shares},${currentOpenTrade.stop_price},${currentOpenTrade.target_price},completed,${new Date().toISOString()},${exitPrice.toFixed(2)},${profit.toFixed(2)},${initialStop},${highestPrice},${exitReason}`;
+        const csvLine = `${currentOpenTrade.ticker},${currentOpenTrade.entry_date},${currentOpenTrade.entry_price},${currentOpenTrade.shares},${currentOpenTrade.stop_price},${currentOpenTrade.target_price},completed,${new Date().toISOString()},${exitPrice.toFixed(2)},${profit.toFixed(2)},${initialStop},${highestPrice},${exitReason},${stopTicks},${targetTicks},${trailingTicks}`;
         
         navigator.clipboard.writeText(csvLine);
         alert('✅ CSV line copied!\n\nREPLACE the open trade line in trades.csv with:\n\n' + csvLine);
@@ -347,15 +406,20 @@
         const openDiv = document.getElementById('openPositionDisplay');
         if (currentOpenTrade) {
             const currentStop = currentOpenTrade.stop_price || (currentOpenTrade.entry_price * 0.98);
-            const currentTarget = currentOpenTrade.target_price || (currentOpenTrade.entry_price * 1.08);
+            const currentTarget = currentOpenTrade.target_price || (currentOpenTrade.entry_price * 1.06);
             const highestPrice = currentOpenTrade.highest_price || currentOpenTrade.entry_price;
+            const stopTicks = currentOpenTrade.stop_ticks || '?';
+            const targetTicks = currentOpenTrade.target_ticks || '?';
+            const trailingTicks = currentOpenTrade.trailing_activation_ticks || '?';
+            
             openDiv.innerHTML = `
                 <div class="trade-row">
                     <span><strong>${currentOpenTrade.ticker}</strong></span>
                     <span>Entry: $${currentOpenTrade.entry_price?.toFixed(2)}</span>
                     <span>${currentOpenTrade.shares} shares</span>
-                    <span>Stop: $${currentStop.toFixed(2)}</span>
-                    <span>Target: $${currentTarget.toFixed(2)}</span>
+                    <span>Stop: ${stopTicks} ticks ($${currentStop.toFixed(2)})</span>
+                    <span>Target: ${targetTicks} ticks ($${currentTarget.toFixed(2)})</span>
+                    <span>Trail: ${trailingTicks} ticks</span>
                     <span>High: $${highestPrice.toFixed(2)}</span>
                 </div>
             `;
@@ -392,6 +456,11 @@
     }
     
     function refreshData() { loadData(); }
+    
+    // Add event listeners for tick calculation
+    document.getElementById('entryPrice').addEventListener('input', updateTickDisplay);
+    document.getElementById('stopPercent').addEventListener('input', updateTickDisplay);
+    document.getElementById('targetPercent').addEventListener('input', updateTickDisplay);
     
     loadData();
     setInterval(loadData, 60000);
