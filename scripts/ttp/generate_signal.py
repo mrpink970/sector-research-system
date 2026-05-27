@@ -156,7 +156,7 @@ def send_email(is_green: bool, data: dict, conditions: list, recipients: list):
         signal_text = "GREEN DAY"
     else:
         subject = f"🔴 TTP DECISION ENGINE - RED DAY - No Trade ({date_str})"
-        Action: WAIT - Check again next run
+        Action = "WAIT - Check again next run"
         signal_icon = "🔴"
         signal_text = "RED DAY"
     
