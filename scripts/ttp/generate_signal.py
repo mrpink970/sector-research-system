@@ -66,7 +66,6 @@ def get_email_recipients(config):
     """Get list of email recipients from config"""
     recipients = config.get('email_recipients', [])
     if not recipients:
-        # Fallback to environment variable or default
         mail_username = os.environ.get("MAIL_USERNAME")
         if mail_username:
             return [mail_username]
@@ -97,23 +96,19 @@ def check_green_day(data: dict, config: dict) -> tuple:
     
     min_return = config['entry_conditions']['min_1h_return']
     
-    # Get day return
     day_return = data.get('day_return_pct', 0)
     one_hour_return = data['return_1h_pct']
     session = data.get('session', 'unknown')
     
-    # Fallback: use 1h return if day_return is 0 and not pre-market
     if day_return == 0 and session != 'premarket':
         day_return = one_hour_return
     
-    # Primary condition: Day return >= 0.5%
     if day_return >= min_return:
         conditions.append(f"✅ DAY RETURN: {day_return:.2f}%")
         all_met = True
     else:
         conditions.append(f"❌ DAY RETURN: {day_return:.2f}%")
     
-    # Check MA20
     if config['entry_conditions']['above_ma20']:
         if data['above_ma20']:
             conditions.append(f"✅ Above MA20 (${data['ma20']:.2f})")
@@ -121,7 +116,6 @@ def check_green_day(data: dict, config: dict) -> tuple:
             conditions.append(f"❌ Below MA20 (${data['ma20']:.2f})")
             all_met = False
     
-    # Check RSI
     rsi_min = config['entry_conditions']['rsi_min']
     if data['rsi'] >= rsi_min:
         conditions.append(f"✅ RSI: {data['rsi']:.1f}")
@@ -148,43 +142,39 @@ def send_email(is_green: bool, data: dict, conditions: list, recipients: list):
     date_str = datetime.now().strftime("%Y-%m-%d %H:%M ET")
     trade_entry_url = "https://mrpink970.github.io/sector-research-system/docs/ttp/trade_entry.html"
     day_return = data.get('day_return_pct', 0)
+    separator = "━" * 60
     
     if is_green:
         subject = f"🟢 TTP DECISION ENGINE - GREEN DAY - Prepare to Buy ({date_str})"
         action = "PREPARE TO BUY"
         signal_icon = "🟢"
         signal_text = "GREEN DAY"
-    else:
-        subject = f"🔴 TTP DECISION ENGINE - RED DAY - No Trade ({date_str})"
-        Action = "WAIT - Check again next run"
-        signal_icon = "🔴"
-        signal_text = "RED DAY"
-    
-    body = f"""
-═══════════════════════════════════════════════════════════
+        
+        body = f"""
+{separator}
   TTP DECISION ENGINE - {date_str}
-═══════════════════════════════════════════════════════════
+{separator}
 
 {signal_icon} MARKET CONDITION: {signal_text} (Day Return: {day_return:.1f}%)
 
    → Action: {action}
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+{separator}
 
-{'📈 TRADE PLAN (to be entered at order placement):' if is_green else '⏸️ ⏸️ Conditions not met this run. Market may change. Check again at next scheduled run..'}
+📈 TRADE PLAN (to be entered at order placement):
 
-{'   Symbol: SOXX' if is_green else ''}
-{'   Direction: BUY' if is_green else ''}
-{'   Quantity: 2 SHARES' if is_green else ''}
-{'   Order Type: LIMIT (enter your desired price)' if is_green else ''}
-{'   Good For: DAY' if is_green else ''}
-{'   Overnight: OFF' if is_green else ''}
-{'' if is_green else ''}
-{'   When you enter your limit price, use the Trade Entry Calculator:' if is_green else ''}
-{'   - STOP LOSS: 2% below entry = X,XXX TICKS' if is_green else ''}
-{'   - TAKE PROFIT: 6% above entry = $XXX.XX (in dollars)' if is_green else ''}
+   Symbol: SOXX
+   Direction: BUY
+   Quantity: 2 SHARES
+   Order Type: LIMIT (enter your desired price)
+   Good For: DAY
+   Overnight: OFF
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   When you enter your limit price, use the Trade Entry Calculator:
+   - STOP LOSS: 2% below entry = X,XXX TICKS
+   - TAKE PROFIT: 6% above entry = $XXX.XX (in dollars)
+
+{separator}
 
 ⚠️ ⚠️ ⚠️ CRITICAL RULE WARNINGS ⚠️ ⚠️ ⚠️
 
@@ -199,13 +189,13 @@ def send_email(is_green: bool, data: dict, conditions: list, recipients: list):
    ❌ MINIMUM TRADES: 5 trades required to scale to next level
       → Cannot pass evaluation or scale without 5 completed trades
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+{separator}
 
 ✅ COMPLIANCE CHECK:
    ✅ No earnings expected today
    ✅ No dividend restrictions
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+{separator}
 
 📊 CURRENT MARKET DATA (for reference):
 
@@ -215,29 +205,92 @@ def send_email(is_green: bool, data: dict, conditions: list, recipients: list):
    RSI: {data['rsi']:.1f}
    Above MA20: {'YES' if data['above_ma20'] else 'NO'}
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+{separator}
 
 📊 CONDITIONS CHECK:
 {chr(10).join([f'   {c}' for c in conditions])}
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+{separator}
 
 🔗 TRADE ENTRY CALCULATOR:
    {trade_entry_url}
 
    Enter your limit price → Get stop loss in TICKS + take profit in DOLLARS
 
-═══════════════════════════════════════════════════════════
+{separator}
+"""
+    else:
+        subject = f"🔴 TTP DECISION ENGINE - RED DAY - Wait ({date_str})"
+        action = "WAIT - Check again next run"
+        signal_icon = "🔴"
+        signal_text = "RED DAY"
+        
+        body = f"""
+{separator}
+  TTP DECISION ENGINE - {date_str}
+{separator}
+
+{signal_icon} MARKET CONDITION: {signal_text} (Day Return: {day_return:.1f}%)
+
+   → Action: {action}
+
+{separator}
+
+⏸️ Conditions not met this run. Market may change.
+   Check again at next scheduled run.
+
+{separator}
+
+⚠️ ⚠️ ⚠️ CRITICAL RULE WARNINGS ⚠️ ⚠️ ⚠️
+
+   ❌ MAX DRAWDOWN: 7% ($140 from peak)
+      → Violation will cause IMMEDIATE ACCOUNT TERMINATION
+      → All profits will be FORFEITED
+
+   ❌ MAX POSITION PROFIT: 50% of target ($150)
+      → Any single trade exceeding $150 profit will be INVALIDATED
+      → You may need additional trades to pass
+
+   ❌ MINIMUM TRADES: 5 trades required to scale to next level
+      → Cannot pass evaluation or scale without 5 completed trades
+
+{separator}
+
+✅ COMPLIANCE CHECK:
+   ✅ No earnings expected today
+   ✅ No dividend restrictions
+
+{separator}
+
+📊 CURRENT MARKET DATA (for reference):
+
+   Current Price: ${data['price']:.2f}
+   Day Return: {day_return:.1f}%
+   1h Return: {data['return_1h_pct']:.1f}%
+   RSI: {data['rsi']:.1f}
+   Above MA20: {'YES' if data['above_ma20'] else 'NO'}
+
+{separator}
+
+📊 CONDITIONS CHECK:
+{chr(10).join([f'   {c}' for c in conditions])}
+
+{separator}
+
+🔗 TRADE ENTRY CALCULATOR:
+   {trade_entry_url}
+
+   Enter your limit price → Get stop loss in TICKS + take profit in DOLLARS
+
+{separator}
 """
     
-    # Create message
     msg = EmailMessage()
     msg.set_content(body)
     msg["Subject"] = subject
     msg["From"] = formataddr(("TTP Decision Engine", mail_username))
     msg["To"] = ", ".join(recipients)
     
-    # Send to all recipients
     try:
         with smtplib.SMTP_SSL("smtp.gmail.com", 465) as smtp:
             smtp.login(mail_username, mail_password)
@@ -265,28 +318,29 @@ def send_compliance_email(data: dict, compliance_reason: str, recipients: list):
     date_str = datetime.now().strftime("%Y-%m-%d %H:%M ET")
     trade_entry_url = "https://mrpink970.github.io/sector-research-system/docs/ttp/trade_entry.html"
     day_return = data.get('day_return_pct', 0)
+    separator = "━" * 60
     
     body = f"""
-═══════════════════════════════════════════════════════════
+{separator}
   TTP DECISION ENGINE - COMPLIANCE BLOCKED - {date_str}
-═══════════════════════════════════════════════════════════
+{separator}
 
 ⚠️ COMPLIANCE RESTRICTION: {compliance_reason}
 
    → Action: DO NOT TRADE TODAY
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+{separator}
 
 📊 CURRENT MARKET DATA:
    Price: ${data['price']:.2f}
    Day Return: {day_return:.1f}%
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+{separator}
 
 🔗 TRADE ENTRY CALCULATOR:
    {trade_entry_url}
 
-═══════════════════════════════════════════════════════════
+{separator}
 """
     
     msg = EmailMessage()
@@ -307,7 +361,7 @@ def send_compliance_email(data: dict, compliance_reason: str, recipients: list):
 
 
 def save_signal(data: dict, is_green: bool, conditions: list):
-    """Save signal to CSV for reference (no position tracking)"""
+    """Save signal to CSV for reference"""
     signal_type = 'GREEN' if is_green else 'RED'
     
     new_row = pd.DataFrame([{
@@ -339,7 +393,6 @@ def main():
     
     config = load_config()
     
-    # Get email recipients from config
     recipients = get_email_recipients(config)
     print(f"📧 Email recipients: {len(recipients)}")
     for r in recipients:
@@ -359,7 +412,6 @@ def main():
     print(f"Day Return: {day_return:.2f}%")
     print(f"Session: {session}")
     
-    # Check compliance
     if compliance_available:
         can_enter, compliance_reason = can_enter_swing_trade(config)
     else:
@@ -371,17 +423,13 @@ def main():
         send_compliance_email(data, compliance_reason, recipients)
         return
     
-    # Check for Green Day signal
     is_green, conditions = check_green_day(data, config)
     
     print(f"\n📊 Signal: {'GREEN DAY' if is_green else 'RED DAY'}")
     for c in conditions:
         print(f"   {c}")
     
-    # Send email to all recipients
     send_email(is_green, data, conditions, recipients)
-    
-    # Save signal to CSV for reference
     save_signal(data, is_green, conditions)
     
     print("\n✅ Decision engine complete")
