@@ -156,7 +156,7 @@ def send_email(is_green: bool, data: dict, conditions: list, recipients: list):
         signal_text = "GREEN DAY"
     else:
         subject = f"🔴 TTP DECISION ENGINE - RED DAY - No Trade ({date_str})"
-        action = "NO TRADE TODAY"
+        → Action: WAIT - Check again next run
         signal_icon = "🔴"
         signal_text = "RED DAY"
     
@@ -171,7 +171,7 @@ def send_email(is_green: bool, data: dict, conditions: list, recipients: list):
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-{'📈 TRADE PLAN (to be entered at order placement):' if is_green else '⏸️ No trade setup detected.'}
+{'📈 TRADE PLAN (to be entered at order placement):' if is_green else '⏸️ ⏸️ Conditions not met this run. Market may change. Check again at next scheduled run..'}
 
 {'   Symbol: SOXX' if is_green else ''}
 {'   Direction: BUY' if is_green else ''}
