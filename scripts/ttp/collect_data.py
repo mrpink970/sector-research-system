@@ -10,61 +10,40 @@ import yfinance as yf
 import pandas as pd
 from pathlib import Path
 from datetime import datetime, time, timedelta
-import pytz
 
 DATA_DIR = Path("data/ttp")
 LOG_PATH = DATA_DIR / "price_log.csv"
 
-# Market open time ET
-MARKET_OPEN = time(9, 30)
-
-# Eastern Time zone
-ET = pytz.timezone('US/Eastern')
+# Market open time (9:30 AM ET)
+MARKET_OPEN_HOUR = 9
+MARKET_OPEN_MINUTE = 30
 
 def get_day_open_price(ticker):
-    """Get today's opening price at 9:30 AM ET using 1-minute data"""
+    """Get today's opening price at 9:30 AM ET"""
     try:
-        # Get current date in Eastern Time
-        now_et = datetime.now(ET)
-        today_str = now_et.strftime("%Y-%m-%d")
+        # Get 1-minute data for the last 2 days (includes today's open)
+        data = ticker.history(period="2d", interval="1m", prepost=False)
         
-        # Build start time string for 9:30 AM ET today
-        start_time_str = f"{today_str} 09:30:00"
+        if data is None or data.empty:
+            return None
         
-        # Get 1-minute data from 9:30 AM to 10:00 AM
-        data = ticker.history(
-            period="1d", 
-            interval="1m", 
-            start=start_time_str,
-            prepost=False
-        )
+        # Remove timezone info for comparison
+        data.index = pd.to_datetime(data.index).tz_localize(None)
         
-        if data is not None and not data.empty:
-            # First candle of the day (9:30 AM)
-            day_open = round(float(data['Open'].iloc[0]), 2)
-            print(f"   Day open captured: ${day_open}")
-            return day_open
+        # Get today's date
+        today = datetime.now().date()
         
-        # Fallback: Try with prepost=True
-        data = ticker.history(
-            period="2d", 
-            interval="5m", 
-            prepost=True
-        )
+        # Find the first candle at or after 9:30 AM today
+        for idx, row in data.iterrows():
+            if idx.date() == today and idx.hour >= MARKET_OPEN_HOUR and idx.minute >= MARKET_OPEN_MINUTE:
+                return round(float(row['Open']), 2)
         
-        if data is not None and not data.empty:
-            # Filter for today's date and times after 9:30 AM
-            data.index = data.index.tz_localize(None)
-            today_start = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
-            today_data = data[data.index >= today_start]
-            morning_data = today_data[today_data.index >= today_start.replace(hour=9, minute=30)]
-            
-            if not morning_data.empty:
-                day_open = round(float(morning_data['Open'].iloc[0]), 2)
-                print(f"   Day open captured (fallback): ${day_open}")
-                return day_open
+        # If no data for today yet (pre-market), use yesterday's close as reference
+        yesterday = today - timedelta(days=1)
+        yesterday_data = data[data.index.date == yesterday]
+        if not yesterday_data.empty:
+            return round(float(yesterday_data['Close'].iloc[-1]), 2)
         
-        print(f"   No day open data available")
         return None
         
     except Exception as e:
@@ -91,7 +70,9 @@ def get_soxx_data():
     day_return_pct = 0
     if day_open and day_open > 0:
         day_return_pct = round((price - day_open) / day_open * 100, 2)
-        print(f"   Day return: {day_return_pct}% (from ${day_open} to ${price})")
+        print(f"   Day open: ${day_open}, Day return: {day_return_pct}%")
+    else:
+        print(f"   Could not get day open, using 0%")
     
     # Get historical data for indicators (15-min candles, including pre-market)
     hist = ticker.history(period="3d", interval="15m", prepost=True)
@@ -99,10 +80,10 @@ def get_soxx_data():
         return None
     
     # Remove timezone for comparison
-    hist.index = hist.index.tz_localize(None)
+    hist.index = pd.to_datetime(hist.index).tz_localize(None)
     now = datetime.now()
     
-    # Calculate 20-period MA (20 * 15min = 5 hours)
+    # Calculate 20-period MA
     ma20 = round(hist['Close'].rolling(window=20).mean().iloc[-1], 2) if len(hist) >= 20 else price
     
     # Calculate 1-hour return (4 x 15min candles)
@@ -112,14 +93,14 @@ def get_soxx_data():
     else:
         return_1h = 0
     
-    # Calculate RSI (14-period on 15-min candles)
+    # Calculate RSI
     delta = hist['Close'].diff()
     gain = (delta.where(delta > 0, 0)).rolling(window=14).mean()
     loss = (-delta.where(delta < 0, 0)).rolling(window=14).mean()
     rs = gain / loss
     rsi = round(100 - (100 / (1 + rs.iloc[-1])), 1) if len(hist) >= 14 and not pd.isna(rs.iloc[-1]) else 50
     
-    # Determine session based on time
+    # Determine session
     hour = now.hour
     minute = now.minute
     
@@ -147,7 +128,7 @@ def get_soxx_data():
 
 def main():
     print("=" * 50)
-    print("SOXX Data Collector (with Pre-Market Data & Day Return)")
+    print("SOXX Data Collector")
     print("=" * 50)
     
     data = get_soxx_data()
@@ -161,7 +142,8 @@ def main():
     print(f"   Price: ${data['price']}")
     print(f"   Day Open: ${data['day_open']}")
     print(f"   Day Return: {data['day_return_pct']}%")
-    print(f"   MA20: ${data['ma20']} (Above: {data['above_ma20']})")
+    print(f"   MA20: ${data['ma20']}")
+    print(f"   Above MA20: {data['above_ma20']}")
     print(f"   1h Return: {data['return_1h_pct']}%")
     print(f"   RSI: {data['rsi']}")
     
