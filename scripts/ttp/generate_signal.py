@@ -3,11 +3,13 @@
 Trade The Pool - SOXX Signal Generator (Email Only)
 Sends pre-market email with Green Day/Red Day signal and TTP rule warnings
 No CSV updates, no position tracking, no dashboard
+Supports multiple email recipients from config file
 """
 
 import os
 import smtplib
 from email.message import EmailMessage
+from email.utils import formataddr
 import pandas as pd
 import yaml
 from pathlib import Path
@@ -58,6 +60,18 @@ except ImportError:
 def load_config():
     with open(CONFIG_PATH, 'r') as f:
         return yaml.safe_load(f)
+
+
+def get_email_recipients(config):
+    """Get list of email recipients from config"""
+    recipients = config.get('email_recipients', [])
+    if not recipients:
+        # Fallback to environment variable or default
+        mail_username = os.environ.get("MAIL_USERNAME")
+        if mail_username:
+            return [mail_username]
+        return []
+    return recipients
 
 
 def load_latest_data():
@@ -118,14 +132,18 @@ def check_green_day(data: dict, config: dict) -> tuple:
     return all_met, conditions
 
 
-def send_email(is_green: bool, data: dict, conditions: list):
-    """Send decision email with TTP rule warnings (no progress tracking)"""
+def send_email(is_green: bool, data: dict, conditions: list, recipients: list):
+    """Send decision email to multiple recipients with TTP rule warnings"""
     mail_username = os.environ.get("MAIL_USERNAME")
     mail_password = os.environ.get("MAIL_PASSWORD")
     
     if not mail_username or not mail_password:
         print("❌ Email credentials not found")
-        return
+        return False
+    
+    if not recipients:
+        print("❌ No email recipients configured")
+        return False
     
     date_str = datetime.now().strftime("%Y-%m-%d %H:%M ET")
     trade_entry_url = "https://mrpink970.github.io/sector-research-system/docs/ttp/trade_entry.html"
@@ -212,19 +230,80 @@ def send_email(is_green: bool, data: dict, conditions: list):
 ═══════════════════════════════════════════════════════════
 """
     
+    # Create message
     msg = EmailMessage()
     msg.set_content(body)
     msg["Subject"] = subject
-    msg["From"] = mail_username
-    msg["To"] = mail_username
+    msg["From"] = formataddr(("TTP Decision Engine", mail_username))
+    msg["To"] = ", ".join(recipients)
+    
+    # Send to all recipients
+    try:
+        with smtplib.SMTP_SSL("smtp.gmail.com", 465) as smtp:
+            smtp.login(mail_username, mail_password)
+            smtp.send_message(msg)
+        print(f"✅ Decision email sent to {len(recipients)} recipient(s): {', '.join(recipients)}")
+        return True
+    except Exception as e:
+        print(f"❌ Failed to send email: {e}")
+        return False
+
+
+def send_compliance_email(data: dict, compliance_reason: str, recipients: list):
+    """Send compliance block email to multiple recipients"""
+    mail_username = os.environ.get("MAIL_USERNAME")
+    mail_password = os.environ.get("MAIL_PASSWORD")
+    
+    if not mail_username or not mail_password:
+        print("❌ Email credentials not found")
+        return False
+    
+    if not recipients:
+        print("❌ No email recipients configured")
+        return False
+    
+    date_str = datetime.now().strftime("%Y-%m-%d %H:%M ET")
+    trade_entry_url = "https://mrpink970.github.io/sector-research-system/docs/ttp/trade_entry.html"
+    day_return = data.get('day_return_pct', 0)
+    
+    body = f"""
+═══════════════════════════════════════════════════════════
+  TTP DECISION ENGINE - COMPLIANCE BLOCKED - {date_str}
+═══════════════════════════════════════════════════════════
+
+⚠️ COMPLIANCE RESTRICTION: {compliance_reason}
+
+   → Action: DO NOT TRADE TODAY
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📊 CURRENT MARKET DATA:
+   Price: ${data['price']:.2f}
+   Day Return: {day_return:.1f}%
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🔗 TRADE ENTRY CALCULATOR:
+   {trade_entry_url}
+
+═══════════════════════════════════════════════════════════
+"""
+    
+    msg = EmailMessage()
+    msg.set_content(body)
+    msg["Subject"] = f"⚠️ TTP COMPLIANCE - No Trading Today ({date_str})"
+    msg["From"] = formataddr(("TTP Decision Engine", mail_username))
+    msg["To"] = ", ".join(recipients)
     
     try:
         with smtplib.SMTP_SSL("smtp.gmail.com", 465) as smtp:
             smtp.login(mail_username, mail_password)
             smtp.send_message(msg)
-        print(f"✅ Decision email sent: {subject}")
+        print(f"✅ Compliance email sent to {len(recipients)} recipient(s)")
+        return True
     except Exception as e:
         print(f"❌ Failed to send email: {e}")
+        return False
 
 
 def save_signal(data: dict, is_green: bool, conditions: list):
@@ -259,6 +338,13 @@ def main():
     print("=" * 50)
     
     config = load_config()
+    
+    # Get email recipients from config
+    recipients = get_email_recipients(config)
+    print(f"📧 Email recipients: {len(recipients)}")
+    for r in recipients:
+        print(f"   - {r}")
+    
     data = load_latest_data()
     
     if not data:
@@ -282,51 +368,7 @@ def main():
     if not can_enter:
         print(f"\n⚠️ COMPLIANCE RESTRICTION: {compliance_reason}")
         print("   Sending compliance warning email")
-        
-        # Send compliance block email
-        mail_username = os.environ.get("MAIL_USERNAME")
-        mail_password = os.environ.get("MAIL_PASSWORD")
-        
-        if mail_username and mail_password:
-            date_str = datetime.now().strftime("%Y-%m-%d %H:%M ET")
-            trade_entry_url = "https://mrpink970.github.io/sector-research-system/docs/ttp/trade_entry.html"
-            
-            body = f"""
-═══════════════════════════════════════════════════════════
-  TTP DECISION ENGINE - COMPLIANCE BLOCKED - {date_str}
-═══════════════════════════════════════════════════════════
-
-⚠️ COMPLIANCE RESTRICTION: {compliance_reason}
-
-   → Action: DO NOT TRADE TODAY
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-📊 CURRENT MARKET DATA:
-   Price: ${data['price']:.2f}
-   Day Return: {day_return:.1f}%
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-🔗 TRADE ENTRY CALCULATOR:
-   {trade_entry_url}
-
-═══════════════════════════════════════════════════════════
-"""
-            msg = EmailMessage()
-            msg.set_content(body)
-            msg["Subject"] = f"⚠️ TTP COMPLIANCE - No Trading Today ({date_str})"
-            msg["From"] = mail_username
-            msg["To"] = mail_username
-            
-            try:
-                with smtplib.SMTP_SSL("smtp.gmail.com", 465) as smtp:
-                    smtp.login(mail_username, mail_password)
-                    smtp.send_message(msg)
-                print("✅ Compliance warning email sent")
-            except Exception as e:
-                print(f"❌ Failed to send email: {e}")
-        
+        send_compliance_email(data, compliance_reason, recipients)
         return
     
     # Check for Green Day signal
@@ -336,8 +378,8 @@ def main():
     for c in conditions:
         print(f"   {c}")
     
-    # Send email
-    send_email(is_green, data, conditions)
+    # Send email to all recipients
+    send_email(is_green, data, conditions, recipients)
     
     # Save signal to CSV for reference
     save_signal(data, is_green, conditions)
