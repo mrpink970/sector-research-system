@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TTP - Trade Entry</title>
+    <title>TTP - Trade Entry Calculator</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -12,7 +12,7 @@
             padding: 20px;
             color: #e2e8f0;
         }
-        .container { max-width: 800px; margin: 0 auto; }
+        .container { max-width: 700px; margin: 0 auto; }
         .card {
             background: #1e293b;
             border-radius: 16px;
@@ -21,18 +21,20 @@
             border: 1px solid #334155;
         }
         h1 { color: #38bdf8; margin-bottom: 8px; font-size: 1.5rem; }
-        h3 { margin-bottom: 16px; }
+        h3 { margin-bottom: 16px; color: #22c55e; }
         .label { font-size: 12px; color: #94a3b8; margin-bottom: 4px; }
-        input, select, textarea {
+        input {
             width: 100%;
-            padding: 12px;
+            padding: 14px;
             background: #0f172a;
             border: 1px solid #334155;
             border-radius: 8px;
             color: #e2e8f0;
-            font-size: 16px;
+            font-size: 20px;
             margin-bottom: 16px;
             font-family: monospace;
+            text-align: center;
+            font-weight: 700;
         }
         button {
             width: 100%;
@@ -44,426 +46,201 @@
             font-weight: 700;
             font-size: 16px;
             cursor: pointer;
+            margin-top: 8px;
         }
         button:hover { background: #16a34a; }
-        .button-secondary { background: #3b82f6; }
-        .button-secondary:hover { background: #2563eb; }
-        .button-copy { background: #8b5cf6; }
-        .button-copy:hover { background: #7c3aed; }
-        .trade-row {
-            background: #0f172a;
-            padding: 12px;
-            border-radius: 8px;
-            margin-bottom: 8px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 8px;
-        }
-        .profit-positive { color: #22c55e; }
-        .profit-negative { color: #ef4444; }
-        .status-bar {
-            display: flex;
-            gap: 16px;
+        .warning-box {
+            background: #7f1d1d;
+            border-left: 4px solid #ef4444;
+            padding: 16px;
             margin-bottom: 20px;
-            flex-wrap: wrap;
+            border-radius: 8px;
         }
-        .status-card {
-            background: #1e293b;
+        .warning-title {
+            color: #ef4444;
+            font-weight: 700;
+            font-size: 18px;
+            margin-bottom: 12px;
+        }
+        .warning-item {
+            margin: 8px 0;
+            padding-left: 20px;
+        }
+        .calculation-box {
+            background: #0f172a;
             border-radius: 12px;
-            padding: 12px 16px;
-            flex: 1;
+            padding: 20px;
+            margin: 20px 0;
             text-align: center;
         }
-        .status-value { font-size: 20px; font-weight: 700; }
-        .positive { color: #22c55e; }
-        .info-text { font-size: 12px; color: #94a3b8; margin-bottom: 16px; padding: 8px; background: #0f172a; border-radius: 8px; text-align: center; }
-        .csv-preview { font-size: 11px; max-height: 200px; overflow: auto; }
-        .preview-row { background: #0f172a; border-radius: 8px; padding: 8px; margin-top: 12px; font-size: 12px; }
-        .compliance-note {
-            background: #7c2d12;
-            border-left: 4px solid #f97316;
-            padding: 12px;
-            margin-bottom: 16px;
-            border-radius: 8px;
+        .calc-value {
+            font-size: 28px;
+            font-weight: 800;
+        }
+        .calc-label {
+            font-size: 12px;
+            color: #94a3b8;
+            margin-bottom: 4px;
+        }
+        .order-details {
+            background: #0f172a;
+            border-radius: 12px;
+            padding: 16px;
+            margin-top: 20px;
+            font-family: monospace;
             font-size: 13px;
         }
-        .back-link {
-            display: inline-block;
-            color: #38bdf8;
-            text-decoration: none;
-            margin-bottom: 20px;
+        .order-details table {
+            width: 100%;
+            border-collapse: collapse;
         }
-        .back-link:hover {
-            text-decoration: underline;
+        .order-details td {
+            padding: 6px;
+            border-bottom: 1px solid #334155;
         }
-        .tick-box {
-            background: #0f172a;
-            border-radius: 8px;
-            padding: 12px;
-            margin-top: 8px;
-            margin-bottom: 16px;
-            border-left: 4px solid #38bdf8;
+        .order-details td:first-child {
+            color: #94a3b8;
+            width: 40%;
         }
         .tick-value {
-            font-family: monospace;
-            font-size: 18px;
+            color: #f97316;
             font-weight: 700;
+        }
+        .dollar-value {
+            color: #22c55e;
+            font-weight: 700;
+        }
+        hr {
+            border-color: #334155;
+            margin: 16px 0;
         }
     </style>
 </head>
 <body>
 <div class="container">
     <div class="card">
-        <a href="ttp_dashboard.html" class="back-link">← Back to Main Dashboard</a>
-        <h1>📝 TTP Trade Entry</h1>
-        <div class="info-text">
-            Enter your trade details. The system calculates dollar prices AND ticks.<br>
-            Use the TICK values to set your stop loss in the TTP platform.
-        </div>
-        <div class="compliance-note">
-            ⚠️ TTP COMPLIANCE REMINDER:<br>
-            • Max profit per trade: $150 (50% of $300 target)<br>
-            • Minimum 5 trades required to pass evaluation<br>
-            • Set stop loss using TICKS, not percentages
-        </div>
+        <h1>📝 TTP Trade Entry Calculator</h1>
+        <p style="color: #94a3b8; font-size: 14px;">Enter your limit price → Get stop loss in TICKS and take profit in DOLLARS</p>
     </div>
 
-    <div class="status-bar">
-        <div class="status-card">
-            <div class="status-label">Target Remaining</div>
-            <div class="status-value" id="targetRemaining">$300</div>
-        </div>
-        <div class="status-card">
-            <div class="status-label">Profit So Far</div>
-            <div class="status-value positive" id="totalProfit">$0</div>
-        </div>
-        <div class="status-card">
-            <div class="status-label">Trades Completed</div>
-            <div class="status-value" id="tradeCount">0</div>
-        </div>
-        <div class="status-card">
-            <div class="status-label">Trades Needed</div>
-            <div class="status-value" id="tradesNeeded">5</div>
-        </div>
-    </div>
-
-    <div class="card" id="openPositionCard">
-        <h3>📌 Open Position</h3>
-        <div id="openPositionDisplay">No open position</div>
+    <div class="warning-box">
+        <div class="warning-title">⚠️ ⚠️ ⚠️ CRITICAL RULE WARNINGS ⚠️ ⚠️ ⚠️</div>
+        <div class="warning-item">❌ <strong>MAX DRAWDOWN: 7% ($140 from peak)</strong><br>Violation will cause IMMEDIATE ACCOUNT TERMINATION. All profits FORFEITED.</div>
+        <div class="warning-item">❌ <strong>MAX POSITION PROFIT: 50% of target ($150)</strong><br>Any single trade exceeding $150 profit will be INVALIDATED.</div>
+        <div class="warning-item">❌ <strong>MINIMUM TRADES: 5 trades required to scale</strong><br>Cannot pass evaluation or scale without 5 completed trades.</div>
     </div>
 
     <div class="card">
-        <h3>🟢 Open New Trade</h3>
-        <div class="label">Entry Price ($)</div>
-        <input type="number" id="entryPrice" step="0.01" placeholder="e.g., 565.51">
-        <div class="label">Shares</div>
-        <select id="shares">
-            <option value="1">1 Share</option>
-            <option value="2" selected>2 Shares</option>
-            <option value="3">3 Shares</option>
-        </select>
-        <div class="label">Stop Loss (%)</div>
-        <input type="number" id="stopPercent" step="0.1" value="2.0" placeholder="e.g., 2.0">
-        <div class="label">Take Profit (%)</div>
-        <input type="number" id="targetPercent" step="0.1" value="6.0" placeholder="e.g., 6.0">
+        <div class="label">Enter Your Limit Price ($)</div>
+        <input type="number" id="limitPrice" step="0.01" placeholder="e.g., 590.00" value="590.00">
         
-        <div id="tickDisplay"></div>
+        <div id="calculations"></div>
         
-        <button onclick="previewTrade()">🔍 Preview Calculations</button>
-        <div id="preview" class="preview-row" style="display:none;"></div>
-        <button onclick="openTrade()" style="margin-top:8px;">📋 Open Trade (Copy to Clipboard)</button>
-    </div>
-
-    <div class="card" id="closeForm" style="display: none;">
-        <h3>🔴 Close Trade</h3>
-        <div class="label">Exit Price ($)</div>
-        <input type="number" id="exitPrice" step="0.01" placeholder="e.g., 599.44">
-        <div class="label">Exit Reason (select one)</div>
-        <select id="exitReason">
-            <option value="TAKE_PROFIT">🎯 Take Profit (+6%)</option>
-            <option value="STOP_LOSS">🛑 Stop Loss (-2%)</option>
-            <option value="TRAILING_STOP">🔒 Trailing Stop</option>
-            <option value="MAX_PROFIT_LIMIT">💰 Max Profit Limit ($150)</option>
-            <option value="MANUAL">✋ Manual Close</option>
-        </select>
-        <button onclick="closeTrade()">📋 Close Trade (Copy to Clipboard)</button>
+        <div id="orderDetails" class="order-details" style="display: none;">
+            <table>
+                <tr><td>Symbol</td><td><strong>SOXX</strong></td></tr>
+                <tr><td>Action</td><td><strong style="color: #22c55e;">BUY</strong></td></tr>
+                <tr><td>Quantity</td><td><strong>2 SHARES</strong></td></tr>
+                <tr><td>Order Type</td><td><strong>LIMIT</strong></td></tr>
+                <tr><td>Limit Price</td><td><strong id="displayLimitPrice">$590.00</strong></td></tr>
+                <tr><td>Good For</td><td><strong>DAY</strong></td></tr>
+                <tr><td>Overnight</td><td><strong>OFF</strong></td></tr>
+                <tr><td>Trailing Stop</td><td><strong id="displayStopTicks" class="tick-value">0 TICKS</strong></td></tr>
+                <tr><td>Take Profit</td><td><strong id="displayTakeProfit" class="dollar-value">$0.00</strong></td></tr>
+            </table>
+            <hr>
+            <button id="copyBtn" style="background: #8b5cf6; margin-top: 8px;">📋 Copy Order Details</button>
+        </div>
     </div>
 
     <div class="card">
-        <h3>📄 Current trades.csv</h3>
-        <textarea id="csvContent" rows="8" class="csv-preview" style="width:100%; background:#0f172a; color:#e2e8f0; border:1px solid #334155; border-radius:8px; padding:8px; font-family:monospace; font-size:11px;"></textarea>
-        <button class="button-copy" onclick="copyCSVToClipboard()" style="margin-top:8px;">📋 Copy Entire CSV to Clipboard</button>
-        <button class="button-secondary" onclick="refreshData()" style="margin-top:8px;">🔄 Refresh CSV Preview</button>
-    </div>
-
-    <div class="card">
-        <h3>📜 Trade History</h3>
-        <div id="tradeHistory">No trades yet</div>
+        <h3>📋 How to Use</h3>
+        <ol style="margin-left: 20px; color: #94a3b8; line-height: 1.8;">
+            <li>Enter your desired limit price above</li>
+            <li>Stop loss in TICKS is calculated automatically</li>
+            <li>Take profit in DOLLARS is calculated automatically</li>
+            <li>Copy order details to clipboard</li>
+            <li>Paste into TTP platform when placing order</li>
+            <li>Set trailing stop to the calculated TICKS value</li>
+            <li>Set take profit to the calculated DOLLARS price</li>
+        </ol>
     </div>
 </div>
 
 <script>
-    const REPO_OWNER = "mrpink970";
-    const REPO_NAME = "sector-research-system";
-    const TRADES_URL = `https://raw.githubusercontent.com/${REPO_OWNER}/${REPO_NAME}/main/data/ttp/trades.csv`;
-    const TICK_SIZE = 0.01; // SOXX trades in $0.01 increments
+    const TICK_SIZE = 0.01;
     const STOP_PERCENT = 2.0;
     const TARGET_PERCENT = 6.0;
-    const TRAILING_ACTIVATION_PERCENT = 3.0;
+    const SHARES = 2;
 
-    let trades = [];
-    let currentOpenTrade = null;
-
-    function calculateTicks(entryPrice, percentMove) {
-        const dollarMove = entryPrice * (percentMove / 100);
-        const ticks = Math.round(dollarMove / TICK_SIZE);
-        return ticks;
+    function calculateTicks(price, percent) {
+        const dollarMove = price * (percent / 100);
+        return Math.round(dollarMove / TICK_SIZE);
     }
 
-    function updateTickDisplay() {
-        const entryPrice = parseFloat(document.getElementById('entryPrice').value);
-        if (!entryPrice || isNaN(entryPrice)) {
-            document.getElementById('tickDisplay').innerHTML = '';
+    function calculateTakeProfitPrice(price, percent) {
+        return price * (1 + percent / 100);
+    }
+
+    function updateCalculations() {
+        const limitPrice = parseFloat(document.getElementById('limitPrice').value);
+        
+        if (isNaN(limitPrice) || limitPrice <= 0) {
+            document.getElementById('calculations').innerHTML = '<div class="calculation-box"><span style="color: #ef4444;">Please enter a valid price</span></div>';
+            document.getElementById('orderDetails').style.display = 'none';
             return;
         }
         
-        const stopPercent = parseFloat(document.getElementById('stopPercent').value) || STOP_PERCENT;
-        const targetPercent = parseFloat(document.getElementById('targetPercent').value) || TARGET_PERCENT;
+        const stopTicks = calculateTicks(limitPrice, STOP_PERCENT);
+        const takeProfitPrice = calculateTakeProfitPrice(limitPrice, TARGET_PERCENT);
+        const profitPerShare = takeProfitPrice - limitPrice;
+        const totalProfit = profitPerShare * SHARES;
         
-        const stopTicks = calculateTicks(entryPrice, stopPercent);
-        const targetTicks = calculateTicks(entryPrice, targetPercent);
-        const trailingTicks = calculateTicks(entryPrice, TRAILING_ACTIVATION_PERCENT);
+        // Check if profit exceeds max limit
+        const exceedsMaxProfit = totalProfit > 150;
         
-        document.getElementById('tickDisplay').innerHTML = `
-            <div class="tick-box">
-                <strong>📊 TICK CALCULATIONS (for TTP Platform):</strong><br>
-                Stop Loss (${stopPercent}%): <span class="tick-value" style="color: #ef4444;">${stopTicks.toLocaleString()} ticks</span> below entry<br>
-                Take Profit (${targetPercent}%): <span class="tick-value" style="color: #22c55e;">${targetTicks.toLocaleString()} ticks</span> above entry<br>
-                Trailing Activation (${TRAILING_ACTIVATION_PERCENT}%): <span class="tick-value" style="color: #f97316;">${trailingTicks.toLocaleString()} ticks</span> above entry<br>
-                <span style="font-size: 11px; color: #94a3b8;">SOXX tick size = $0.01 (1 cent)</span>
+        const calculationsHtml = `
+            <div class="calculation-box">
+                <div class="calc-label">📉 STOP LOSS (2% below entry)</div>
+                <div class="calc-value tick-value">${stopTicks.toLocaleString()} TICKS</div>
+                <div style="font-size: 12px; color: #64748b;">below your limit price</div>
+                <div style="margin-top: 16px;"></div>
+                <div class="calc-label">📈 TAKE PROFIT (6% above entry)</div>
+                <div class="calc-value dollar-value">$${takeProfitPrice.toFixed(2)}</div>
+                <div style="font-size: 12px; color: #64748b;">total profit: $${totalProfit.toFixed(2)}</div>
+                ${exceedsMaxProfit ? '<div style="margin-top: 12px; padding: 8px; background: #7f1d1d; border-radius: 6px; color: #ef4444; font-weight: 700;">⚠️ WARNING: Profit exceeds $150 max limit!</div>' : ''}
             </div>
         `;
-    }
-
-    async function fetchCSV(url) {
-        try {
-            const response = await fetch(url + '?t=' + Date.now());
-            if (!response.ok) return null;
-            return await response.text();
-        } catch (error) { return null; }
-    }
-
-    function parseCSV(csvText) {
-        if (!csvText) return [];
-        const lines = csvText.trim().split('\n');
-        if (lines.length < 2) return [];
-        const headers = lines[0].split(',').map(h => h.trim());
-        const result = [];
-        for (let i = 1; i < lines.length; i++) {
-            const values = lines[i].split(',');
-            const row = {};
-            for (let j = 0; j < headers.length; j++) {
-                let val = values[j] ? values[j].trim() : '';
-                if (!isNaN(val) && val !== '') row[headers[j]] = parseFloat(val);
-                else row[headers[j]] = val;
-            }
-            result.push(row);
-        }
-        return result;
-    }
-
-    function previewTrade() {
-        const entryPrice = parseFloat(document.getElementById('entryPrice').value);
-        const stopPercent = parseFloat(document.getElementById('stopPercent').value);
-        const targetPercent = parseFloat(document.getElementById('targetPercent').value);
         
-        if (!entryPrice) {
-            alert('Please enter entry price first');
-            return;
-        }
-        
-        const stopPrice = entryPrice * (1 - stopPercent / 100);
-        const targetPrice = entryPrice * (1 + targetPercent / 100);
-        const shares = parseInt(document.getElementById('shares').value);
-        const profitAtTarget = (targetPrice - entryPrice) * shares;
-        const maxProfitAllowed = 150;
-        const exceedsLimit = profitAtTarget > maxProfitAllowed;
-        
-        const stopTicks = calculateTicks(entryPrice, stopPercent);
-        const targetTicks = calculateTicks(entryPrice, targetPercent);
-        const trailingTicks = calculateTicks(entryPrice, TRAILING_ACTIVATION_PERCENT);
-        
-        document.getElementById('preview').style.display = 'block';
-        document.getElementById('preview').innerHTML = `
-            <strong>📊 Calculated Values:</strong><br>
-            Entry: $${entryPrice.toFixed(2)}<br>
-            Stop Loss (${stopPercent}%): $${stopPrice.toFixed(2)} (${stopTicks.toLocaleString()} ticks below)<br>
-            Take Profit (${targetPercent}%): $${targetPrice.toFixed(2)} (${targetTicks.toLocaleString()} ticks above)<br>
-            Trailing Activation (${TRAILING_ACTIVATION_PERCENT}%): ${trailingTicks.toLocaleString()} ticks above entry<br>
-            Risk per share: $${(entryPrice - stopPrice).toFixed(2)}<br>
-            Reward per share: $${(targetPrice - entryPrice).toFixed(2)}<br>
-            Risk:Reward: 1:${((targetPrice - entryPrice) / (entryPrice - stopPrice)).toFixed(2)}<br>
-            <strong>Profit at target (${shares} shares): $${profitAtTarget.toFixed(2)}</strong><br>
-            ${exceedsLimit ? '<span style="color:#f97316;">⚠️ WARNING: Profit exceeds $150 max limit! Reduce shares or lower target.</span>' : '<span style="color:#22c55e;">✅ Profit within $150 max limit.</span>'}
-        `;
-    }
-
-    function openTrade() {
-        const entryPrice = parseFloat(document.getElementById('entryPrice').value);
-        const shares = parseInt(document.getElementById('shares').value);
-        const stopPercent = parseFloat(document.getElementById('stopPercent').value);
-        const targetPercent = parseFloat(document.getElementById('targetPercent').value);
-        
-        if (!entryPrice || !stopPercent || !targetPercent) {
-            alert('Please fill in all fields');
-            return;
-        }
-        
-        const stopPrice = entryPrice * (1 - stopPercent / 100);
-        const targetPrice = entryPrice * (1 + targetPercent / 100);
-        const profitAtTarget = (targetPrice - entryPrice) * shares;
-        const initialStop = stopPrice;
-        
-        // Calculate ticks
-        const stopTicks = calculateTicks(entryPrice, stopPercent);
-        const targetTicks = calculateTicks(entryPrice, targetPercent);
-        const trailingTicks = calculateTicks(entryPrice, TRAILING_ACTIVATION_PERCENT);
-        
-        if (profitAtTarget > 150) {
-            if (!confirm(`⚠️ WARNING: Profit at target will be $${profitAtTarget.toFixed(2)} which exceeds the $150 max profit per trade rule. Continue anyway?`)) {
-                return;
-            }
-        }
-        
-        // CSV format with tick columns
-        const csvLine = `SOXX,${new Date().toISOString()},${entryPrice.toFixed(2)},${shares},${stopPrice.toFixed(2)},${targetPrice.toFixed(2)},open,,,,${initialStop.toFixed(2)},${entryPrice.toFixed(2)},,${stopTicks},${targetTicks},${trailingTicks}`;
-        
-        navigator.clipboard.writeText(csvLine);
-        alert('✅ CSV line copied!\n\n' + csvLine + '\n\nGo to GitHub → data/ttp/trades.csv → Paste at bottom → Commit');
-        
-        document.getElementById('entryPrice').value = '';
-        document.getElementById('preview').style.display = 'none';
-        document.getElementById('tickDisplay').innerHTML = '';
-        
-        setTimeout(() => loadData(), 1000);
+        document.getElementById('calculations').innerHTML = calculationsHtml;
+        document.getElementById('orderDetails').style.display = 'block';
+        document.getElementById('displayLimitPrice').innerHTML = `$${limitPrice.toFixed(2)}`;
+        document.getElementById('displayStopTicks').innerHTML = `${stopTicks.toLocaleString()} TICKS`;
+        document.getElementById('displayTakeProfit').innerHTML = `$${takeProfitPrice.toFixed(2)}`;
     }
     
-    function closeTrade() {
-        const exitPrice = parseFloat(document.getElementById('exitPrice').value);
-        const exitReason = document.getElementById('exitReason').value;
+    function copyOrderDetails() {
+        const limitPrice = parseFloat(document.getElementById('limitPrice').value);
+        const stopTicks = calculateTicks(limitPrice, STOP_PERCENT);
+        const takeProfitPrice = calculateTakeProfitPrice(limitPrice, TARGET_PERCENT);
         
-        if (!exitPrice || !currentOpenTrade) {
-            alert('Please fill in exit price');
-            return;
-        }
+        const orderText = `SOXX BUY 2 SHARES LIMIT $${limitPrice.toFixed(2)} DAY OVERNIGHT OFF | Trailing Stop: ${stopTicks.toLocaleString()} TICKS | Take Profit: $${takeProfitPrice.toFixed(2)}`;
         
-        const profit = (exitPrice - currentOpenTrade.entry_price) * currentOpenTrade.shares;
-        const highestPrice = currentOpenTrade.highest_price || currentOpenTrade.entry_price;
-        const initialStop = currentOpenTrade.initial_stop || currentOpenTrade.stop_price;
-        const stopTicks = currentOpenTrade.stop_ticks || '';
-        const targetTicks = currentOpenTrade.target_ticks || '';
-        const trailingTicks = currentOpenTrade.trailing_activation_ticks || '';
+        navigator.clipboard.writeText(orderText);
         
-        const csvLine = `${currentOpenTrade.ticker},${currentOpenTrade.entry_date},${currentOpenTrade.entry_price},${currentOpenTrade.shares},${currentOpenTrade.stop_price},${currentOpenTrade.target_price},completed,${new Date().toISOString()},${exitPrice.toFixed(2)},${profit.toFixed(2)},${initialStop},${highestPrice},${exitReason},${stopTicks},${targetTicks},${trailingTicks}`;
-        
-        navigator.clipboard.writeText(csvLine);
-        alert('✅ CSV line copied!\n\nREPLACE the open trade line in trades.csv with:\n\n' + csvLine);
-        
-        document.getElementById('exitPrice').value = '';
-        
-        setTimeout(() => loadData(), 1000);
+        const copyBtn = document.getElementById('copyBtn');
+        const originalText = copyBtn.innerHTML;
+        copyBtn.innerHTML = '✅ Copied!';
+        setTimeout(() => {
+            copyBtn.innerHTML = originalText;
+        }, 2000);
     }
     
-    function copyCSVToClipboard() {
-        const content = document.getElementById('csvContent').value;
-        navigator.clipboard.writeText(content);
-        alert('✅ Entire trades.csv copied! Go to GitHub and replace the whole file.');
-    }
+    document.getElementById('limitPrice').addEventListener('input', updateCalculations);
+    document.getElementById('copyBtn').addEventListener('click', copyOrderDetails);
     
-    async function loadData() {
-        const tradesCSV = await fetchCSV(TRADES_URL);
-        if (tradesCSV) {
-            document.getElementById('csvContent').value = tradesCSV;
-            trades = parseCSV(tradesCSV);
-        } else {
-            trades = [];
-        }
-        
-        currentOpenTrade = trades.find(t => t.status === 'open');
-        
-        const closedTrades = trades.filter(t => t.status === 'completed');
-        const totalProfit = closedTrades.reduce((sum, t) => sum + (t.profit || 0), 0);
-        const remainingTarget = Math.max(0, 300 - totalProfit);
-        const tradesNeeded = Math.max(0, 5 - closedTrades.length);
-        
-        document.getElementById('totalProfit').innerHTML = `$${totalProfit.toFixed(2)}`;
-        document.getElementById('targetRemaining').innerHTML = `$${remainingTarget.toFixed(2)}`;
-        document.getElementById('tradeCount').innerHTML = closedTrades.length;
-        document.getElementById('tradesNeeded').innerHTML = tradesNeeded;
-        
-        const openDiv = document.getElementById('openPositionDisplay');
-        if (currentOpenTrade) {
-            const currentStop = currentOpenTrade.stop_price || (currentOpenTrade.entry_price * 0.98);
-            const currentTarget = currentOpenTrade.target_price || (currentOpenTrade.entry_price * 1.06);
-            const highestPrice = currentOpenTrade.highest_price || currentOpenTrade.entry_price;
-            const stopTicks = currentOpenTrade.stop_ticks || '?';
-            const targetTicks = currentOpenTrade.target_ticks || '?';
-            const trailingTicks = currentOpenTrade.trailing_activation_ticks || '?';
-            
-            openDiv.innerHTML = `
-                <div class="trade-row">
-                    <span><strong>${currentOpenTrade.ticker}</strong></span>
-                    <span>Entry: $${currentOpenTrade.entry_price?.toFixed(2)}</span>
-                    <span>${currentOpenTrade.shares} shares</span>
-                    <span>Stop: ${stopTicks} ticks ($${currentStop.toFixed(2)})</span>
-                    <span>Target: ${targetTicks} ticks ($${currentTarget.toFixed(2)})</span>
-                    <span>Trail: ${trailingTicks} ticks</span>
-                    <span>High: $${highestPrice.toFixed(2)}</span>
-                </div>
-            `;
-            document.getElementById('closeForm').style.display = 'block';
-        } else {
-            openDiv.innerHTML = '<p style="color: #64748b;">📭 No open position</p>';
-            document.getElementById('closeForm').style.display = 'none';
-        }
-        
-        const historyDiv = document.getElementById('tradeHistory');
-        if (closedTrades.length === 0) {
-            historyDiv.innerHTML = '<p style="color: #64748b;">No completed trades yet</p>';
-        } else {
-            historyDiv.innerHTML = closedTrades.slice(-10).reverse().map(t => {
-                let exitReasonDisplay = t.exit_reason || '--';
-                if (exitReasonDisplay === 'MAX_PROFIT_LIMIT') exitReasonDisplay = '💰 Max Profit ($150)';
-                if (exitReasonDisplay === 'TAKE_PROFIT') exitReasonDisplay = '🎯 Take Profit';
-                if (exitReasonDisplay === 'STOP_LOSS') exitReasonDisplay = '🛑 Stop Loss';
-                if (exitReasonDisplay === 'TRAILING_STOP') exitReasonDisplay = '🔒 Trailing Stop';
-                return `
-                    <div class="trade-row">
-                        <span><strong>${t.entry_date?.split('T')[0] || '--'}</strong></span>
-                        <span>${t.ticker}</span>
-                        <span>Entry: $${t.entry_price?.toFixed(2)}</span>
-                        <span>Exit: $${t.exit_price?.toFixed(2)}</span>
-                        <span class="${(t.profit || 0) >= 0 ? 'profit-positive' : 'profit-negative'}">
-                            ${(t.profit || 0) >= 0 ? '+' : ''}$${t.profit?.toFixed(2) || '0'}
-                        </span>
-                        <span style="font-size: 11px;">${exitReasonDisplay}</span>
-                    </div>
-                `;
-            }).join('');
-        }
-    }
-    
-    function refreshData() { loadData(); }
-    
-    // Add event listeners for tick calculation
-    document.getElementById('entryPrice').addEventListener('input', updateTickDisplay);
-    document.getElementById('stopPercent').addEventListener('input', updateTickDisplay);
-    document.getElementById('targetPercent').addEventListener('input', updateTickDisplay);
-    
-    loadData();
-    setInterval(loadData, 60000);
+    // Initial calculation
+    updateCalculations();
 </script>
 </body>
 </html>
