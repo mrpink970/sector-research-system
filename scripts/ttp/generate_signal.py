@@ -118,33 +118,8 @@ def check_green_day(data: dict, config: dict) -> tuple:
     return all_met, conditions
 
 
-def get_progress_from_trades() -> dict:
-    """Get progress from trades.csv if it exists (for reference only)"""
-    trades_path = DATA_DIR / "trades.csv"
-    if not trades_path.exists():
-        return {'total_profit': 0, 'trades_completed': 0, 'remaining': 300}
-    
-    try:
-        df = pd.read_csv(trades_path)
-        if df.empty:
-            return {'total_profit': 0, 'trades_completed': 0, 'remaining': 300}
-        
-        completed = df[df['status'] == 'completed']
-        total_profit = completed['profit'].sum() if 'profit' in completed.columns else 0
-        trades_count = len(completed)
-        
-        return {
-            'total_profit': round(total_profit, 2),
-            'trades_completed': trades_count,
-            'remaining': round(max(0, 300 - total_profit), 2)
-        }
-    except Exception as e:
-        print(f"Error reading progress: {e}")
-        return {'total_profit': 0, 'trades_completed': 0, 'remaining': 300}
-
-
 def send_email(is_green: bool, data: dict, conditions: list):
-    """Send decision email with TTP rule warnings"""
+    """Send decision email with TTP rule warnings (no progress tracking)"""
     mail_username = os.environ.get("MAIL_USERNAME")
     mail_password = os.environ.get("MAIL_PASSWORD")
     
@@ -156,25 +131,23 @@ def send_email(is_green: bool, data: dict, conditions: list):
     trade_entry_url = "https://mrpink970.github.io/sector-research-system/docs/ttp/trade_entry.html"
     day_return = data.get('day_return_pct', 0)
     
-    # Get progress from trades.csv if available
-    progress = get_progress_from_trades()
-    trades_needed = max(0, 5 - progress['trades_completed'])
-    
     if is_green:
         subject = f"🟢 TTP DECISION ENGINE - GREEN DAY - Prepare to Buy ({date_str})"
         action = "PREPARE TO BUY"
         signal_icon = "🟢"
+        signal_text = "GREEN DAY"
     else:
         subject = f"🔴 TTP DECISION ENGINE - RED DAY - No Trade ({date_str})"
         action = "NO TRADE TODAY"
         signal_icon = "🔴"
+        signal_text = "RED DAY"
     
     body = f"""
 ═══════════════════════════════════════════════════════════
   TTP DECISION ENGINE - {date_str}
 ═══════════════════════════════════════════════════════════
 
-{signal_icon} MARKET CONDITION: {'GREEN DAY' if is_green else 'RED DAY'} (Day Return: {day_return:.1f}%)
+{signal_icon} MARKET CONDITION: {signal_text} (Day Return: {day_return:.1f}%)
 
    → Action: {action}
 
@@ -207,13 +180,6 @@ def send_email(is_green: bool, data: dict, conditions: list):
 
    ❌ MINIMUM TRADES: 5 trades required to scale to next level
       → Cannot pass evaluation or scale without 5 completed trades
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-📊 CURRENT PROGRESS:
-   Profit: ${progress['total_profit']:.2f} / $300
-   Trades Completed: {progress['trades_completed']} / 5
-   {'✅ READY TO REQUEST REVIEW!' if progress['trades_completed'] >= 5 and progress['total_profit'] >= 300 else f'⚠️ Need ${progress["remaining"]:.2f} profit and {trades_needed} more trades'}
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
