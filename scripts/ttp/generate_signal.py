@@ -1,7 +1,10 @@
 #!/usr/bin/env python3
 """
 Trade The Pool - SOXX Signal Generator (with Email)
-Determines Green Day status based on DAY RETURN from market open
+Determines Green Day status and fast breakouts
+Includes TRAILING STOP logic for active positions
+Includes TTP COMPLIANCE CHECKS and MAX PROFIT HARD STOP
+Includes PRE-MARKET DATA support for manual morning runs
 """
 
 import os
@@ -75,7 +78,7 @@ def load_latest_data():
 
 
 def load_open_position():
-    """Load open position from trades.csv"""
+    """Load open position from trades.csv with proper type conversion"""
     if not TRADES_PATH.exists():
         return None
     
@@ -87,7 +90,28 @@ def load_open_position():
     if open_trades.empty:
         return None
     
-    return open_trades.iloc[-1].to_dict()
+    position = open_trades.iloc[-1].to_dict()
+    
+    # Convert string values to float where needed
+    numeric_fields = ['entry_price', 'stop_price', 'target_price', 'shares', 
+                      'profit', 'initial_stop', 'highest_price', 
+                      'stop_ticks', 'target_ticks', 'trailing_activation_ticks']
+    
+    for field in numeric_fields:
+        if field in position and position[field] is not None:
+            try:
+                position[field] = float(position[field])
+            except (ValueError, TypeError):
+                position[field] = 0
+    
+    # Convert shares to int
+    if 'shares' in position:
+        try:
+            position['shares'] = int(position['shares'])
+        except (ValueError, TypeError):
+            position['shares'] = 2
+    
+    return position
 
 
 def save_open_position(position: dict):
@@ -98,9 +122,11 @@ def save_open_position(position: dict):
         df = pd.read_csv(TRADES_PATH)
         trades = df.to_dict('records')
         
+        # Find and update existing open position
         found = False
         for i, trade in enumerate(trades):
             if trade.get('status') == 'open':
+                # Update with latest tracking values
                 trades[i].update({
                     'stop_price': position.get('stop_price', trade.get('stop_price')),
                     'highest_price': position.get('highest_price', trade.get('highest_price', position.get('entry_price'))),
@@ -115,6 +141,7 @@ def save_open_position(position: dict):
     else:
         trades = [position]
     
+    # Ensure all required columns exist with proper values
     all_trades = []
     for t in trades:
         row = {
@@ -142,7 +169,24 @@ def save_open_position(position: dict):
 
 
 def update_trailing_stop(position: dict, current_price: float, config: dict) -> dict:
-    """Update trailing stop based on highest price reached"""
+    """
+    Update trailing stop based on highest price reached
+    Returns updated position dict with new stop price and highest price
+    """
+    # Convert position values to float if they're strings
+    for key in ['entry_price', 'stop_price', 'highest_price', 'initial_stop']:
+        if key in position and isinstance(position[key], str):
+            try:
+                position[key] = float(position[key])
+            except (ValueError, TypeError):
+                position[key] = 0
+    
+    if 'shares' in position and isinstance(position['shares'], str):
+        try:
+            position['shares'] = int(position['shares'])
+        except (ValueError, TypeError):
+            position['shares'] = 2
+    
     entry_price = position['entry_price']
     highest_price = position.get('highest_price', entry_price)
     current_stop = position.get('stop_price', 0)
@@ -150,22 +194,29 @@ def update_trailing_stop(position: dict, current_price: float, config: dict) -> 
     trailing_pct = config['exit_rules']['trailing_stop_pct']
     activation_pct = config['exit_rules']['trailing_activation_pct']
     
+    # Calculate initial stop if not set
     if current_stop == 0:
         current_stop = round(entry_price * (1 - config['exit_rules']['stop_loss_pct'] / 100), 2)
         position['initial_stop'] = current_stop
     
+    # Update highest price seen
     if current_price > highest_price:
         highest_price = current_price
         print(f"   📈 New high: ${highest_price:.2f}")
     
+    # Check if trailing should activate
     profit_pct = (highest_price - entry_price) / entry_price * 100
     
     if profit_pct >= activation_pct:
+        # Calculate new trailing stop
         new_stop = round(highest_price * (1 - trailing_pct / 100), 2)
+        
+        # Only move stop UP, never down
         if new_stop > current_stop:
             current_stop = new_stop
             print(f"   🔼 Trailing stop moved up to ${current_stop:.2f} (profit: {profit_pct:.1f}%)")
     
+    # Update position
     position['highest_price'] = highest_price
     position['stop_price'] = current_stop
     
@@ -173,7 +224,10 @@ def update_trailing_stop(position: dict, current_price: float, config: dict) -> 
 
 
 def check_max_profit_limit(position: dict, current_price: float, config: dict) -> tuple:
-    """HARD STOP at $150 profit per trade (50% of $300 target)"""
+    """
+    HARD STOP at $150 profit per trade (50% of $300 target)
+    Returns: (should_exit, exit_price, exit_reason)
+    """
     max_profit = config['exit_rules'].get('max_profit_per_trade', 150)
     entry_price = position['entry_price']
     shares = position['shares']
@@ -187,7 +241,10 @@ def check_max_profit_limit(position: dict, current_price: float, config: dict) -
 
 
 def check_trailing_stop_exit(position: dict, current_price: float, config: dict) -> tuple:
-    """Check if trailing stop has been hit"""
+    """
+    Check if trailing stop has been hit
+    Returns: (should_exit, exit_price, exit_reason)
+    """
     stop_price = position.get('stop_price', 0)
     
     if stop_price > 0 and current_price <= stop_price:
@@ -197,14 +254,21 @@ def check_trailing_stop_exit(position: dict, current_price: float, config: dict)
 
 
 def check_initial_exit(position: dict, current_price: float, config: dict) -> tuple:
-    """Check initial stop loss and take profit"""
-    entry_price = position['entry_price']
-    stop_loss = position.get('initial_stop', position.get('stop_price', 0))
-    take_profit = position.get('target_price', 0)
+    """
+    Check initial stop loss and take profit
+    """
+    # Ensure values are float
+    current_price = float(current_price)
     
+    entry_price = float(position.get('entry_price', 0))
+    stop_loss = float(position.get('initial_stop', position.get('stop_price', 0)))
+    take_profit = float(position.get('target_price', 0))
+    
+    # Check stop loss
     if stop_loss > 0 and current_price <= stop_loss:
         return True, stop_loss, "STOP_LOSS"
     
+    # Check take profit
     if take_profit > 0 and current_price >= take_profit:
         return True, take_profit, "TAKE_PROFIT"
     
@@ -227,6 +291,7 @@ def close_position(exit_price: float, exit_reason: str, position: dict):
                 trades[i]['exit_price'] = exit_price
                 trades[i]['profit'] = round(profit, 2)
                 trades[i]['exit_reason'] = exit_reason
+                # Preserve tracking fields
                 trades[i]['highest_price'] = position.get('highest_price', trade.get('highest_price', trade['entry_price']))
                 trades[i]['initial_stop'] = position.get('initial_stop', trade.get('initial_stop', trade.get('stop_price')))
                 trades[i]['stop_price'] = position.get('stop_price', trade.get('stop_price'))
@@ -255,6 +320,11 @@ def check_green_day(data: dict, config: dict) -> tuple:
     
     # Determine which return to use based on session
     session = data.get('session', 'unknown')
+    
+    # FALLBACK: If day_return is 0 but it's not pre-market, use 1h return as proxy
+    if day_return == 0 and session != 'premarket':
+        day_return = one_hour_return
+        print(f"   Using 1h return as day return proxy: {day_return}%")
     
     # Primary condition: Day return >= 0.5%
     if day_return >= min_return:
@@ -752,14 +822,17 @@ def main():
     # Check for existing open position
     open_position = load_open_position()
     
+    # If there's an open position, manage trailing stop and check max profit
     if open_position:
         print(f"\n📌 Open position exists:")
         print(f"   Entry: ${open_position['entry_price']:.2f}")
         print(f"   Current stop: ${open_position.get('stop_price', 'N/A')}")
         print(f"   Highest price: ${open_position.get('highest_price', open_position['entry_price']):.2f}")
         
+        # Update trailing stop with current price
         updated_position = update_trailing_stop(open_position, current_price, config)
         
+        # Check exits
         should_exit, exit_price, exit_reason = check_max_profit_limit(updated_position, current_price, config)
         
         if not should_exit:
@@ -772,11 +845,13 @@ def main():
             close_position(exit_price, exit_reason, updated_position)
             print(f"\n🔴 Position closed: {exit_reason} at ${exit_price:.2f}")
         else:
+            # Save updated position with new stop and highest price
             save_open_position(updated_position)
             print(f"\n✅ Position updated")
             print(f"   Stop price: ${updated_position['stop_price']:.2f}")
             print(f"   Highest price: ${updated_position['highest_price']:.2f}")
             
+            # Send email if trailing stop moved significantly
             old_stop = open_position.get('stop_price', 0)
             if updated_position['stop_price'] > old_stop:
                 send_trailing_stop_email(updated_position, updated_position['stop_price'], current_price)
@@ -784,16 +859,20 @@ def main():
         print("\n" + "=" * 50)
         return
     
-    # No open position - check compliance
-    print("\n🔍 No open position. Checking compliance...")
+    # No open position - check TTP compliance before entering
+    print("\n🔍 No open position. Checking compliance for new entry...")
     
+    # === TTP COMPLIANCE CHECK ===
     if compliance_available:
         can_enter, compliance_reason = can_enter_swing_trade(config)
     else:
-        can_enter, compliance_reason = True, "Compliance checks skipped"
+        can_enter, compliance_reason = True, "Compliance checks skipped (module not loaded)"
     
     if not can_enter:
         print(f"\n⚠️ COMPLIANCE RESTRICTION: {compliance_reason}")
+        print("   Cannot enter swing trade at this time")
+        
+        # Send notification email
         positions = {
             'entry_price': data['price'],
             'stop_price': 0,
@@ -810,12 +889,16 @@ def main():
     
     # Check for signals
     is_fast = False
+    fast_details = {}
     
+    # Check standard Green Day conditions
     is_green, conditions = check_green_day(data, config)
     
+    # If not green, check for fast breakout
     if not is_green:
         recent_data = load_recent_data_points()
         is_fast, fast_details = check_fast_breakout(data, recent_data)
+        
         if is_fast:
             print("\n⚡ FAST BREAKOUT DETECTED!")
     
@@ -826,7 +909,9 @@ def main():
     max_profit_limit = config['exit_rules'].get('max_profit_per_trade', 150)
     positions = calculate_positions(data, config, is_fast=False)
     
+    # Send appropriate email based on session
     if session == "premarket":
+        # Pre-market session - send preparation email
         if is_fast:
             print("\n⚡ PRE-MARKET SIGNAL: FAST BREAKOUT SETUP")
             send_premarket_email(data, conditions, positions, is_fast=True, no_signal=False)
@@ -837,9 +922,11 @@ def main():
             print("\n🔴 PRE-MARKET SIGNAL: NO SETUP")
             send_premarket_email(data, conditions, positions, is_fast=False, no_signal=True)
         
+        # Save signal for dashboard
         save_signal(data, is_green, conditions, positions, is_fast)
         
     else:
+        # Regular session - send execution email
         if is_fast:
             print("\n⚡ SIGNAL: FAST BREAKOUT - BUY NOW")
             position_record = {
@@ -885,10 +972,11 @@ def main():
             save_signal(data, is_green, conditions, positions)
             send_email(is_green, data, conditions, positions)
     
+    # Display upcoming compliance events if module is available
     if compliance_available:
         events = get_upcoming_events(config)
         if events['earnings']:
-            print("\n📅 Upcoming earnings:")
+            print("\n📅 Upcoming earnings (watch for compliance blocks):")
             for e in events['earnings'][:3]:
                 print(f"   {e['symbol']}: {e['date']} ({e['days']} days)")
     
