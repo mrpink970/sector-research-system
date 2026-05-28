@@ -41,3 +41,4 @@ timestamp,session,signal,price,stop_price,target_price,shares,net_profit,conditi
 2026-05-27 21:20:10,late,RED,565.01,,,,,❌ DAY RETURN: -3.31% | ✅ Above MA20 ($562.53) | ✅ RSI: 69.6,,,-3.31,-0.31,69.6,True
 2026-05-28 12:26:29,afternoon,RED,557.65,,,,,❌ DAY RETURN: -1.06% | ✅ Above MA20 ($557.31) | ❌ RSI: 47.7,,,-1.06,0.59,47.7,True
 2026-05-28 15:01:18,afternoon,RED,567.24,,,,,❌ DAY RETURN: 0.36% | ✅ Above MA20 ($560.01) | ✅ RSI: 64.6,,,0.36,0.52,64.6,True
+2026-05-28 15:28:23,afternoon,GREEN,572.2,,,,,✅ DAY RETURN: 1.24% | ✅ Above MA20 ($560.94) | ✅ RSI: 70.5,,,1.24,1.71,70.5,True
