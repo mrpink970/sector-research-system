@@ -1,2 +1,2 @@
 total_trades,win_rate,loss_rate,avg_gain_pct,avg_loss_pct,largest_gain_pct,largest_loss_pct,total_gross_pl,expectancy_pct
-6,1.0,0.0,36.0603,0.0,137.8637,0.0,15484.73,36.0603
+7,0.857143,0.142857,36.0603,7.4301,137.8637,-7.4301,14366.87,29.8474
