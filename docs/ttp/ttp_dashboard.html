@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TTP - SOXX Green Day System</title>
+    <title>TTP - Trade Manager & Calculator</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -12,448 +12,560 @@
             padding: 20px;
             color: #e2e8f0;
         }
-        .dashboard { max-width: 1200px; margin: 0 auto; }
-        .header {
-            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-            border-radius: 16px;
-            padding: 24px;
-            margin-bottom: 20px;
-            border: 1px solid #334155;
+        .container { max-width: 1400px; margin: 0 auto; }
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
         }
-        .header h1 { font-size: 1.8rem; color: #38bdf8; margin-bottom: 8px; }
-        .header p { color: #94a3b8; }
-        .status-bar {
-            display: flex;
-            gap: 16px;
-            margin-bottom: 20px;
-            flex-wrap: wrap;
-        }
-        .status-card {
-            background: #1e293b;
-            border-radius: 12px;
-            padding: 16px 20px;
-            flex: 1;
-            min-width: 150px;
-            border: 1px solid #334155;
-        }
-        .status-label { font-size: 11px; text-transform: uppercase; color: #64748b; margin-bottom: 8px; }
-        .status-value { font-size: 24px; font-weight: 700; }
-        .status-value.positive { color: #22c55e; }
-        .status-value.negative { color: #ef4444; }
-        .signal-card {
+        .card {
             background: #1e293b;
             border-radius: 16px;
             padding: 24px;
             margin-bottom: 20px;
             border: 1px solid #334155;
         }
-        .signal-green {
-            background: linear-gradient(135deg, #064e3b 0%, #065f46 100%);
-            border-color: #10b981;
-        }
-        .signal-red {
-            background: linear-gradient(135deg, #7f1d1d 0%, #991b1b 100%);
-            border-color: #ef4444;
-        }
-        .signal-title { font-size: 20px; font-weight: 700; margin-bottom: 16px; }
-        .signal-action { font-size: 32px; font-weight: 800; margin-bottom: 16px; }
-        .trade-details { background: #0f172a; border-radius: 12px; padding: 16px; margin-top: 16px; }
-        .trade-details table { width: 100%; }
-        .trade-details td { padding: 8px; }
-        .progress-card {
-            background: #1e293b;
-            border-radius: 16px;
-            padding: 20px;
-            margin-bottom: 20px;
+        h1 { color: #38bdf8; margin-bottom: 8px; font-size: 1.5rem; }
+        h2 { color: #22c55e; margin-bottom: 16px; font-size: 1.2rem; border-bottom: 1px solid #334155; padding-bottom: 8px; }
+        h3 { margin-bottom: 16px; color: #f97316; font-size: 1rem; }
+        .label { font-size: 12px; color: #94a3b8; margin-bottom: 4px; }
+        input, select {
+            width: 100%;
+            padding: 12px;
+            background: #0f172a;
             border: 1px solid #334155;
+            border-radius: 8px;
+            color: #e2e8f0;
+            font-size: 14px;
+            margin-bottom: 16px;
+            font-family: monospace;
         }
-        .progress-bar-container {
-            background: #334155;
-            border-radius: 20px;
-            height: 24px;
-            margin: 16px 0;
-            overflow: hidden;
-        }
-        .progress-bar-fill {
-            background: linear-gradient(90deg, #22c55e, #16a34a);
-            width: 0%;
-            height: 100%;
-            border-radius: 20px;
-            transition: width 0.5s;
-            display: flex;
-            align-items: center;
-            justify-content: flex-end;
-            padding-right: 8px;
+        button {
+            width: 100%;
+            padding: 12px;
+            background: #22c55e;
+            border: none;
+            border-radius: 8px;
             color: white;
-            font-size: 12px;
-            font-weight: 600;
+            font-weight: 700;
+            font-size: 14px;
+            cursor: pointer;
+            margin-top: 8px;
         }
-        .two-col { display: flex; gap: 20px; margin-bottom: 20px; flex-wrap: wrap; }
-        .two-col > div { flex: 1; min-width: 280px; }
-        .data-table {
+        button.danger { background: #ef4444; }
+        button.danger:hover { background: #dc2626; }
+        button.secondary { background: #3b82f6; }
+        button.secondary:hover { background: #2563eb; }
+        button:hover { background: #16a34a; }
+        .warning-box {
+            background: #7f1d1d;
+            border-left: 4px solid #ef4444;
+            padding: 16px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+        }
+        .calc-box {
+            background: #0f172a;
+            border-radius: 12px;
+            padding: 16px;
+            margin: 16px 0;
+        }
+        .calc-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            padding: 4px 0;
+            border-bottom: 1px solid #334155;
+        }
+        .recommendation {
+            background: #0f172a;
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 20px;
+            text-align: center;
+            border: 2px solid #22c55e;
+        }
+        .recommendation-value {
+            font-size: 32px;
+            font-weight: 800;
+            color: #22c55e;
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 700;
+        }
+        .status-open { background: #22c55e; color: #0a0e17; }
+        .status-closed { background: #64748b; }
+        .positive { color: #22c55e; }
+        .negative { color: #ef4444; }
+        .danger { color: #ef4444; }
+        .warning { color: #f97316; }
+        .safe { color: #22c55e; }
+        table {
             width: 100%;
             border-collapse: collapse;
+            font-size: 12px;
         }
-        .data-table th, .data-table td {
-            padding: 10px;
+        th, td {
+            padding: 8px;
             text-align: left;
             border-bottom: 1px solid #334155;
         }
-        .data-table th { color: #94a3b8; font-weight: 600; font-size: 12px; }
-        .rules-list {
-            list-style: none;
-            padding: 0;
+        th {
+            color: #94a3b8;
+            font-weight: 600;
         }
-        .rules-list li {
-            padding: 8px 0;
-            border-bottom: 1px solid #334155;
-        }
-        .rules-list li:last-child { border-bottom: none; }
-        .footer {
-            text-align: center;
-            padding: 20px;
-            color: #64748b;
-            font-size: 12px;
-        }
-        .btn-link {
-            background: #38bdf8;
-            color: #0a0e17;
-            padding: 10px 20px;
+        .trade-row {
+            background: #0f172a;
+            padding: 12px;
             border-radius: 8px;
-            text-decoration: none;
-            font-weight: 700;
-            display: inline-block;
-            transition: background 0.2s;
-        }
-        .btn-link:hover {
-            background: #0ea5e9;
+            margin-bottom: 8px;
         }
         .flex-between {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            flex-wrap: wrap;
-            gap: 20px;
         }
-        .locked-profit { color: #22c55e; font-weight: 700; }
-        .tick-badge {
-            font-family: monospace;
-            background: #0f172a;
-            padding: 2px 6px;
-            border-radius: 4px;
-            font-size: 12px;
+        hr {
+            margin: 16px 0;
+            border-color: #334155;
         }
     </style>
 </head>
 <body>
-<div class="dashboard">
-    <div class="header">
+<div class="container">
+    <div class="card">
         <div class="flex-between">
             <div>
-                <h1>🔬 SOXX Green Day System</h1>
-                <p>Trade The Pool • $2,000 FLEX Swing • Target: $300 profit (15%)</p>
+                <h1>📝 TTP Trade Manager & Calculator</h1>
+                <p style="color: #94a3b8;">One dashboard: Pre-trade position sizing + Post-trade logging</p>
             </div>
-            <div>
-                <a href="trade_entry.html" target="_blank" class="btn-link">📝 Trade Entry</a>
+            <button class="secondary" onclick="refreshAll()" style="width: auto; padding: 8px 16px;">🔄 Refresh Data</button>
+        </div>
+    </div>
+
+    <div class="grid-2">
+        <!-- LEFT COLUMN: Pre-Trade Calculator -->
+        <div>
+            <div class="card">
+                <h2>📊 Account Status (Auto-Loaded)</h2>
+                <div class="calc-row">
+                    <span class="calc-label">Current Equity:</span>
+                    <span class="calc-value" id="displayCurrentEquity">$2,000.00</span>
+                </div>
+                <div class="calc-row">
+                    <span class="calc-label">Peak Equity:</span>
+                    <span class="calc-value" id="displayPeakEquity">$2,000.00</span>
+                </div>
+                <div class="calc-row">
+                    <span class="calc-label">Drawdown So Far:</span>
+                    <span class="calc-value" id="displayDrawdown">$0.00</span>
+                </div>
+                <div class="calc-row">
+                    <span class="calc-label">Remaining Drawdown Buffer:</span>
+                    <span class="calc-value" id="displayDrawdownBuffer">$140.00</span>
+                </div>
+                <div class="calc-row">
+                    <span class="calc-label">Today's Losses:</span>
+                    <span class="calc-value" id="displayTodayLoss">$0.00</span>
+                </div>
+                <div class="calc-row">
+                    <span class="calc-label">Remaining Daily Loss Buffer:</span>
+                    <span class="calc-value" id="displayDailyBuffer">$60.00</span>
+                </div>
             </div>
-        </div>
-    </div>
 
-    <div class="status-bar" id="statusBar">
-        <div class="status-card">
-            <div class="status-label">Account Balance</div>
-            <div class="status-value" id="balance">$2,000</div>
-        </div>
-        <div class="status-card">
-            <div class="status-label">Total Profit</div>
-            <div class="status-value positive" id="totalProfit">$0</div>
-        </div>
-        <div class="status-card">
-            <div class="status-label">Remaining to Target</div>
-            <div class="status-value" id="remaining">$300</div>
-        </div>
-        <div class="status-card">
-            <div class="status-label">Trades Completed</div>
-            <div class="status-value" id="tradesCount">0</div>
-        </div>
-        <div class="status-card">
-            <div class="status-label">Today's P&L</div>
-            <div class="status-value" id="dailyPL">$0</div>
-        </div>
-    </div>
-
-    <div class="signal-card" id="signalCard">
-        <div class="signal-title">📡 Current Position / Signal</div>
-        <div id="signalContent">Loading...</div>
-    </div>
-
-    <div class="progress-card">
-        <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
-            <span>🎯 Progress to $300 Target</span>
-            <span id="progressPercent">0%</span>
-        </div>
-        <div class="progress-bar-container">
-            <div class="progress-bar-fill" id="progressBar" style="width: 0%;">0%</div>
-        </div>
-        <div style="margin-top: 16px;">
-            <span id="progressDetail">0 of 5 trades completed</span>
-        </div>
-    </div>
-
-    <div class="two-col">
-        <div class="signal-card">
-            <div class="signal-title">📌 Open Position Details</div>
-            <div id="openPosition">No open position</div>
-        </div>
-        <div class="signal-card">
-            <div class="signal-title">⚠️ Today's Rules</div>
-            <ul class="rules-list" id="rulesList">
-                <li>✅ Max daily loss: $60</li>
-                <li>✅ Max single trade profit: $150 (50% of $300 target)</li>
-                <li>✅ Stop loss: -2%</li>
-                <li>✅ Take profit: +6%</li>
-                <li>✅ Trailing stop activates at +3%</li>
-                <li>✅ Minimum 5 trades required to pass</li>
-            </ul>
-            <div id="dailyLossUsed" style="margin-top: 12px; padding-top: 12px; border-top: 1px solid #334155;">
-                Daily loss used today: <strong>$0</strong>
+            <div class="card">
+                <h2>🟢 Plan New Trade</h2>
+                <div class="label">Instrument</div>
+                <select id="instrument">
+                    <option value="SOXX">SOXX (1x Semiconductor ETF)</option>
+                    <option value="SOXL">SOXL (3x Leveraged ETF)</option>
+                </select>
+                
+                <div class="label">Current Price ($)</div>
+                <input type="number" id="currentPrice" step="0.01" placeholder="e.g., 230.00">
+                
+                <div class="label">Stop Loss (%)</div>
+                <input type="number" id="stopPercent" step="0.1" value="2.0">
+                
+                <div class="label">Take Profit (%)</div>
+                <input type="number" id="targetPercent" step="0.1" value="6.0">
+                
+                <button onclick="calculatePosition()">🔍 Calculate Position Size</button>
+                <div id="calcResults"></div>
             </div>
         </div>
-    </div>
 
-    <div class="signal-card">
-        <div class="signal-title">📜 Trade History</div>
-        <table class="data-table" id="tradeHistory">
-            <thead>
-                <tr><th>Date</th><th>Entry</th><th>Exit</th><th>Profit</th><th>Exit Reason</th><th>Status</th></tr>
-            </thead>
-            <tbody id="tradeHistoryBody">
-                <tr><td colspan="6" style="text-align: center;">No trades yet</td></tr>
-            </tbody>
-        </table>
-    </div>
+        <!-- RIGHT COLUMN: Post-Trade Logging -->
+        <div>
+            <div class="card">
+                <h2>🔴 Close Open Trade</h2>
+                <div class="label">Select Open Position</div>
+                <select id="openTradesSelect"></select>
+                
+                <div class="label">Exit Price ($)</div>
+                <input type="number" id="exitPrice" step="0.01" placeholder="e.g., 243.80">
+                
+                <div class="label">Exit Reason</div>
+                <select id="exitReason">
+                    <option value="TAKE_PROFIT">🎯 Take Profit</option>
+                    <option value="STOP_LOSS">🛑 Stop Loss</option>
+                    <option value="TRAILING_STOP">🔒 Trailing Stop</option>
+                    <option value="MANUAL">✋ Manual Close</option>
+                </select>
+                
+                <button onclick="closeTrade()">📝 Close Trade & Update Equity</button>
+            </div>
 
-    <div class="footer">
-        Data updates every 90 seconds during market hours | Last update: <span id="lastUpdate">--</span>
+            <div class="card">
+                <h2>📜 Trade History</h2>
+                <div id="tradeHistoryList">No trades yet</div>
+            </div>
+        </div>
     </div>
 </div>
 
 <script>
-    const SIGNALS_URL = 'https://raw.githubusercontent.com/mrpink970/sector-research-system/main/data/ttp/signals.csv';
-    const TRADES_URL = 'https://raw.githubusercontent.com/mrpink970/sector-research-system/main/data/ttp/trades.csv';
-    const PROGRESS_URL = 'https://raw.githubusercontent.com/mrpink970/sector-research-system/main/data/ttp/progress.csv';
+    // ============================================================
+    // CONSTANTS
+    // ============================================================
+    const TICK_SIZE = 0.01;
+    const MAX_PROFIT_PER_TRADE = 90;      // 30% of $300 target
+    const DAILY_LOSS_LIMIT = 60;
+    const MAX_DRAWDOWN = 140;
+    const COMMISSION_PER_ORDER = 0.75;
+    const STARTING_EQUITY = 2000;
 
-    async function fetchCSV(url) {
-        try {
-            const response = await fetch(url + '?t=' + Date.now());
-            if (!response.ok) return null;
-            return await response.text();
-        } catch (error) { return null; }
+    // File paths (relative to docs/ttp/)
+    const TRADES_FILE = 'trades.csv';
+    const ACCOUNT_FILE = 'account_status.csv';
+
+    // ============================================================
+    // DATA STRUCTURES
+    // ============================================================
+    let trades = [];           // All trades (open and closed)
+    let accountStatus = {      // Current account status
+        currentEquity: STARTING_EQUITY,
+        peakEquity: STARTING_EQUITY,
+        lastUpdated: null
+    };
+
+    // ============================================================
+    // CSV UTILITIES (Store in browser localStorage for demo)
+    // In production, this would read/write to actual files.
+    // For GitHub Pages demo, we use localStorage.
+    // ============================================================
+    function loadData() {
+        // Load trades from localStorage
+        const savedTrades = localStorage.getItem('ttp_trades');
+        if (savedTrades) {
+            trades = JSON.parse(savedTrades);
+        } else {
+            // Initialize with no trades
+            trades = [];
+        }
+        
+        // Load account status
+        const savedAccount = localStorage.getItem('ttp_account');
+        if (savedAccount) {
+            accountStatus = JSON.parse(savedAccount);
+        } else {
+            accountStatus = {
+                currentEquity: STARTING_EQUITY,
+                peakEquity: STARTING_EQUITY,
+                lastUpdated: new Date().toISOString()
+            };
+        }
+        
+        // Recalculate from trades to ensure consistency
+        recalculateAccountFromTrades();
     }
-
-    function parseCSV(csvText) {
-        if (!csvText) return [];
-        const lines = csvText.trim().split('\n');
-        if (lines.length < 2) return [];
-        const headers = lines[0].split(',').map(h => h.trim());
-        const result = [];
-        for (let i = 1; i < lines.length; i++) {
-            const values = lines[i].split(',');
-            const row = {};
-            for (let j = 0; j < headers.length; j++) {
-                let val = values[j] ? values[j].trim() : '';
-                if (!isNaN(val) && val !== '') row[headers[j]] = parseFloat(val);
-                else row[headers[j]] = val;
+    
+    function saveData() {
+        localStorage.setItem('ttp_trades', JSON.stringify(trades));
+        localStorage.setItem('ttp_account', JSON.stringify(accountStatus));
+    }
+    
+    function recalculateAccountFromTrades() {
+        // Calculate current equity from completed trades
+        let completedTrades = trades.filter(t => t.status === 'completed');
+        let totalProfit = 0;
+        for (let t of completedTrades) {
+            totalProfit += t.profit || 0;
+        }
+        
+        let calculatedEquity = STARTING_EQUITY + totalProfit;
+        let calculatedPeak = Math.max(STARTING_EQUITY, calculatedPeak);
+        
+        // Also check open trades for unrealized? No, only realized for equity
+        // But peak equity should track highest realized equity reached
+        let allPeaks = [STARTING_EQUITY];
+        let runningEquity = STARTING_EQUITY;
+        for (let t of completedTrades.sort((a,b) => new Date(a.exit_date) - new Date(b.exit_date))) {
+            runningEquity += t.profit;
+            allPeaks.push(runningEquity);
+        }
+        calculatedPeak = Math.max(...allPeaks);
+        
+        accountStatus.currentEquity = calculatedEquity;
+        accountStatus.peakEquity = calculatedPeak;
+        accountStatus.lastUpdated = new Date().toISOString();
+        
+        saveData();
+        updateAccountDisplay();
+    }
+    
+    function updateAccountDisplay() {
+        const drawdown = accountStatus.peakEquity - accountStatus.currentEquity;
+        const remainingDrawdownBuffer = MAX_DRAWDOWN - drawdown;
+        
+        // Calculate today's losses
+        const today = new Date().toISOString().split('T')[0];
+        let todayLoss = 0;
+        let completedTrades = trades.filter(t => t.status === 'completed');
+        for (let t of completedTrades) {
+            if (t.exit_date && t.exit_date.split('T')[0] === today && (t.profit || 0) < 0) {
+                todayLoss += Math.abs(t.profit);
             }
-            result.push(row);
         }
-        return result;
+        const remainingDailyBuffer = DAILY_LOSS_LIMIT - todayLoss;
+        
+        document.getElementById('displayCurrentEquity').innerHTML = `$${accountStatus.currentEquity.toFixed(2)}`;
+        document.getElementById('displayPeakEquity').innerHTML = `$${accountStatus.peakEquity.toFixed(2)}`;
+        document.getElementById('displayDrawdown').innerHTML = `$${drawdown.toFixed(2)}`;
+        document.getElementById('displayDrawdownBuffer').innerHTML = `$${remainingDrawdownBuffer.toFixed(2)}`;
+        document.getElementById('displayTodayLoss').innerHTML = `$${todayLoss.toFixed(2)}`;
+        document.getElementById('displayDailyBuffer').innerHTML = `$${remainingDailyBuffer.toFixed(2)}`;
+        
+        // Update open trades dropdown
+        const openSelect = document.getElementById('openTradesSelect');
+        let openTrades = trades.filter(t => t.status === 'open');
+        if (openTrades.length === 0) {
+            openSelect.innerHTML = '<option>No open positions</option>';
+        } else {
+            openSelect.innerHTML = openTrades.map(t => 
+                `<option value="${t.entry_date}">${t.ticker} - ${t.shares} shares @ $${t.entry_price.toFixed(2)} (${t.entry_date.split('T')[0]})</option>`
+            ).join('');
+        }
+        
+        // Update trade history display
+        updateTradeHistoryDisplay();
     }
-
-    async function loadDashboard() {
-        const signals = parseCSV(await fetchCSV(SIGNALS_URL));
-        const trades = parseCSV(await fetchCSV(TRADES_URL));
-        const progressData = parseCSV(await fetchCSV(PROGRESS_URL));
-
-        const progress = progressData.length > 0 ? progressData[progressData.length - 1] : { total_profit: 0, trades_completed: 0 };
-        
-        const openPosition = trades.find(t => t.status === 'open');
-        const completedTrades = trades.filter(t => t.status === 'completed');
-        const latestSignal = signals.length > 0 ? signals[signals.length - 1] : null;
-
-        const totalProfit = progress.total_profit || 0;
-        const remaining = Math.max(0, 300 - totalProfit);
-        const tradesCount = completedTrades.length;
-        const progressPercent = (totalProfit / 300) * 100;
-
-        document.getElementById('balance').innerHTML = `$${(2000 + totalProfit).toFixed(2)}`;
-        document.getElementById('totalProfit').innerHTML = `$${totalProfit.toFixed(2)}`;
-        document.getElementById('remaining').innerHTML = `$${remaining.toFixed(2)}`;
-        document.getElementById('tradesCount').innerHTML = tradesCount;
-        document.getElementById('progressPercent').innerHTML = `${progressPercent.toFixed(0)}%`;
-        document.getElementById('progressBar').style.width = `${Math.min(100, progressPercent)}%`;
-        document.getElementById('progressBar').innerHTML = `${progressPercent.toFixed(0)}%`;
-        
-        const tradesNeeded = Math.max(0, 5 - tradesCount);
-        const profitNeeded = remaining;
-        document.getElementById('progressDetail').innerHTML = `${tradesCount} of 5 trades completed | Need $${profitNeeded.toFixed(0)} more profit | ${tradesNeeded} more trades`;
-
-        const signalCard = document.getElementById('signalCard');
-        const signalContent = document.getElementById('signalContent');
-
-        if (openPosition) {
-            signalCard.className = 'signal-card signal-green';
-            const entryDate = openPosition.entry_date ? openPosition.entry_date.split('T')[0] : '--';
-            const entryTime = openPosition.entry_date ? openPosition.entry_date.split('T')[1]?.split('.')[0] : '--';
-            const currentStop = openPosition.stop_price || (openPosition.entry_price * 0.98);
-            const currentTarget = openPosition.target_price || (openPosition.entry_price * 1.06);
-            const highestPrice = openPosition.highest_price || openPosition.entry_price;
-            const initialStop = openPosition.initial_stop || (openPosition.entry_price * 0.98);
-            const lockedProfit = ((currentStop - openPosition.entry_price) * openPosition.shares).toFixed(2);
-            const stopTicks = openPosition.stop_ticks || '?';
-            const targetTicks = openPosition.target_ticks || '?';
-            const trailingTicks = openPosition.trailing_activation_ticks || '?';
-            
-            signalContent.innerHTML = `
-                <div class="signal-action">🟢 OPEN POSITION</div>
-                <div class="trade-details">
-                    <table style="width:100%">
-                        <tr><td style="width:40%">Ticker:</td><td><strong>${openPosition.ticker || 'SOXX'}</strong></td></tr>
-                        <tr><td>Entry Date:</td><td>${entryDate} ${entryTime}</td></tr>
-                        <tr><td>Entry Price:</td><td><strong>$${openPosition.entry_price?.toFixed(2)}</strong></td></tr>
-                        <tr><td>Shares:</td><td>${openPosition.shares}</td></tr>
-                        <tr><td>Initial Stop:</td><td>$${initialStop.toFixed(2)} (-2%)</td></tr>
-                        <tr><td>Current Stop (Trailing):</td><td><strong>$${currentStop.toFixed(2)}</strong> <span class="tick-badge">${stopTicks} ticks</span></td></tr>
-                        <tr><td>Take Profit:</td><td>$${currentTarget.toFixed(2)} (+6%) <span class="tick-badge">${targetTicks} ticks</span></td></tr>
-                        <tr><td>Trailing Activation:</td><td><span class="tick-badge">${trailingTicks} ticks</span> (+3%)</td></tr>
-                        <tr><td>Highest Price:</td><td>$${highestPrice.toFixed(2)}</td></tr>
-                        <tr><td>Locked Profit:</td><td class="locked-profit">+$${lockedProfit}</td></tr>
-                        <tr><td>Max Profit Limit:</td><td><strong>$150 (50% of target)</strong></td></tr>
-                    </table>
-                </div>
-                <div style="margin-top: 16px; padding: 12px; background: #064e3b; border-radius: 8px;">
-                    ⚡ Position open. Stop is trailing upward as price rises.
-                </div>
-            `;
-        } 
-        else if (latestSignal && latestSignal.signal === 'GREEN') {
-            signalCard.className = 'signal-card signal-green';
-            signalContent.innerHTML = `
-                <div class="signal-action">🟢 GREEN DAY - BUY SIGNAL</div>
-                <div class="trade-details">
-                    <table style="width:100%">
-                        <tr><td style="width:40%">Action:</td><td><strong>BUY 2 SHARES SOXX</strong></td></tr>
-                        <tr><td>Entry Price:</td><td>$${latestSignal.price?.toFixed(2)}</td></tr>
-                        <tr><td>Stop Loss:</td><td>$${latestSignal.stop_price?.toFixed(2)} (-2%)</td></tr>
-                        <tr><td>Take Profit:</td><td>$${latestSignal.target_price?.toFixed(2)} (+6%)</td></tr>
-                        <tr><td>Expected Net Profit:</td><td>$${latestSignal.net_profit?.toFixed(2)}</td></tr>
-                        <tr><td>Session:</td><td>${latestSignal.session || '--'}</td></tr>
-                        <tr><td>Max Profit Limit:</td><td><strong>$150 (50% of target)</strong></td></tr>
-                    </table>
-                </div>
-                <div style="margin-top: 16px; padding: 12px; background: #064e3b; border-radius: 8px;">
-                    ⚡ Sell both shares at +6%. System auto-closes at $150 profit.
-                </div>
-            `;
-        } else if (latestSignal && latestSignal.signal === 'FAST_BREAKOUT') {
-            signalCard.className = 'signal-card signal-green';
-            signalContent.innerHTML = `
-                <div class="signal-action">⚡ FAST BREAKOUT - BUY NOW (Tighter Stops)</div>
-                <div class="trade-details">
-                    <table style="width:100%">
-                        <tr><td style="width:40%">Action:</td><td><strong>BUY 2 SHARES SOXX</strong></td></tr>
-                        <tr><td>Entry Price:</td><td>$${latestSignal.price?.toFixed(2)}</td></tr>
-                        <tr><td>Stop Loss:</td><td>$${latestSignal.stop_price?.toFixed(2)} (-1.5%)</td></tr>
-                        <tr><td>Take Profit:</td><td>$${latestSignal.target_price?.toFixed(2)} (+3%)</td></tr>
-                        <tr><td>Max Profit Limit:</td><td><strong>$150 (50% of target)</strong></td></tr>
-                    </table>
-                </div>
-                <div style="margin-top: 16px; padding: 12px; background: #064e3b; border-radius: 8px;">
-                    ⚡ FAST SYSTEM - Execute within 5 minutes. Tighter stops.
-                </div>
-            `;
-        } else {
-            signalCard.className = 'signal-card signal-red';
-            let reasonText = latestSignal?.conditions || 'No buy signal detected';
-            signalContent.innerHTML = `
-                <div class="signal-action">🔴 NO SIGNAL / WAIT</div>
-                <div class="trade-details">
-                    <p>${reasonText}</p>
-                    <p style="margin-top: 12px; color: #94a3b8;">System checks every 15 minutes during market hours.</p>
-                    <p style="margin-top: 8px; color: #f97316;">📋 TTP Compliance: Cannot enter if earnings within 1 day</p>
-                </div>
-            `;
+    
+    function updateTradeHistoryDisplay() {
+        const historyDiv = document.getElementById('tradeHistoryList');
+        let allTrades = [...trades].reverse();
+        if (allTrades.length === 0) {
+            historyDiv.innerHTML = '<p style="color: #64748b;">No trades yet</p>';
+            return;
         }
-
-        const openPosDiv = document.getElementById('openPosition');
-        if (openPosition) {
-            const currentStop = openPosition.stop_price || (openPosition.entry_price * 0.98);
-            const currentTarget = openPosition.target_price || (openPosition.entry_price * 1.06);
-            const highestPrice = openPosition.highest_price || openPosition.entry_price;
-            const initialStop = openPosition.initial_stop || (openPosition.entry_price * 0.98);
-            const lockedProfit = ((currentStop - openPosition.entry_price) * openPosition.shares).toFixed(2);
-            const stopTicks = openPosition.stop_ticks || '?';
-            const targetTicks = openPosition.target_ticks || '?';
-            const trailingTicks = openPosition.trailing_activation_ticks || '?';
-            
-            openPosDiv.innerHTML = `
-                <div class="trade-details">
-                    <table style="width:100%">
-                        <tr><td>Ticker:</td><td><strong>${openPosition.ticker || 'SOXX'}</strong></td></tr>
-                        <tr><td>Entry:</td><td>$${openPosition.entry_price?.toFixed(2)}</td></tr>
-                        <tr><td>Shares:</td><td>${openPosition.shares}</td></tr>
-                        <tr><td>Initial Stop:</td><td>$${initialStop.toFixed(2)}</td></tr>
-                        <tr><td>Current Stop:</td><td><strong>$${currentStop.toFixed(2)}</strong> <span class="tick-badge">${stopTicks} ticks</span></td></tr>
-                        <tr><td>Take Profit:</td><td>$${currentTarget.toFixed(2)} <span class="tick-badge">${targetTicks} ticks</span></td></tr>
-                        <tr><td>Trailing Activation:</td><td><span class="tick-badge">${trailingTicks} ticks</span></td></tr>
-                        <tr><td>Highest Price:</td><td>$${highestPrice.toFixed(2)}</td></tr>
-                        <tr><td>Locked Profit:</td><td class="locked-profit">+$${lockedProfit}</td></tr>
-                    </table>
-                </div>
-            `;
-        } else {
-            openPosDiv.innerHTML = '<p style="color: #64748b;">📭 No open position</p>';
-        }
-
-        const tradeBody = document.getElementById('tradeHistoryBody');
-        if (completedTrades.length === 0) {
-            tradeBody.innerHTML = '<tr><td colspan="6" style="text-align: center;">No trades yet</td></tr>';
-        } else {
-            tradeBody.innerHTML = completedTrades.slice().reverse().map(t => {
-                let exitReasonDisplay = t.exit_reason || '--';
-                if (exitReasonDisplay === 'MAX_PROFIT_LIMIT') exitReasonDisplay = '💰 Max Profit Hit ($150)';
-                if (exitReasonDisplay === 'TRAILING_STOP') exitReasonDisplay = '🔒 Trailing Stop';
-                if (exitReasonDisplay === 'STOP_LOSS') exitReasonDisplay = '🛑 Stop Loss';
-                if (exitReasonDisplay === 'TAKE_PROFIT') exitReasonDisplay = '🎯 Take Profit';
-                return `
+        
+        historyDiv.innerHTML = `
+            <table>
+                <thead>
                     <tr>
-                        <td>${t.entry_date?.split('T')[0] || '--'}</td>
-                        <td>$${t.entry_price?.toFixed(2) || '--'}</td>
-                        <td>$${t.exit_price?.toFixed(2) || '--'}</td>
-                        <td class="${(t.profit || 0) >= 0 ? 'positive' : 'negative'}">${(t.profit || 0) >= 0 ? '+' : ''}$${t.profit?.toFixed(2) || '0'}</td>
-                        <td>${exitReasonDisplay}</td>
-                        <td>Closed</td>
+                        <th>Date</th><th>Ticker</th><th>Shares</th><th>Entry</th><th>Exit</th><th>Profit</th><th>Status</th>
                     </tr>
-                `;
-            }).join('');
+                </thead>
+                <tbody>
+                    ${allTrades.map(t => `
+                        <tr>
+                            <td>${t.entry_date?.split('T')[0] || '--'}</td>
+                            <td>${t.ticker}</td>
+                            <td>${t.shares}</td>
+                            <td>$${t.entry_price?.toFixed(2)}</td>
+                            <td>${t.exit_price ? `$${t.exit_price.toFixed(2)}` : '--'}</td>
+                            <td class="${(t.profit || 0) >= 0 ? 'positive' : 'negative'}">${t.profit ? `${t.profit >= 0 ? '+' : ''}$${t.profit.toFixed(2)}` : '--'}</td>
+                            <td><span class="status-badge ${t.status === 'open' ? 'status-open' : 'status-closed'}">${t.status}</span></td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+        `;
+    }
+    
+    // ============================================================
+    // POSITION SIZING CALCULATOR
+    // ============================================================
+    function calculatePosition() {
+        const instrument = document.getElementById('instrument').value;
+        const price = parseFloat(document.getElementById('currentPrice').value);
+        const stopPercent = parseFloat(document.getElementById('stopPercent').value);
+        const targetPercent = parseFloat(document.getElementById('targetPercent').value);
+        
+        if (isNaN(price) || price <= 0) {
+            document.getElementById('calcResults').innerHTML = '<div class="calc-box" style="color:#ef4444;">Please enter a valid price</div>';
+            return;
         }
-
-        document.getElementById('lastUpdate').innerHTML = new Date().toLocaleString();
+        
+        const stopLossPerShare = price * (stopPercent / 100);
+        const targetProfitPerShare = price * (targetPercent / 100);
+        
+        const drawdownSoFar = accountStatus.peakEquity - accountStatus.currentEquity;
+        const remainingDrawdownBuffer = MAX_DRAWDOWN - drawdownSoFar;
         
         const today = new Date().toISOString().split('T')[0];
-        const todayLosses = completedTrades.filter(t => {
-            const exitDate = t.exit_date?.split('T')[0];
-            return exitDate === today && (t.profit || 0) < 0;
-        });
-        const dailyLoss = todayLosses.reduce((sum, t) => sum + Math.abs(t.profit || 0), 0);
-        document.getElementById('dailyLossUsed').innerHTML = `Daily loss used today: <strong>$${dailyLoss.toFixed(2)}</strong> / $60 limit`;
-        if (dailyLoss >= 60) {
-            document.getElementById('dailyLossUsed').style.color = '#ef4444';
+        let todayLoss = 0;
+        let completedTrades = trades.filter(t => t.status === 'completed');
+        for (let t of completedTrades) {
+            if (t.exit_date && t.exit_date.split('T')[0] === today && (t.profit || 0) < 0) {
+                todayLoss += Math.abs(t.profit);
+            }
         }
+        const remainingDailyBuffer = DAILY_LOSS_LIMIT - todayLoss;
+        
+        // Max shares based on each rule
+        let maxSharesProfit = Math.floor(MAX_PROFIT_PER_TRADE / targetProfitPerShare);
+        let maxSharesDrawdown = Math.floor(remainingDrawdownBuffer / stopLossPerShare);
+        let maxSharesDaily = Math.floor(remainingDailyBuffer / stopLossPerShare);
+        
+        maxSharesProfit = Math.max(0, maxSharesProfit);
+        maxSharesDrawdown = Math.max(0, maxSharesDrawdown);
+        maxSharesDaily = Math.max(0, maxSharesDaily);
+        
+        let recommendedShares = Math.min(maxSharesProfit, maxSharesDrawdown, maxSharesDaily);
+        if (recommendedShares === 0 && (remainingDrawdownBuffer > 0 || remainingDailyBuffer > 0)) {
+            recommendedShares = 1;
+        }
+        
+        const stopTicks = Math.round(stopLossPerShare / TICK_SIZE);
+        const targetPrice = price * (1 + targetPercent / 100);
+        const commissionTotal = COMMISSION_PER_ORDER * 2;
+        
+        let profitStatusClass = 'safe';
+        let profitStatusText = '✅ Safe';
+        if (targetProfitPerShare * recommendedShares > MAX_PROFIT_PER_TRADE * 0.8) {
+            profitStatusClass = 'warning';
+            profitStatusText = '⚠️ Approaching limit';
+        }
+        if (targetProfitPerShare * recommendedShares > MAX_PROFIT_PER_TRADE) {
+            profitStatusClass = 'danger';
+            profitStatusText = '❌ Exceeds limit';
+        }
+        
+        const resultsHtml = `
+            <div class="calc-box">
+                <div class="calc-row"><span class="calc-label">🔒 Max Shares (30% Profit):</span><span class="calc-value">${maxSharesProfit}</span></div>
+                <div class="calc-row"><span class="calc-label">🔒 Max Shares (Drawdown):</span><span class="calc-value">${maxSharesDrawdown}</span></div>
+                <div class="calc-row"><span class="calc-label">🔒 Max Shares (Daily Loss):</span><span class="calc-value">${maxSharesDaily}</span></div>
+            </div>
+            <div class="recommendation">
+                <div class="recommendation-value">${recommendedShares} ${recommendedShares === 1 ? 'SHARE' : 'SHARES'}</div>
+                <div>Recommended Position Size</div>
+                <div style="font-size:12px; margin-top:8px;">Risk: $${(stopLossPerShare * recommendedShares).toFixed(2)} | Reward: $${(targetProfitPerShare * recommendedShares).toFixed(2)}</div>
+            </div>
+            <div class="calc-box">
+                <div class="calc-row"><span class="calc-label">Stop Loss (TICKS):</span><span class="calc-value">${stopTicks.toLocaleString()} TICKS</span></div>
+                <div class="calc-row"><span class="calc-label">Take Profit Price:</span><span class="calc-value">$${targetPrice.toFixed(2)}</span></div>
+                <div class="calc-row"><span class="calc-label">Breakeven Price:</span><span class="calc-value">$${(price + (commissionTotal / recommendedShares)).toFixed(2)}</span></div>
+                <div class="calc-row"><span class="calc-label">Profit at target:</span><span class="calc-value ${profitStatusClass}">$${(targetProfitPerShare * recommendedShares).toFixed(2)} (30% rule: $90)</span></div>
+            </div>
+        `;
+        
+        document.getElementById('calcResults').innerHTML = resultsHtml;
     }
-
-    loadDashboard();
-    setInterval(loadDashboard, 90000);
+    
+    // ============================================================
+    // OPEN NEW TRADE (Manually - no auto-creation)
+    // ============================================================
+    function openNewTrade() {
+        // This function is for manual entry of a trade you actually placed
+        // We'll add a button for this in the UI if needed
+        const instrument = document.getElementById('instrument').value;
+        const price = parseFloat(document.getElementById('currentPrice').value);
+        const shares = parseInt(document.getElementById('recommendedShares')?.innerText || 2);
+        const stopPercent = parseFloat(document.getElementById('stopPercent').value);
+        const targetPercent = parseFloat(document.getElementById('targetPercent').value);
+        
+        // Create new trade record
+        const newTrade = {
+            ticker: instrument,
+            entry_date: new Date().toISOString(),
+            entry_price: price,
+            shares: shares,
+            stop_price: price * (1 - stopPercent/100),
+            target_price: price * (1 + targetPercent/100),
+            status: 'open',
+            initial_stop: price * (1 - stopPercent/100),
+            highest_price: price,
+            stop_ticks: Math.round((price * stopPercent/100) / TICK_SIZE),
+            target_ticks: Math.round((price * targetPercent/100) / TICK_SIZE),
+            trailing_activation_ticks: Math.round((price * 3 / 100) / TICK_SIZE)
+        };
+        
+        trades.push(newTrade);
+        saveData();
+        refreshAll();
+        alert(`✅ Trade opened: ${shares} shares ${instrument} at $${price.toFixed(2)}`);
+    }
+    
+    // ============================================================
+    // CLOSE TRADE
+    // ============================================================
+    function closeTrade() {
+        const selectElement = document.getElementById('openTradesSelect');
+        const selectedValue = selectElement.value;
+        const exitPrice = parseFloat(document.getElementById('exitPrice').value);
+        const exitReason = document.getElementById('exitReason').value;
+        
+        if (!selectedValue || selectedValue === 'No open positions') {
+            alert('No open position selected');
+            return;
+        }
+        
+        if (isNaN(exitPrice) || exitPrice <= 0) {
+            alert('Please enter a valid exit price');
+            return;
+        }
+        
+        // Find the open trade
+        const tradeIndex = trades.findIndex(t => t.status === 'open' && t.entry_date === selectedValue);
+        if (tradeIndex === -1) {
+            alert('Trade not found');
+            return;
+        }
+        
+        const trade = trades[tradeIndex];
+        const profit = trade.direction === 'BUY' 
+            ? (exitPrice - trade.entry_price) * trade.shares
+            : (trade.entry_price - exitPrice) * trade.shares;
+        
+        trade.status = 'completed';
+        trade.exit_date = new Date().toISOString();
+        trade.exit_price = exitPrice;
+        trade.profit = parseFloat(profit.toFixed(2));
+        trade.exit_reason = exitReason;
+        
+        trades[tradeIndex] = trade;
+        saveData();
+        refreshAll();
+        
+        alert(`✅ Trade closed: ${trade.shares} shares ${trade.ticker} at $${exitPrice.toFixed(2)} | Profit: ${profit >= 0 ? '+' : ''}$${profit.toFixed(2)}`);
+        document.getElementById('exitPrice').value = '';
+    }
+    
+    // ============================================================
+    // REFRESH ALL
+    // ============================================================
+    function refreshAll() {
+        loadData();
+        updateAccountDisplay();
+        document.getElementById('calcResults').innerHTML = '';
+        document.getElementById('currentPrice').value = '';
+    }
+    
+    // ============================================================
+    // INITIALIZATION
+    // ============================================================
+    loadData();
+    updateAccountDisplay();
+    
+    // Set default price for demo
+    document.getElementById('currentPrice').value = '230.00';
 </script>
 </body>
 </html>
