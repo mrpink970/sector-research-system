@@ -2,8 +2,7 @@
 """
 Trade The Pool - SOXX Signal Generator (Email Only)
 Sends pre-market email with Green Day/Red Day signal and TTP rule warnings
-No CSV updates, no position tracking, no dashboard
-Supports multiple email recipients from config file
+NO automatic trade creation. NO position tracking. Email and signals.csv only.
 """
 
 import os
@@ -163,16 +162,16 @@ def send_email(is_green: bool, data: dict, conditions: list, recipients: list):
 
 📈 TRADE PLAN (to be entered at order placement):
 
-   Symbol: SOXX
+   Symbol: SOXX (or SOXL - use Trade Entry Calculator)
    Direction: BUY
-   Quantity: 2 SHARES
    Order Type: LIMIT (enter your desired price)
    Good For: DAY
    Overnight: OFF
 
-   When you enter your limit price, use the Trade Entry Calculator:
-   - STOP LOSS: 2% below entry = X,XXX TICKS
-   - TAKE PROFIT: 6% above entry = $XXX.XX (in dollars)
+   Use the Trade Entry Calculator to determine:
+   - Position size based on your account equity
+   - Stop loss in TICKS
+   - Take profit in DOLLARS
 
 {separator}
 
@@ -215,7 +214,11 @@ def send_email(is_green: bool, data: dict, conditions: list, recipients: list):
 🔗 TRADE ENTRY CALCULATOR:
    {trade_entry_url}
 
-   Enter your limit price → Get stop loss in TICKS + take profit in DOLLARS
+   Use this tool to:
+   - Enter your current account equity and peak equity
+   - Calculate safe position size
+   - Get stop loss in TICKS and take profit in DOLLARS
+   - Log your completed trades
 
 {separator}
 """
@@ -279,8 +282,6 @@ def send_email(is_green: bool, data: dict, conditions: list, recipients: list):
 
 🔗 TRADE ENTRY CALCULATOR:
    {trade_entry_url}
-
-   Enter your limit price → Get stop loss in TICKS + take profit in DOLLARS
 
 {separator}
 """
@@ -361,7 +362,7 @@ def send_compliance_email(data: dict, compliance_reason: str, recipients: list):
 
 
 def save_signal(data: dict, is_green: bool, conditions: list):
-    """Save signal to CSV for reference"""
+    """Save signal to CSV for reference (no position tracking)"""
     signal_type = 'GREEN' if is_green else 'RED'
     
     new_row = pd.DataFrame([{
@@ -388,7 +389,7 @@ def save_signal(data: dict, is_green: bool, conditions: list):
 
 def main():
     print("=" * 50)
-    print("TTP DECISION ENGINE (Email Only)")
+    print("TTP DECISION ENGINE (Email Only - No Auto Trades)")
     print("=" * 50)
     
     config = load_config()
@@ -429,7 +430,10 @@ def main():
     for c in conditions:
         print(f"   {c}")
     
+    # Send email only - NO automatic trade creation
     send_email(is_green, data, conditions, recipients)
+    
+    # Save signal to CSV for reference only
     save_signal(data, is_green, conditions)
     
     print("\n✅ Decision engine complete")
