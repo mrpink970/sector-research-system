@@ -139,6 +139,14 @@
             text-align: center;
             font-weight: 700;
         }
+        .rule-caution {
+            background: #7c2d12;
+            border-radius: 8px;
+            padding: 8px;
+            margin-top: 8px;
+            text-align: center;
+            font-weight: 700;
+        }
     </style>
 </head>
 <body>
@@ -206,9 +214,9 @@
                 <div id="calcResults"></div>
                 
                 <div class="label" style="margin-top: 16px;">Your Quantity (override recommendation)</div>
-                <input type="number" id="userQuantity" class="quantity-input" step="1" min="1" max="20" value="6" onchange="updateWithUserQuantity()">
+                <input type="number" id="userQuantity" class="quantity-input" step="1" min="1" max="20" value="6" oninput="updateWithUserQuantity()">
                 
-                <button onclick="copyOrderDetails()" style="background: #8b5cf6;">📋 Copy Order Details to Clipboard</button>
+                <button onclick="copyOrderDetails()" style="background: #8b5cf6; margin-top: 8px;">📋 Copy Order Details to Clipboard</button>
             </div>
         </div>
 
@@ -373,7 +381,7 @@
         }
         
         historyDiv.innerHTML = `
-            <table>
+            <table style="width:100%; font-size:12px;">
                 <thead>
                     <tr>
                         <th>Date</th><th>Ticker</th><th>Shares</th><th>Entry</th><th>Exit</th><th>Profit</th><th>Status</th>
@@ -495,6 +503,7 @@
         const price = parseFloat(document.getElementById('currentPrice').value);
         const stopPercent = parseFloat(document.getElementById('stopPercent').value);
         const targetPercent = parseFloat(document.getElementById('targetPercent').value);
+        const instrument = document.getElementById('instrument').value;
         
         if (isNaN(price) || price <= 0) return;
         
@@ -509,15 +518,15 @@
         
         let warningHtml = '';
         if (rewardAmount > MAX_PROFIT_PER_TRADE) {
-            warningHtml = '<div class="rule-warning" style="background:#7f1d1d;">❌ WARNING: Profit exceeds $90 limit (30% rule)! Reduce shares.</div>';
+            warningHtml = '<div class="rule-warning">❌ WARNING: Profit exceeds $90 limit (30% rule)! Reduce shares.</div>';
         } else if (rewardAmount > MAX_PROFIT_PER_TRADE * 0.8) {
-            warningHtml = '<div class="rule-warning" style="background:#7c2d12;">⚠️ CAUTION: Profit approaching $90 limit. Be careful.</div>';
+            warningHtml = '<div class="rule-caution">⚠️ CAUTION: Profit approaching $90 limit. Be careful.</div>';
         }
         
         const orderDetailsHtml = `
             <div class="calc-box" style="margin-top: 16px;">
                 <div class="calc-row"><span class="calc-label">📈 ORDER DETAILS (for TTP platform):</span><span class="calc-value"></span></div>
-                <div class="calc-row"><span class="calc-label">Symbol:</span><span class="calc-value"><strong>${document.getElementById('instrument').value}</strong></span></div>
+                <div class="calc-row"><span class="calc-label">Symbol:</span><span class="calc-value"><strong>${instrument}</strong></span></div>
                 <div class="calc-row"><span class="calc-label">Action:</span><span class="calc-value" style="color:#22c55e;"><strong>BUY</strong></span></div>
                 <div class="calc-row"><span class="calc-label">Quantity:</span><span class="calc-value"><strong>${userShares} SHARES</strong></span></div>
                 <div class="calc-row"><span class="calc-label">Order Type:</span><span class="calc-value"><strong>LIMIT</strong></span></div>
@@ -536,11 +545,17 @@
             ${warningHtml}
         `;
         
-        const existingResults = document.getElementById('calcResults');
-        if (existingResults) {
-            existingResults.innerHTML = existingResults.innerHTML.split('<div class="calc-box" style="margin-top: 16px;">')[0] + orderDetailsHtml;
-        } else {
-            document.getElementById('calcResults').innerHTML = orderDetailsHtml;
+        // Find the calcResults div and update only the order details section
+        const calcResults = document.getElementById('calcResults');
+        if (calcResults) {
+            // Keep the recommendation section, replace the order details
+            const existingHtml = calcResults.innerHTML;
+            const recommendationMatch = existingHtml.match(/<div class="recommendation">[\s\S]*?<\/div>/);
+            if (recommendationMatch) {
+                calcResults.innerHTML = recommendationMatch[0] + orderDetailsHtml;
+            } else {
+                calcResults.innerHTML = orderDetailsHtml;
+            }
         }
     }
     
