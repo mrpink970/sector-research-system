@@ -182,8 +182,8 @@ def send_email(is_green: bool, data: dict, conditions: list, recipients: list):
       → Violation will cause IMMEDIATE ACCOUNT TERMINATION
       → All profits will be FORFEITED
 
-   ❌ MAX POSITION PROFIT: 50% of target ($150)
-      → Any single trade exceeding $150 profit will be INVALIDATED
+   ❌ MAX POSITION PROFIT: 30% of target ($90)
+      → Any single trade exceeding $90 profit will be INVALIDATED
       → You may need additional trades to pass
 
    ❌ MINIMUM TRADES: 5 trades required to scale to next level
@@ -247,8 +247,8 @@ def send_email(is_green: bool, data: dict, conditions: list, recipients: list):
       → Violation will cause IMMEDIATE ACCOUNT TERMINATION
       → All profits will be FORFEITED
 
-   ❌ MAX POSITION PROFIT: 50% of target ($150)
-      → Any single trade exceeding $150 profit will be INVALIDATED
+   ❌ MAX POSITION PROFIT: 30% of target ($90)
+      → Any single trade exceeding $90 profit will be INVALIDATED
       → You may need additional trades to pass
 
    ❌ MINIMUM TRADES: 5 trades required to scale to next level
