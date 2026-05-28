@@ -20,8 +20,8 @@ exit_rules:
   stop_loss_pct: 2.0
   take_profit_pct: 6.0
   trailing_stop_pct: 2.0
-  trailing_activation_pct: 0.0  # Activates immediately
-  max_profit_per_trade: 150
+  trailing_activation_pct: 0.0
+  max_profit_per_trade: 90   # 30% of $300 target
 
 trade_management:
   shares_per_trade: 2
@@ -46,10 +46,10 @@ compliance:
     - "AMAT"
     - "KLAC"
 
-# Email Recipients - Add or remove emails here
+# Email Recipients
 email_recipients:
   - "mrpink970@gmail.com"
- # - "mwhite7680@gmail.com"
+  - "mwhite7680@gmail.com"
 
 # Data collection times (ET)
 data_times:
