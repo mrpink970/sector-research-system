@@ -101,8 +101,7 @@
             font-size: 12px;
             font-weight: 700;
         }
-        .status-open { background: #22c55e; color: #0a0e17; }
-        .status-closed { background: #64748b; }
+        .status-completed { background: #22c55e; color: #0a0e17; }
         .positive { color: #22c55e; }
         .negative { color: #ef4444; }
         .danger { color: #ef4444; }
@@ -147,6 +146,11 @@
             text-align: center;
             font-weight: 700;
         }
+        .grid-2-fields {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
     </style>
 </head>
 <body>
@@ -155,7 +159,7 @@
         <div class="flex-between">
             <div>
                 <h1>📝 TTP Trade Manager & Calculator</h1>
-                <p style="color: #94a3b8;">Pre-trade position sizing (with custom quantity) + Post-trade logging</p>
+                <p style="color: #94a3b8;">Pre-trade position sizing + Post-trade logging</p>
             </div>
             <button class="secondary" onclick="refreshAll()" style="width: auto; padding: 8px 16px;">🔄 Refresh Data</button>
         </div>
@@ -165,7 +169,7 @@
         <!-- LEFT COLUMN: Pre-Trade Calculator -->
         <div>
             <div class="card">
-                <h2>📊 Account Status (Auto-Loaded)</h2>
+                <h2>📊 Account Status</h2>
                 <div class="calc-row">
                     <span class="calc-label">Current Equity:</span>
                     <span class="calc-value" id="displayCurrentEquity">$2,000.00</span>
@@ -216,29 +220,54 @@
                 <div class="label" style="margin-top: 16px;">Your Quantity (override recommendation)</div>
                 <input type="number" id="userQuantity" class="quantity-input" step="1" min="1" max="20" value="6" oninput="updateWithUserQuantity()">
                 
-                <button onclick="copyOrderDetails()" style="background: #8b5cf6; margin-top: 8px;">📋 Copy Order Details to Clipboard</button>
+                <button onclick="copyOrderDetails()" style="background: #8b5cf6; margin-top: 8px;">📋 Copy Order Details</button>
             </div>
         </div>
 
-        <!-- RIGHT COLUMN: Post-Trade Logging -->
+        <!-- RIGHT COLUMN: Log Completed Trade -->
         <div>
             <div class="card">
-                <h2>🔴 Close Open Trade</h2>
-                <div class="label">Select Open Position</div>
-                <select id="openTradesSelect"></select>
+                <h2>📝 Log Completed Trade</h2>
+                <div class="label">Symbol</div>
+                <select id="logSymbol">
+                    <option value="SOXX">SOXX (1x Semiconductor ETF)</option>
+                    <option value="SOXL">SOXL (3x Leveraged ETF)</option>
+                </select>
                 
-                <div class="label">Exit Price ($)</div>
-                <input type="number" id="exitPrice" step="0.01" placeholder="e.g., 237.44">
+                <div class="grid-2-fields">
+                    <div>
+                        <div class="label">Entry Date</div>
+                        <input type="datetime-local" id="entryDate">
+                    </div>
+                    <div>
+                        <div class="label">Entry Price ($)</div>
+                        <input type="number" id="entryPriceLog" step="0.01" placeholder="e.g., 224.00">
+                    </div>
+                </div>
+                
+                <div class="grid-2-fields">
+                    <div>
+                        <div class="label">Exit Date</div>
+                        <input type="datetime-local" id="exitDate">
+                    </div>
+                    <div>
+                        <div class="label">Exit Price ($)</div>
+                        <input type="number" id="exitPriceLog" step="0.01" placeholder="e.g., 237.44">
+                    </div>
+                </div>
+                
+                <div class="label">Shares</div>
+                <input type="number" id="sharesLog" step="1" min="1" value="2">
                 
                 <div class="label">Exit Reason</div>
-                <select id="exitReason">
-                    <option value="TAKE_PROFIT">🎯 Take Profit</option>
-                    <option value="STOP_LOSS">🛑 Stop Loss</option>
+                <select id="exitReasonLog">
+                    <option value="TAKE_PROFIT">🎯 Take Profit (6%)</option>
+                    <option value="STOP_LOSS">🛑 Stop Loss (2%)</option>
                     <option value="TRAILING_STOP">🔒 Trailing Stop</option>
                     <option value="MANUAL">✋ Manual Close</option>
                 </select>
                 
-                <button onclick="closeTrade()">📝 Close Trade & Update Equity</button>
+                <button onclick="logCompletedTrade()">💾 Save Trade & Update Equity</button>
             </div>
 
             <div class="card">
@@ -359,16 +388,6 @@
         document.getElementById('displayTodayLoss').innerHTML = `$${todayLoss.toFixed(2)}`;
         document.getElementById('displayDailyBuffer').innerHTML = `$${remainingDailyBuffer.toFixed(2)}`;
         
-        const openSelect = document.getElementById('openTradesSelect');
-        let openTrades = trades.filter(t => t.status === 'open');
-        if (openTrades.length === 0) {
-            openSelect.innerHTML = '<option>No open positions</option>';
-        } else {
-            openSelect.innerHTML = openTrades.map(t => 
-                `<option value="${t.entry_date}">${t.ticker} - ${t.shares} shares @ $${t.entry_price.toFixed(2)} (${t.entry_date.split('T')[0]})</option>`
-            ).join('');
-        }
-        
         updateTradeHistoryDisplay();
     }
     
@@ -384,24 +403,85 @@
             <table style="width:100%; font-size:12px;">
                 <thead>
                     <tr>
-                        <th>Date</th><th>Ticker</th><th>Shares</th><th>Entry</th><th>Exit</th><th>Profit</th><th>Status</th>
+                        <th>Entry Date</th><th>Exit Date</th><th>Ticker</th><th>Shares</th><th>Entry</th><th>Exit</th><th>Profit</th><th>Reason</th>
                     </tr>
                 </thead>
                 <tbody>
                     ${allTrades.map(t => `
                         <tr>
-                            <td>${t.entry_date?.split('T')[0] || '--'}</td>
+                            <td>${t.entry_date?.split('T')[0] || '--'} ${t.entry_date?.split('T')[1]?.slice(0,5) || ''}</td>
+                            <td>${t.exit_date?.split('T')[0] || '--'} ${t.exit_date?.split('T')[1]?.slice(0,5) || ''}</td>
                             <td>${t.ticker}</td>
                             <td>${t.shares}</td>
                             <td>$${t.entry_price?.toFixed(2)}</td>
-                            <td>${t.exit_price ? `$${t.exit_price.toFixed(2)}` : '--'}</td>
+                            <td>$${t.exit_price?.toFixed(2)}</td>
                             <td class="${(t.profit || 0) >= 0 ? 'positive' : 'negative'}">${t.profit ? `${t.profit >= 0 ? '+' : ''}$${t.profit.toFixed(2)}` : '--'}</td>
-                            <td><span class="status-badge ${t.status === 'open' ? 'status-open' : 'status-closed'}">${t.status}</span></td>
+                            <td>${t.exit_reason || '--'}</td>
                         </tr>
                     `).join('')}
                 </tbody>
             </table>
         `;
+    }
+    
+    // ============================================================
+    // LOG COMPLETED TRADE
+    // ============================================================
+    function logCompletedTrade() {
+        const symbol = document.getElementById('logSymbol').value;
+        const entryDate = document.getElementById('entryDate').value;
+        const entryPrice = parseFloat(document.getElementById('entryPriceLog').value);
+        const exitDate = document.getElementById('exitDate').value;
+        const exitPrice = parseFloat(document.getElementById('exitPriceLog').value);
+        const shares = parseInt(document.getElementById('sharesLog').value);
+        const exitReason = document.getElementById('exitReasonLog').value;
+        
+        if (!entryDate) {
+            alert('Please enter entry date');
+            return;
+        }
+        if (isNaN(entryPrice) || entryPrice <= 0) {
+            alert('Please enter valid entry price');
+            return;
+        }
+        if (!exitDate) {
+            alert('Please enter exit date');
+            return;
+        }
+        if (isNaN(exitPrice) || exitPrice <= 0) {
+            alert('Please enter valid exit price');
+            return;
+        }
+        if (isNaN(shares) || shares < 1) {
+            alert('Please enter valid number of shares');
+            return;
+        }
+        
+        const profit = (exitPrice - entryPrice) * shares;
+        
+        const newTrade = {
+            ticker: symbol,
+            entry_date: new Date(entryDate).toISOString(),
+            entry_price: entryPrice,
+            shares: shares,
+            exit_date: new Date(exitDate).toISOString(),
+            exit_price: exitPrice,
+            profit: parseFloat(profit.toFixed(2)),
+            exit_reason: exitReason,
+            status: 'completed'
+        };
+        
+        trades.push(newTrade);
+        saveData();
+        recalculateAccountFromTrades();
+        refreshAll();
+        
+        alert(`✅ Trade saved: ${shares} shares ${symbol}\nProfit: ${profit >= 0 ? '+' : ''}$${profit.toFixed(2)}`);
+        
+        // Clear form
+        document.getElementById('entryPriceLog').value = '';
+        document.getElementById('exitPriceLog').value = '';
+        document.getElementById('sharesLog').value = '2';
     }
     
     // ============================================================
@@ -545,10 +625,8 @@
             ${warningHtml}
         `;
         
-        // Find the calcResults div and update only the order details section
         const calcResults = document.getElementById('calcResults');
         if (calcResults) {
-            // Keep the recommendation section, replace the order details
             const existingHtml = calcResults.innerHTML;
             const recommendationMatch = existingHtml.match(/<div class="recommendation">[\s\S]*?<\/div>/);
             if (recommendationMatch) {
@@ -581,48 +659,6 @@
     }
     
     // ============================================================
-    // CLOSE TRADE
-    // ============================================================
-    function closeTrade() {
-        const selectElement = document.getElementById('openTradesSelect');
-        const selectedValue = selectElement.value;
-        const exitPrice = parseFloat(document.getElementById('exitPrice').value);
-        const exitReason = document.getElementById('exitReason').value;
-        
-        if (!selectedValue || selectedValue === 'No open positions') {
-            alert('No open position selected');
-            return;
-        }
-        
-        if (isNaN(exitPrice) || exitPrice <= 0) {
-            alert('Please enter a valid exit price');
-            return;
-        }
-        
-        const tradeIndex = trades.findIndex(t => t.status === 'open' && t.entry_date === selectedValue);
-        if (tradeIndex === -1) {
-            alert('Trade not found');
-            return;
-        }
-        
-        const trade = trades[tradeIndex];
-        const profit = (exitPrice - trade.entry_price) * trade.shares;
-        
-        trade.status = 'completed';
-        trade.exit_date = new Date().toISOString();
-        trade.exit_price = exitPrice;
-        trade.profit = parseFloat(profit.toFixed(2));
-        trade.exit_reason = exitReason;
-        
-        trades[tradeIndex] = trade;
-        saveData();
-        refreshAll();
-        
-        alert(`✅ Trade closed: ${trade.shares} shares ${trade.ticker} at $${exitPrice.toFixed(2)} | Profit: ${profit >= 0 ? '+' : ''}$${profit.toFixed(2)}`);
-        document.getElementById('exitPrice').value = '';
-    }
-    
-    // ============================================================
     // REFRESH
     // ============================================================
     function refreshAll() {
@@ -639,6 +675,12 @@
     loadData();
     updateAccountDisplay();
     calculatePosition();
+    
+    // Set default dates to now
+    const now = new Date();
+    const localDateTime = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+    document.getElementById('entryDate').value = localDateTime;
+    document.getElementById('exitDate').value = localDateTime;
     
     // Add event listeners for real-time updates
     document.getElementById('instrument').addEventListener('change', () => { calculatePosition(); });
