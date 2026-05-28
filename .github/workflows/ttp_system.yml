@@ -2,9 +2,9 @@ name: TTP SOXX System
 
 on:
   schedule:
-    - cron: '0 14 * * 1-5'
-    - cron: '0 17 * * 1-5'
-    - cron: '30 19 * * 1-5'
+   # - cron: '0 14 * * 1-5'
+   # - cron: '0 17 * * 1-5'
+  #  - cron: '30 19 * * 1-5'
   workflow_dispatch:
 
 jobs:
