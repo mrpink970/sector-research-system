@@ -16,7 +16,6 @@
         input, select { width: 100%; padding: 12px; background: #0f172a; border: 1px solid #334155; border-radius: 8px; color: #e2e8f0; font-size: 14px; margin-bottom: 16px; font-family: monospace; }
         button { width: 100%; padding: 12px; background: #22c55e; border: none; border-radius: 8px; color: white; font-weight: 700; font-size: 14px; cursor: pointer; margin-top: 8px; }
         button.secondary { background: #3b82f6; }
-        button.danger { background: #ef4444; }
         .calc-box { background: #0f172a; border-radius: 12px; padding: 16px; margin: 16px 0; }
         .calc-row { display: flex; justify-content: space-between; margin-bottom: 8px; padding: 4px 0; border-bottom: 1px solid #334155; }
         .recommendation { background: #0f172a; border-radius: 12px; padding: 20px; text-align: center; border: 2px solid #22c55e; margin-top: 16px; }
@@ -38,7 +37,7 @@
         <div class="flex-between">
             <div>
                 <h1>📝 TTP Trade Manager & Calculator</h1>
-                <p>New CSV format: entry_date,exit_date,ticker,shares,entry_price,exit_price,gross_profit,commission,net_profit,exit_reason</p>
+                <p>Writes to: mrpink970/sector-research-system/data/ttp/trades.csv | $1.50 commission on ALL trades</p>
             </div>
             <button class="secondary" onclick="loadFromGitHub()" style="width: auto; padding: 8px 16px;">🔄 Load from GitHub</button>
         </div>
@@ -48,11 +47,11 @@
         <div>
             <div class="card">
                 <h2>🔑 GitHub Settings</h2>
-                <div class="label">GitHub Token</div>
-                <input type="password" id="githubToken" class="token-input" placeholder="ghp_xxxxxxxxxxxx">
-                <div class="label">Repository</div>
+                <div class="label">GitHub Token (starts with ghp_)</div>
+                <input type="password" id="githubToken" class="token-input" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx">
+                <div class="label">Repository (username/repo)</div>
                 <input type="text" id="repoName" value="mrpink970/sector-research-system">
-                <div class="commission-note">Token needs 'repo' scope | Saved in browser</div>
+                <div class="commission-note">Token needs 'repo' scope | Saved in your browser</div>
             </div>
 
             <div class="card">
@@ -134,7 +133,7 @@
     async function loadFromGitHub() {
         const token = getToken();
         const repo = getRepoName();
-        if (!token) { alert('Enter GitHub token'); return; }
+        if (!token) { alert('Enter GitHub token (starts with ghp_)'); return; }
         try {
             const res = await fetch(`https://api.github.com/repos/${repo}/contents/${CSV_PATH}`, {
                 headers: { 'Authorization': `token ${token}`, 'Accept': 'application/vnd.github.v3+json' }
@@ -152,7 +151,7 @@
     async function addTradeToGitHub() {
         const token = getToken();
         const repo = getRepoName();
-        if (!token) { alert('Enter GitHub token'); return; }
+        if (!token) { alert('Enter GitHub token (starts with ghp_)'); return; }
 
         const entryDate = document.getElementById('entryDate').value;
         const entryPrice = parseFloat(document.getElementById('entryPriceLog').value);
@@ -196,7 +195,7 @@
                 body: JSON.stringify({ message: `Add trade: ${ticker}`, content: btoa(unescape(encodeURIComponent(csvContent))), sha: sha })
             });
             if (!putRes.ok) throw new Error('GitHub save failed');
-            alert(`✅ Saved! Net: ${netProfit >= 0 ? '+' : ''}$${netProfit.toFixed(2)}`);
+            alert(`✅ Saved to ${repo}/${CSV_PATH}\nNet: ${netProfit >= 0 ? '+' : ''}$${netProfit.toFixed(2)}`);
             document.getElementById('entryPriceLog').value = '';
             document.getElementById('exitPriceLog').value = '';
             updateAccount();
@@ -208,7 +207,6 @@
         if (!csv.trim()) return [];
         const lines = csv.trim().split('\n');
         if (lines.length < 2) return [];
-        const headers = lines[0].split(',');
         const result = [];
         for (let i = 1; i < lines.length; i++) {
             const v = lines[i].split(',');
