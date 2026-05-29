@@ -1,2 +1,4 @@
 entry_date,exit_date,ticker,shares,entry_price,exit_price,gross_profit,commission,net_profit,exit_reason
 2026-05-29,2026-05-29,SOXL,6,220.00,224.49,26.94,1.50,25.44,TAKE_PROFIT
+2026-05-29,2026-05-29,SOXL,6,227.04,223.40,-21.78,1.50,-23.28,STOP_LOSS
+2026-05-29,2026-05-29,SOXX,2,569.97,570.80,1.66,1.50,0.16,STOP_LOSS
