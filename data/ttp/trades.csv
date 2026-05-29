@@ -1,2 +1,1 @@
-ticker,entry_date,entry_price,shares,stop_price,target_price,status,exit_date,exit_price,profit,initial_stop,highest_price,exit_reason,stop_ticks,target_ticks,trailing_activation_ticks
-
+entry_date,exit_date,ticker,shares,entry_price,exit_price,gross_profit,commission,net_profit,exit_reason
