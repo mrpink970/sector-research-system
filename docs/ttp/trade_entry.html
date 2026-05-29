@@ -56,13 +56,6 @@
         button.secondary { background: #3b82f6; }
         button.secondary:hover { background: #2563eb; }
         button:hover { background: #16a34a; }
-        .warning-box {
-            background: #7f1d1d;
-            border-left: 4px solid #ef4444;
-            padding: 16px;
-            margin-bottom: 20px;
-            border-radius: 8px;
-        }
         .calc-box {
             background: #0f172a;
             border-radius: 12px;
@@ -110,6 +103,34 @@
             font-size: 12px;
             text-align: center;
         }
+        .token-input {
+            background: #0f172a;
+            border: 1px solid #f97316;
+            color: #f97316;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        .status-ok { color: #22c55e; }
+        .status-error { color: #ef4444; }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+        }
+        th, td {
+            padding: 8px;
+            text-align: left;
+            border-bottom: 1px solid #334155;
+        }
+        th {
+            color: #94a3b8;
+            font-weight: 600;
+        }
+        .flex-between {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
     </style>
 </head>
 <body>
@@ -118,121 +139,75 @@
         <div class="flex-between">
             <div>
                 <h1>📝 TTP Trade Manager & Calculator</h1>
-                <p style="color: #94a3b8;">Pre-trade position sizing + Post-trade logging (includes $1.50 commission on ALL trades)</p>
+                <p style="color: #94a3b8;">Pre-trade position sizing + Post-trade logging ($1.50 commission on ALL trades)</p>
             </div>
             <button class="secondary" onclick="loadFromGitHub()" style="width: auto; padding: 8px 16px;">🔄 Load from GitHub</button>
         </div>
     </div>
 
     <div class="grid-2">
-        <!-- LEFT COLUMN: Pre-Trade Calculator -->
+        <!-- LEFT COLUMN -->
         <div>
             <div class="card">
                 <h2>🔑 GitHub Settings</h2>
-                <div class="label">GitHub Token (classic)</div>
-                <input type="password" id="githubToken" class="token-input" placeholder="ghp_xxxxxxxxxxxx" value="">
+                <div class="label">GitHub Token</div>
+                <input type="password" id="githubToken" class="token-input" placeholder="ghp_xxxxxxxxxxxx">
                 <div class="label" style="margin-top: 8px;">Repository</div>
-                <input type="text" id="repoName" value="mrpink970/sector-research-system" placeholder="username/repo">
-                <div class="commission-note">
-                    🔐 Token needs 'repo' scope. Stored only in your browser.
-                </div>
+                <input type="text" id="repoName" value="mrpink970/sector-research-system">
+                <div class="commission-note">🔐 Token needs 'repo' scope</div>
             </div>
 
             <div class="card">
                 <h2>📊 Account Status</h2>
-                <div class="calc-row">
-                    <span class="calc-label">Current Equity:</span>
-                    <span class="calc-value" id="displayCurrentEquity">$2,000.00</span>
-                </div>
-                <div class="calc-row">
-                    <span class="calc-label">Peak Equity:</span>
-                    <span class="calc-value" id="displayPeakEquity">$2,000.00</span>
-                </div>
-                <div class="calc-row">
-                    <span class="calc-label">Drawdown So Far:</span>
-                    <span class="calc-value" id="displayDrawdown">$0.00</span>
-                </div>
-                <div class="calc-row">
-                    <span class="calc-label">Remaining Drawdown Buffer:</span>
-                    <span class="calc-value" id="displayDrawdownBuffer">$140.00</span>
-                </div>
-                <div class="calc-row">
-                    <span class="calc-label">Today's Losses:</span>
-                    <span class="calc-value" id="displayTodayLoss">$0.00</span>
-                </div>
-                <div class="calc-row">
-                    <span class="calc-label">Remaining Daily Loss Buffer:</span>
-                    <span class="calc-value" id="displayDailyBuffer">$60.00</span>
-                </div>
+                <div class="calc-row"><span class="calc-label">Current Equity:</span><span class="calc-value" id="displayCurrentEquity">$2,000.00</span></div>
+                <div class="calc-row"><span class="calc-label">Peak Equity:</span><span class="calc-value" id="displayPeakEquity">$2,000.00</span></div>
+                <div class="calc-row"><span class="calc-label">Drawdown:</span><span class="calc-value" id="displayDrawdown">$0.00</span></div>
+                <div class="calc-row"><span class="calc-label">Drawdown Buffer:</span><span class="calc-value" id="displayDrawdownBuffer">$140.00</span></div>
+                <div class="calc-row"><span class="calc-label">Today's Losses:</span><span class="calc-value" id="displayTodayLoss">$0.00</span></div>
+                <div class="calc-row"><span class="calc-label">Daily Buffer:</span><span class="calc-value" id="displayDailyBuffer">$60.00</span></div>
             </div>
 
             <div class="card">
                 <h2>🟢 Plan New Trade</h2>
                 <div class="label">Instrument</div>
                 <select id="instrument">
-                    <option value="SOXX">SOXX (1x Semiconductor ETF)</option>
-                    <option value="SOXL">SOXL (3x Leveraged ETF)</option>
+                    <option value="SOXX">SOXX (1x)</option>
+                    <option value="SOXL">SOXL (3x)</option>
                 </select>
-                
                 <div class="label">Current Price ($)</div>
-                <input type="number" id="currentPrice" step="0.01" placeholder="e.g., 224.00" value="224.00">
-                
+                <input type="number" id="currentPrice" step="0.01" value="224.00">
                 <div class="label">Stop Loss (%)</div>
                 <input type="number" id="stopPercent" step="0.1" value="2.0">
-                
                 <div class="label">Take Profit (%)</div>
                 <input type="number" id="targetPercent" step="0.1" value="6.0">
-                
-                <button onclick="calculatePosition()">🔍 Calculate Recommended Size</button>
-                
+                <button onclick="calculatePosition()">🔍 Calculate Size</button>
                 <div id="calcResults"></div>
-                
-                <div class="label" style="margin-top: 16px;">Your Quantity (override recommendation)</div>
+                <div class="label">Your Quantity</div>
                 <input type="number" id="userQuantity" class="quantity-input" step="1" min="1" max="20" value="6" oninput="updateWithUserQuantity()">
-                
-                <div class="commission-note">
-                    💰 Commission: $0.75 per order ($1.50 round trip) - deducted from ALL trades
-                </div>
-                
-                <button onclick="copyOrderDetails()" style="background: #8b5cf6; margin-top: 8px;">📋 Copy Order Details</button>
+                <div class="commission-note">💰 $1.50 commission deducted from ALL trades</div>
+                <button onclick="copyOrderDetails()" style="background:#8b5cf6;">📋 Copy Order Details</button>
             </div>
         </div>
 
-        <!-- RIGHT COLUMN: Log Completed Trade -->
+        <!-- RIGHT COLUMN -->
         <div>
             <div class="card">
                 <h2>📝 Log Completed Trade</h2>
                 <div class="label">Symbol</div>
                 <select id="logSymbol">
-                    <option value="SOXX">SOXX (1x Semiconductor ETF)</option>
-                    <option value="SOXL">SOXL (3x Leveraged ETF)</option>
+                    <option value="SOXX">SOXX (1x)</option>
+                    <option value="SOXL">SOXL (3x)</option>
                 </select>
-                
                 <div class="grid-2-fields">
-                    <div>
-                        <div class="label">Entry Date</div>
-                        <input type="date" id="entryDate">
-                    </div>
-                    <div>
-                        <div class="label">Entry Price ($)</div>
-                        <input type="number" id="entryPriceLog" step="0.01" placeholder="e.g., 227.03">
-                    </div>
+                    <div><div class="label">Entry Date</div><input type="date" id="entryDate"></div>
+                    <div><div class="label">Entry Price ($)</div><input type="number" id="entryPriceLog" step="0.01"></div>
                 </div>
-                
                 <div class="grid-2-fields">
-                    <div>
-                        <div class="label">Exit Date</div>
-                        <input type="date" id="exitDate">
-                    </div>
-                    <div>
-                        <div class="label">Exit Price ($)</div>
-                        <input type="number" id="exitPriceLog" step="0.01" placeholder="e.g., 223.40">
-                    </div>
+                    <div><div class="label">Exit Date</div><input type="date" id="exitDate"></div>
+                    <div><div class="label">Exit Price ($)</div><input type="number" id="exitPriceLog" step="0.01"></div>
                 </div>
-                
                 <div class="label">Shares</div>
                 <input type="number" id="sharesLog" step="1" min="1" value="6">
-                
                 <div class="label">Exit Reason</div>
                 <select id="exitReasonLog">
                     <option value="TAKE_PROFIT">🎯 Take Profit</option>
@@ -240,26 +215,19 @@
                     <option value="TRAILING_STOP">🔒 Trailing Stop</option>
                     <option value="MANUAL">✋ Manual Close</option>
                 </select>
-                
-                <div class="commission-note" style="margin-bottom: 16px;">
-                    💰 $1.50 commission deducted from EVERY trade (win or loss)
-                </div>
-                
-                <button onclick="addTradeToGitHub()">💾 Save Trade to GitHub</button>
+                <div class="commission-note">💰 $1.50 commission deducted from EVERY trade</div>
+                <button onclick="addTradeToGitHub()">💾 Save to GitHub</button>
             </div>
 
             <div class="card">
                 <h2>📜 Trade History</h2>
-                <div id="tradeHistoryList">No trades loaded. Click "Load from GitHub"</div>
+                <div id="tradeHistoryList">Click "Load from GitHub"</div>
             </div>
         </div>
     </div>
 </div>
 
 <script>
-    // ============================================================
-    // CONSTANTS
-    // ============================================================
     const TICK_SIZE = 0.01;
     const MAX_PROFIT_PER_TRADE = 90;
     const DAILY_LOSS_LIMIT = 60;
@@ -269,78 +237,34 @@
     const CSV_PATH = 'data/ttp/trades.csv';
 
     let trades = [];
-    let accountStatus = {
-        currentEquity: STARTING_EQUITY,
-        peakEquity: STARTING_EQUITY
-    };
+    let accountStatus = { currentEquity: STARTING_EQUITY, peakEquity: STARTING_EQUITY };
 
-    // ============================================================
-    // GITHUB API FUNCTIONS
-    // ============================================================
-    function getRepoName() {
-        return document.getElementById('repoName').value.trim();
-    }
-
-    function getToken() {
-        return document.getElementById('githubToken').value.trim();
-    }
+    function getRepoName() { return document.getElementById('repoName').value.trim(); }
+    function getToken() { return document.getElementById('githubToken').value.trim(); }
 
     async function loadFromGitHub() {
         const token = getToken();
         const repo = getRepoName();
-        
-        if (!token) {
-            alert('Please enter your GitHub token');
-            return;
-        }
-        
-        const historyDiv = document.getElementById('tradeHistoryList');
-        historyDiv.innerHTML = '<p>Loading from GitHub...</p>';
-        
+        if (!token) { alert('Enter GitHub token'); return; }
         try {
-            const url = `https://api.github.com/repos/${repo}/contents/${CSV_PATH}`;
-            const response = await fetch(url, {
-                headers: {
-                    'Authorization': `token ${token}`,
-                    'Accept': 'application/vnd.github.v3+json'
-                }
+            const res = await fetch(`https://api.github.com/repos/${repo}/contents/${CSV_PATH}`, {
+                headers: { 'Authorization': `token ${token}`, 'Accept': 'application/vnd.github.v3+json' }
             });
-            
-            if (response.status === 404) {
-                trades = [];
-                historyDiv.innerHTML = '<p>No trades file found. Create one by adding a trade.</p>';
-                updateAccountFromTrades();
-                displayTradeHistory();
-                return;
-            }
-            
-            if (!response.ok) {
-                throw new Error(`GitHub API error: ${response.status}`);
-            }
-            
-            const data = await response.json();
-            const content = atob(data.content);
-            trades = parseCSV(content);
-            updateAccountFromTrades();
-            displayTradeHistory();
-            
-            historyDiv.innerHTML = `<p class="status-ok" style="color:#22c55e;">✅ Loaded ${trades.length} trades from GitHub</p>`;
-            
-        } catch (error) {
-            console.error(error);
-            historyDiv.innerHTML = `<p class="status-error" style="color:#ef4444;">❌ Error loading: ${error.message}</p>`;
-        }
+            if (res.status === 404) { trades = []; updateAccount(); displayTrades(); return; }
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            const data = await res.json();
+            const csv = atob(data.content);
+            trades = parseCSV(csv);
+            updateAccount();
+            displayTrades();
+        } catch(e) { alert(`Error: ${e.message}`); }
     }
 
     async function addTradeToGitHub() {
         const token = getToken();
         const repo = getRepoName();
-        
-        if (!token) {
-            alert('Please enter your GitHub token');
-            return;
-        }
-        
+        if (!token) { alert('Enter GitHub token'); return; }
+
         const symbol = document.getElementById('logSymbol').value;
         const entryDate = document.getElementById('entryDate').value;
         const entryPrice = parseFloat(document.getElementById('entryPriceLog').value);
@@ -348,405 +272,187 @@
         const exitPrice = parseFloat(document.getElementById('exitPriceLog').value);
         const shares = parseInt(document.getElementById('sharesLog').value);
         const exitReason = document.getElementById('exitReasonLog').value;
-        
-        if (!entryDate || !exitDate) {
-            alert('Please enter entry and exit dates');
-            return;
-        }
-        if (isNaN(entryPrice) || entryPrice <= 0) {
-            alert('Please enter valid entry price');
-            return;
-        }
-        if (isNaN(exitPrice) || exitPrice <= 0) {
-            alert('Please enter valid exit price');
-            return;
-        }
-        if (isNaN(shares) || shares < 1) {
-            alert('Please enter valid shares');
-            return;
-        }
-        
-        // Calculate profit with commission - ALWAYS deduct $1.50
+
+        if (!entryDate || !exitDate) { alert('Enter dates'); return; }
+        if (isNaN(entryPrice) || entryPrice <= 0) { alert('Valid entry price'); return; }
+        if (isNaN(exitPrice) || exitPrice <= 0) { alert('Valid exit price'); return; }
+        if (isNaN(shares) || shares < 1) { alert('Valid shares'); return; }
+
         const grossProfit = (exitPrice - entryPrice) * shares;
-        const netProfit = grossProfit - COMMISSION;  // ← THE FIX: Always subtract commission
-        const profitPerShare = netProfit / shares;
-        
-        let warningMsg = '';
-        if (netProfit > 0 && profitPerShare < 0.10) {
-            warningMsg = `\n⚠️ WARNING: Net profit per share is $${profitPerShare.toFixed(4)} (below $0.10 minimum). This trade may not count toward your profit target.`;
-        }
-        
+        const netProfit = grossProfit - COMMISSION;  // ← COMMISSION ON EVERY TRADE
+
         const newTrade = {
-            entry_date: entryDate,
-            exit_date: exitDate,
-            ticker: symbol,
-            shares: shares,
-            entry_price: entryPrice.toFixed(2),
-            exit_price: exitPrice.toFixed(2),
-            gross_profit: grossProfit.toFixed(2),
-            commission: COMMISSION.toFixed(2),
-            net_profit: netProfit.toFixed(2),
-            exit_reason: exitReason
+            entry_date: entryDate, exit_date: exitDate, ticker: symbol, shares: shares,
+            entry_price: entryPrice.toFixed(2), exit_price: exitPrice.toFixed(2),
+            gross_profit: grossProfit.toFixed(2), commission: COMMISSION.toFixed(2),
+            net_profit: netProfit.toFixed(2), exit_reason: exitReason
         };
-        
         trades.push(newTrade);
         const csvContent = tradesToCSV();
-        
+
         try {
             const url = `https://api.github.com/repos/${repo}/contents/${CSV_PATH}`;
             let sha = null;
-            
-            const getResponse = await fetch(url, {
-                headers: {
-                    'Authorization': `token ${token}`,
-                    'Accept': 'application/vnd.github.v3+json'
-                }
-            });
-            
-            if (getResponse.status === 200) {
-                const data = await getResponse.json();
-                sha = data.sha;
-            } else if (getResponse.status !== 404) {
-                throw new Error(`GitHub API error: ${getResponse.status}`);
-            }
-            
-            const putResponse = await fetch(url, {
+            const getRes = await fetch(url, { headers: { 'Authorization': `token ${token}`, 'Accept': 'application/vnd.github.v3+json' } });
+            if (getRes.ok) { const data = await getRes.json(); sha = data.sha; }
+            const putRes = await fetch(url, {
                 method: 'PUT',
-                headers: {
-                    'Authorization': `token ${token}`,
-                    'Accept': 'application/vnd.github.v3+json',
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    message: `Add trade: ${symbol} ${shares} shares ${entryDate}`,
-                    content: btoa(unescape(encodeURIComponent(csvContent))),
-                    sha: sha
-                })
+                headers: { 'Authorization': `token ${token}`, 'Accept': 'application/vnd.github.v3+json', 'Content-Type': 'application/json' },
+                body: JSON.stringify({ message: `Add trade: ${symbol}`, content: btoa(unescape(encodeURIComponent(csvContent))), sha: sha })
             });
-            
-            if (!putResponse.ok) {
-                const errorData = await putResponse.json();
-                throw new Error(`GitHub API error: ${putResponse.status} - ${errorData.message}`);
-            }
-            
-            alert(`✅ Trade saved to GitHub!\n\n${shares} shares ${symbol}\nGross: $${grossProfit.toFixed(2)}\nCommission: $${COMMISSION.toFixed(2)}\nNet Profit: ${netProfit >= 0 ? '+' : ''}$${netProfit.toFixed(2)}\nProfit/Share: $${profitPerShare.toFixed(4)}${warningMsg}`);
-            
+            if (!putRes.ok) throw new Error('GitHub save failed');
+            alert(`✅ Saved! Net: ${netProfit >= 0 ? '+' : ''}$${netProfit.toFixed(2)}`);
             document.getElementById('entryPriceLog').value = '';
             document.getElementById('exitPriceLog').value = '';
-            document.getElementById('sharesLog').value = '6';
-            
-            const todayDate = new Date().toISOString().split('T')[0];
-            document.getElementById('entryDate').value = todayDate;
-            document.getElementById('exitDate').value = todayDate;
-            
-            updateAccountFromTrades();
-            displayTradeHistory();
-            
-        } catch (error) {
-            console.error(error);
-            alert(`❌ Error saving to GitHub: ${error.message}`);
-        }
+            updateAccount();
+            displayTrades();
+        } catch(e) { alert(`Error: ${e.message}`); }
     }
 
-    function parseCSV(csvText) {
-        if (!csvText.trim()) return [];
-        const lines = csvText.trim().split('\n');
+    function parseCSV(csv) {
+        if (!csv.trim()) return [];
+        const lines = csv.trim().split('\n');
         if (lines.length < 2) return [];
-        
-        const result = [];
+        const trades = [];
         for (let i = 1; i < lines.length; i++) {
-            const values = lines[i].split(',');
-            if (values.length < 10) continue;
-            
-            const trade = {
-                entry_date: values[0],
-                exit_date: values[1],
-                ticker: values[2],
-                shares: parseFloat(values[3]),
-                entry_price: parseFloat(values[4]),
-                exit_price: parseFloat(values[5]),
-                gross_profit: parseFloat(values[6]),
-                commission: parseFloat(values[7]),
-                net_profit: parseFloat(values[8]),
-                exit_reason: values[9]
-            };
-            result.push(trade);
+            const v = lines[i].split(',');
+            if (v.length < 10) continue;
+            trades.push({
+                entry_date: v[0], exit_date: v[1], ticker: v[2], shares: parseFloat(v[3]),
+                entry_price: parseFloat(v[4]), exit_price: parseFloat(v[5]),
+                gross_profit: parseFloat(v[6]), commission: parseFloat(v[7]),
+                net_profit: parseFloat(v[8]), exit_reason: v[9]
+            });
         }
-        return result;
+        return trades;
     }
 
     function tradesToCSV() {
-        if (trades.length === 0) return 'entry_date,exit_date,ticker,shares,entry_price,exit_price,gross_profit,commission,net_profit,exit_reason';
-        
-        const rows = trades.map(t => {
-            return `${t.entry_date},${t.exit_date},${t.ticker},${t.shares},${t.entry_price},${t.exit_price},${t.gross_profit},${t.commission},${t.net_profit},${t.exit_reason}`;
-        });
+        if (!trades.length) return 'entry_date,exit_date,ticker,shares,entry_price,exit_price,gross_profit,commission,net_profit,exit_reason';
+        const rows = trades.map(t => `${t.entry_date},${t.exit_date},${t.ticker},${t.shares},${t.entry_price},${t.exit_price},${t.gross_profit},${t.commission},${t.net_profit},${t.exit_reason}`);
         return ['entry_date,exit_date,ticker,shares,entry_price,exit_price,gross_profit,commission,net_profit,exit_reason', ...rows].join('\n');
     }
 
-    function updateAccountFromTrades() {
-        let totalProfit = 0;
-        for (let t of trades) {
-            totalProfit += parseFloat(t.net_profit);
-        }
-        
-        let currentEquity = STARTING_EQUITY + totalProfit;
-        
-        let allPeaks = [STARTING_EQUITY];
-        let runningEquity = STARTING_EQUITY;
-        for (let t of trades) {
-            runningEquity += parseFloat(t.net_profit);
-            allPeaks.push(runningEquity);
-        }
-        let peakEquity = Math.max(...allPeaks);
-        
-        accountStatus.currentEquity = currentEquity;
-        accountStatus.peakEquity = peakEquity;
-        
-        updateAccountDisplay();
-    }
+    function updateAccount() {
+        let total = 0;
+        for (let t of trades) total += t.net_profit;
+        let equity = STARTING_EQUITY + total;
+        let peaks = [STARTING_EQUITY];
+        let run = STARTING_EQUITY;
+        for (let t of trades) { run += t.net_profit; peaks.push(run); }
+        let peak = Math.max(...peaks);
+        accountStatus.currentEquity = equity;
+        accountStatus.peakEquity = peak;
 
-    function updateAccountDisplay() {
-        const drawdown = accountStatus.peakEquity - accountStatus.currentEquity;
-        const remainingDrawdownBuffer = MAX_DRAWDOWN - drawdown;
-        
+        const drawdown = peak - equity;
+        const drawdownBuffer = MAX_DRAWDOWN - drawdown;
         const today = new Date().toISOString().split('T')[0];
         let todayLoss = 0;
         for (let t of trades) {
-            if (t.exit_date === today && parseFloat(t.net_profit) < 0) {
-                todayLoss += Math.abs(parseFloat(t.net_profit));
-            }
+            if (t.exit_date === today && t.net_profit < 0) todayLoss += Math.abs(t.net_profit);
         }
-        const remainingDailyBuffer = DAILY_LOSS_LIMIT - todayLoss;
-        
-        document.getElementById('displayCurrentEquity').innerHTML = `$${accountStatus.currentEquity.toFixed(2)}`;
-        document.getElementById('displayPeakEquity').innerHTML = `$${accountStatus.peakEquity.toFixed(2)}`;
+        const dailyBuffer = DAILY_LOSS_LIMIT - todayLoss;
+        document.getElementById('displayCurrentEquity').innerHTML = `$${equity.toFixed(2)}`;
+        document.getElementById('displayPeakEquity').innerHTML = `$${peak.toFixed(2)}`;
         document.getElementById('displayDrawdown').innerHTML = `$${drawdown.toFixed(2)}`;
-        document.getElementById('displayDrawdownBuffer').innerHTML = `$${remainingDrawdownBuffer.toFixed(2)}`;
+        document.getElementById('displayDrawdownBuffer').innerHTML = `$${drawdownBuffer.toFixed(2)}`;
         document.getElementById('displayTodayLoss').innerHTML = `$${todayLoss.toFixed(2)}`;
-        document.getElementById('displayDailyBuffer').innerHTML = `$${remainingDailyBuffer.toFixed(2)}`;
+        document.getElementById('displayDailyBuffer').innerHTML = `$${dailyBuffer.toFixed(2)}`;
     }
 
-    function displayTradeHistory() {
-        const historyDiv = document.getElementById('tradeHistoryList');
-        if (trades.length === 0) {
-            historyDiv.innerHTML = '<p>No trades yet. Add a trade above.</p>';
-            return;
-        }
-        
+    function displayTrades() {
+        const div = document.getElementById('tradeHistoryList');
+        if (!trades.length) { div.innerHTML = '<p>No trades</p>'; return; }
         let totalNet = 0;
-        for (let t of trades) {
-            totalNet += parseFloat(t.net_profit);
-        }
-        
-        historyDiv.innerHTML = `
-            <div class="calc-box" style="max-height: 400px; overflow: auto;">
-                <table style="width:100%; font-size:11px;">
-                    <thead>
-                        <tr><th>Entry</th><th>Exit</th><th>Ticker</th><th>Shares</th><th>Entry $</th><th>Exit $</th><th>Net</th><th>Reason</th></tr>
-                    </thead>
-                    <tbody>
-                        ${trades.slice().reverse().map(t => `
-                            <tr>
-                                <td>${t.entry_date}</td>
-                                <td>${t.exit_date}</td>
-                                <td>${t.ticker}</td>
-                                <td>${t.shares}</td>
-                                <td>$${parseFloat(t.entry_price).toFixed(2)}</td>
-                                <td>$${parseFloat(t.exit_price).toFixed(2)}</td>
-                                <td class="${parseFloat(t.net_profit) >= 0 ? 'positive' : 'negative'}">${parseFloat(t.net_profit) >= 0 ? '+' : ''}$${parseFloat(t.net_profit).toFixed(2)}</td>
-                                <td>${t.exit_reason}</td>
-                            </tr>
-                        `).join('')}
-                    </tbody>
-                </table>
+        for (let t of trades) totalNet += t.net_profit;
+        div.innerHTML = `
+            <div class="calc-box" style="max-height:300px; overflow:auto;">
+                <table><thead><tr><th>Entry</th><th>Exit</th><th>Ticker</th><th>Shares</th><th>Entry $</th><th>Exit $</th><th>Net</th><th>Reason</th></tr></thead>
+                <tbody>${trades.slice().reverse().map(t => `<tr><td>${t.entry_date}</td><td>${t.exit_date}</td><td>${t.ticker}</td><td>${t.shares}</td><td>$${t.entry_price}</td><td>$${t.exit_price}</td><td class="${t.net_profit >= 0 ? 'positive' : 'negative'}">${t.net_profit >= 0 ? '+' : ''}$${t.net_profit.toFixed(2)}</td><td>${t.exit_reason}</td></tr>`).join('')}</tbody></table>
             </div>
-            <div class="calc-box" style="margin-top: 12px;">
-                <div class="calc-row"><span class="calc-label">Total Trades:</span><span class="calc-value">${trades.length}</span></div>
-                <div class="calc-row"><span class="calc-label">Total Net Profit:</span><span class="calc-value ${totalNet >= 0 ? 'positive' : 'negative'}">${totalNet >= 0 ? '+' : ''}$${totalNet.toFixed(2)}</span></div>
-                <div class="calc-row"><span class="calc-label">Progress to $300:</span><span class="calc-value positive">${(accountStatus.currentEquity - STARTING_EQUITY) > 0 ? '+' : ''}$${(accountStatus.currentEquity - STARTING_EQUITY).toFixed(2)} / $300</span></div>
-            </div>
+            <div class="calc-box"><div class="calc-row"><span class="calc-label">Total Net:</span><span class="calc-value ${totalNet >= 0 ? 'positive' : 'negative'}">${totalNet >= 0 ? '+' : ''}$${totalNet.toFixed(2)}</span></div>
+            <div class="calc-row"><span class="calc-label">Progress to $300:</span><span class="calc-value">${(accountStatus.currentEquity - STARTING_EQUITY) > 0 ? '+' : ''}$${(accountStatus.currentEquity - STARTING_EQUITY).toFixed(2)} / $300</span></div></div>
         `;
     }
-
-    // ============================================================
-    // POSITION SIZING CALCULATOR
-    // ============================================================
-    let currentCalc = {};
 
     function calculatePosition() {
         const price = parseFloat(document.getElementById('currentPrice').value);
-        const stopPercent = parseFloat(document.getElementById('stopPercent').value);
-        const targetPercent = parseFloat(document.getElementById('targetPercent').value);
-        
-        if (isNaN(price) || price <= 0) {
-            document.getElementById('calcResults').innerHTML = '<div class="calc-box" style="color:#ef4444;">Please enter a valid price</div>';
-            return;
-        }
-        
-        const stopLossPerShare = price * (stopPercent / 100);
-        const targetProfitPerShare = price * (targetPercent / 100);
-        
+        const stopPct = parseFloat(document.getElementById('stopPercent').value);
+        const targetPct = parseFloat(document.getElementById('targetPercent').value);
+        if (isNaN(price) || price <= 0) return;
+        const stopLoss = price * (stopPct / 100);
+        const targetProfit = price * (targetPct / 100);
         const drawdownSoFar = accountStatus.peakEquity - accountStatus.currentEquity;
-        const remainingDrawdownBuffer = MAX_DRAWDOWN - drawdownSoFar;
-        
+        const remainingDrawdown = MAX_DRAWDOWN - drawdownSoFar;
         const today = new Date().toISOString().split('T')[0];
         let todayLoss = 0;
-        for (let t of trades) {
-            if (t.exit_date === today && parseFloat(t.net_profit) < 0) {
-                todayLoss += Math.abs(parseFloat(t.net_profit));
-            }
-        }
-        const remainingDailyBuffer = DAILY_LOSS_LIMIT - todayLoss;
-        
-        let maxSharesProfit = Math.floor(MAX_PROFIT_PER_TRADE / targetProfitPerShare);
-        let maxSharesDrawdown = Math.floor(remainingDrawdownBuffer / stopLossPerShare);
-        let maxSharesDaily = Math.floor(remainingDailyBuffer / stopLossPerShare);
-        
-        maxSharesProfit = Math.max(0, maxSharesProfit);
-        maxSharesDrawdown = Math.max(0, maxSharesDrawdown);
-        maxSharesDaily = Math.max(0, maxSharesDaily);
-        
-        let recommendedShares = Math.min(maxSharesProfit, maxSharesDrawdown, maxSharesDaily);
-        if (recommendedShares === 0 && (remainingDrawdownBuffer > 0 || remainingDailyBuffer > 0)) {
-            recommendedShares = 1;
-        }
-        
-        const stopTicks = Math.round(stopLossPerShare / TICK_SIZE);
-        const targetPrice = price * (1 + targetPercent / 100);
-        
-        currentCalc = {
-            recommendedShares: recommendedShares,
-            stopLossPerShare: stopLossPerShare,
-            targetProfitPerShare: targetProfitPerShare,
-            stopTicks: stopTicks,
-            targetPrice: targetPrice,
-            riskAmount: stopLossPerShare * recommendedShares,
-            rewardAmount: targetProfitPerShare * recommendedShares
-        };
-        
-        const resultsHtml = `
-            <div class="calc-box">
-                <div class="calc-row"><span class="calc-label">🔒 Max Shares (30% Profit):</span><span class="calc-value">${maxSharesProfit}</span></div>
-                <div class="calc-row"><span class="calc-label">🔒 Max Shares (Drawdown):</span><span class="calc-value">${maxSharesDrawdown}</span></div>
-                <div class="calc-row"><span class="calc-label">🔒 Max Shares (Daily Loss):</span><span class="calc-value">${maxSharesDaily}</span></div>
-            </div>
-            <div class="recommendation">
-                <div class="recommendation-value">${recommendedShares} SHARES</div>
-                <div>Recommended Position Size</div>
-                <div style="font-size:12px; margin-top:8px;">Risk: $${currentCalc.riskAmount.toFixed(2)} (${stopPercent}%) | Reward: $${currentCalc.rewardAmount.toFixed(2)} (${targetPercent}%)</div>
-            </div>
-        `;
-        
-        document.getElementById('calcResults').innerHTML = resultsHtml;
-        document.getElementById('userQuantity').value = recommendedShares;
+        for (let t of trades) { if (t.exit_date === today && t.net_profit < 0) todayLoss += Math.abs(t.net_profit); }
+        const remainingDaily = DAILY_LOSS_LIMIT - todayLoss;
+        let maxShares = Math.min(
+            Math.floor(MAX_PROFIT_PER_TRADE / targetProfit),
+            Math.floor(remainingDrawdown / stopLoss),
+            Math.floor(remainingDaily / stopLoss)
+        );
+        if (maxShares === 0 && (remainingDrawdown > 0 || remainingDaily > 0)) maxShares = 1;
+        const stopTicks = Math.round(stopLoss / TICK_SIZE);
+        const targetPrice = price * (1 + targetPct / 100);
+        document.getElementById('calcResults').innerHTML = `
+            <div class="calc-box"><div class="calc-row"><span class="calc-label">Max Shares:</span><span class="calc-value">${maxShares}</span></div></div>
+            <div class="recommendation"><div class="recommendation-value">${maxShares} SHARES</div><div>Recommended Size</div><div style="font-size:12px;">Risk: $${(stopLoss * maxShares).toFixed(2)} | Reward: $${(targetProfit * maxShares).toFixed(2)}</div></div>`;
+        document.getElementById('userQuantity').value = maxShares;
         updateWithUserQuantity();
     }
 
     function updateWithUserQuantity() {
-        const userShares = parseInt(document.getElementById('userQuantity').value);
-        if (isNaN(userShares) || userShares < 1) {
-            document.getElementById('userQuantity').value = 1;
-            return;
-        }
-        
+        const shares = parseInt(document.getElementById('userQuantity').value);
         const price = parseFloat(document.getElementById('currentPrice').value);
-        const stopPercent = parseFloat(document.getElementById('stopPercent').value);
-        const targetPercent = parseFloat(document.getElementById('targetPercent').value);
+        const stopPct = parseFloat(document.getElementById('stopPercent').value);
+        const targetPct = parseFloat(document.getElementById('targetPercent').value);
         const instrument = document.getElementById('instrument').value;
-        
         if (isNaN(price) || price <= 0) return;
-        
-        const stopLossPerShare = price * (stopPercent / 100);
-        const targetProfitPerShare = price * (targetPercent / 100);
-        const stopTicks = Math.round(stopLossPerShare / TICK_SIZE);
-        const targetPrice = price * (1 + targetPercent / 100);
-        const commissionPerShare = COMMISSION / userShares;
-        const riskAmount = stopLossPerShare * userShares;
-        const rewardAmount = targetProfitPerShare * userShares;
-        const netReward = rewardAmount - COMMISSION;
-        
-        let warningHtml = '';
-        if (rewardAmount > MAX_PROFIT_PER_TRADE) {
-            warningHtml = '<div class="rule-warning">❌ WARNING: Gross profit exceeds $90 limit (30% rule)! Reduce shares.</div>';
-        } else if (rewardAmount > MAX_PROFIT_PER_TRADE * 0.8) {
-            warningHtml = '<div class="rule-caution">⚠️ CAUTION: Profit approaching $90 limit. Be careful.</div>';
-        }
-        
-        const orderDetailsHtml = `
-            <div class="calc-box" style="margin-top: 16px;">
-                <div class="calc-row"><span class="calc-label">📈 ORDER DETAILS (for TTP platform):</span><span class="calc-value"></span></div>
-                <div class="calc-row"><span class="calc-label">Symbol:</span><span class="calc-value"><strong>${instrument}</strong></span></div>
-                <div class="calc-row"><span class="calc-label">Action:</span><span class="calc-value" style="color:#22c55e;"><strong>BUY</strong></span></div>
-                <div class="calc-row"><span class="calc-label">Quantity:</span><span class="calc-value"><strong>${userShares} SHARES</strong></span></div>
-                <div class="calc-row"><span class="calc-label">Order Type:</span><span class="calc-value"><strong>LIMIT</strong></span></div>
-                <div class="calc-row"><span class="calc-label">Limit Price:</span><span class="calc-value"><strong>$${price.toFixed(2)}</strong></span></div>
-                <div class="calc-row"><span class="calc-label">Stop Loss (TICKS):</span><span class="calc-value" style="color:#f97316;"><strong>${stopTicks.toLocaleString()} TICKS</strong> (${stopPercent}% below entry)</span></div>
-                <div class="calc-row"><span class="calc-label">Take Profit:</span><span class="calc-value" style="color:#22c55e;"><strong>$${targetPrice.toFixed(2)}</strong> (${targetPercent}% above entry)</span></div>
-                <div class="calc-row"><span class="calc-label">Commission (round trip):</span><span class="calc-value">$${COMMISSION.toFixed(2)} ($${commissionPerShare.toFixed(2)}/share)</span></div>
-                <div class="calc-row"><span class="calc-label">Net Profit at Target:</span><span class="calc-value">$${netReward.toFixed(2)}</span></div>
-            </div>
-            ${warningHtml}
-        `;
-        
-        const calcResults = document.getElementById('calcResults');
-        if (calcResults) {
-            const existingHtml = calcResults.innerHTML;
-            const recommendationMatch = existingHtml.match(/<div class="recommendation">[\s\S]*?<\/div>/);
-            if (recommendationMatch) {
-                calcResults.innerHTML = recommendationMatch[0] + orderDetailsHtml;
-            } else {
-                calcResults.innerHTML = orderDetailsHtml;
-            }
-        }
+        const stopLoss = price * (stopPct / 100);
+        const targetProfit = price * (targetPct / 100);
+        const stopTicks = Math.round(stopLoss / TICK_SIZE);
+        const targetPrice = price * (1 + targetPct / 100);
+        const netProfit = (targetProfit * shares) - COMMISSION;
+        const existing = document.getElementById('calcResults').innerHTML;
+        const recMatch = existing.match(/<div class="recommendation">[\s\S]*?<\/div>/);
+        const details = `<div class="calc-box" style="margin-top:16px;"><div class="calc-row"><span class="calc-label">Symbol:</span><span class="calc-value"><strong>${instrument}</strong></span></div>
+            <div class="calc-row"><span class="calc-label">Quantity:</span><span class="calc-value"><strong>${shares} SHARES</strong></span></div>
+            <div class="calc-row"><span class="calc-label">Limit Price:</span><span class="calc-value"><strong>$${price.toFixed(2)}</strong></span></div>
+            <div class="calc-row"><span class="calc-label">Stop Loss (TICKS):</span><span class="calc-value"><strong>${stopTicks.toLocaleString()} TICKS</strong> (${stopPct}% below)</span></div>
+            <div class="calc-row"><span class="calc-label">Take Profit:</span><span class="calc-value"><strong>$${targetPrice.toFixed(2)}</strong> (${targetPct}% above)</span></div>
+            <div class="calc-row"><span class="calc-label">Net Profit at Target:</span><span class="calc-value">$${netProfit.toFixed(2)} (after $${COMMISSION} commission)</span></div></div>`;
+        if (recMatch) document.getElementById('calcResults').innerHTML = recMatch[0] + details;
+        else document.getElementById('calcResults').innerHTML = details;
     }
 
     function copyOrderDetails() {
-        const userShares = parseInt(document.getElementById('userQuantity').value);
+        const shares = parseInt(document.getElementById('userQuantity').value);
         const price = parseFloat(document.getElementById('currentPrice').value);
-        const stopPercent = parseFloat(document.getElementById('stopPercent').value);
-        const targetPercent = parseFloat(document.getElementById('targetPercent').value);
+        const stopPct = parseFloat(document.getElementById('stopPercent').value);
+        const targetPct = parseFloat(document.getElementById('targetPercent').value);
         const instrument = document.getElementById('instrument').value;
-        
-        const stopTicks = Math.round((price * stopPercent / 100) / TICK_SIZE);
-        const targetPrice = price * (1 + targetPercent / 100);
-        
-        const orderText = `${instrument} BUY ${userShares} SHARES LIMIT $${price.toFixed(2)} DAY | Stop: ${stopTicks} TICKS | Target: $${targetPrice.toFixed(2)} | Commission: $${COMMISSION.toFixed(2)} RT`;
-        
-        navigator.clipboard.writeText(orderText);
-        const copyBtn = event.target;
-        const originalText = copyBtn.innerHTML;
-        copyBtn.innerHTML = '✅ Copied!';
-        setTimeout(() => {
-            copyBtn.innerHTML = originalText;
-        }, 2000);
+        const stopTicks = Math.round((price * stopPct / 100) / TICK_SIZE);
+        const targetPrice = price * (1 + targetPct / 100);
+        const text = `${instrument} BUY ${shares} SHARES LIMIT $${price.toFixed(2)} DAY | Stop: ${stopTicks} TICKS | Target: $${targetPrice.toFixed(2)} | Commission: $${COMMISSION} RT`;
+        navigator.clipboard.writeText(text);
+        alert('Copied!');
     }
 
-    // ============================================================
-    // INITIALIZATION
-    // ============================================================
-    const todayDate = new Date().toISOString().split('T')[0];
-    document.getElementById('entryDate').value = todayDate;
-    document.getElementById('exitDate').value = todayDate;
-    document.getElementById('currentPrice').value = '224.00';
-    
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('entryDate').value = today;
+    document.getElementById('exitDate').value = today;
     const savedToken = localStorage.getItem('github_token');
     const savedRepo = localStorage.getItem('github_repo');
     if (savedToken) document.getElementById('githubToken').value = savedToken;
     if (savedRepo) document.getElementById('repoName').value = savedRepo;
-    
-    document.getElementById('githubToken').addEventListener('change', () => {
-        localStorage.setItem('github_token', document.getElementById('githubToken').value);
-    });
-    document.getElementById('repoName').addEventListener('change', () => {
-        localStorage.setItem('github_repo', document.getElementById('repoName').value);
-    });
-    
-    document.getElementById('instrument').addEventListener('change', () => { calculatePosition(); });
-    document.getElementById('currentPrice').addEventListener('input', () => { calculatePosition(); });
-    document.getElementById('stopPercent').addEventListener('input', () => { calculatePosition(); });
-    document.getElementById('targetPercent').addEventListener('input', () => { calculatePosition(); });
-    
+    document.getElementById('githubToken').onchange = () => localStorage.setItem('github_token', document.getElementById('githubToken').value);
+    document.getElementById('repoName').onchange = () => localStorage.setItem('github_repo', document.getElementById('repoName').value);
+    document.getElementById('instrument').onchange = calculatePosition;
+    document.getElementById('currentPrice').oninput = calculatePosition;
+    document.getElementById('stopPercent').oninput = calculatePosition;
+    document.getElementById('targetPercent').oninput = calculatePosition;
     calculatePosition();
 </script>
 </body>
