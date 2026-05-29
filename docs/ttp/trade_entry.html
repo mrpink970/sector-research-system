@@ -29,7 +29,6 @@
         th, td { padding: 8px; text-align: left; border-bottom: 1px solid #334155; }
         th { color: #94a3b8; font-weight: 600; }
         .flex-between { display: flex; justify-content: space-between; align-items: center; }
-        .section-title { margin-top: 16px; margin-bottom: 8px; font-weight: 600; color: #22c55e; }
     </style>
 </head>
 <body>
@@ -38,7 +37,7 @@
         <div class="flex-between">
             <div>
                 <h1>📝 TTP Trade Manager & Calculator</h1>
-                <p>Writes to: mrpink970/sector-research-system/data/ttp/trades.csv | $1.50 commission on ALL trades</p>
+                <p>Writes to: mrpink970/sector-research-system/data/ttp/trades.csv | $1.50 commission on ALL trades | APPENDS new trades</p>
             </div>
             <button class="secondary" onclick="loadFromGitHub()" style="width: auto; padding: 8px 16px;">🔄 Load from GitHub</button>
         </div>
@@ -133,7 +132,7 @@
                 </select>
                 
                 <div class="commission-note">💰 $1.50 commission deducted from EVERY trade</div>
-                <button onclick="addTradeToGitHub()">💾 Save to GitHub</button>
+                <button onclick="addTradeToGitHub()">💾 Save to GitHub (Appends)</button>
             </div>
 
             <div class="card">
@@ -211,26 +210,52 @@
             net_profit: netProfit.toFixed(2),
             exit_reason: exitReason
         };
-        trades.push(newTrade);
-        const csvContent = tradesToCSV();
+
+        // Get existing trades from GitHub first
+        let existingTrades = [];
+        let sha = null;
+        
+        try {
+            const url = `https://api.github.com/repos/${repo}/contents/${CSV_PATH}`;
+            const getRes = await fetch(url, { headers: { 'Authorization': `token ${token}`, 'Accept': 'application/vnd.github.v3+json' } });
+            
+            if (getRes.ok) {
+                const data = await getRes.json();
+                sha = data.sha;
+                const csv = atob(data.content);
+                existingTrades = parseCSV(csv);
+            }
+        } catch(e) {
+            // File doesn't exist yet, that's fine
+        }
+        
+        // Append new trade to existing trades
+        const allTrades = [...existingTrades, newTrade];
+        const csvContent = tradesToCSV(allTrades);
 
         try {
             const url = `https://api.github.com/repos/${repo}/contents/${CSV_PATH}`;
-            let sha = null;
-            const getRes = await fetch(url, { headers: { 'Authorization': `token ${token}`, 'Accept': 'application/vnd.github.v3+json' } });
-            if (getRes.ok) { const data = await getRes.json(); sha = data.sha; }
             const putRes = await fetch(url, {
                 method: 'PUT',
                 headers: { 'Authorization': `token ${token}`, 'Accept': 'application/vnd.github.v3+json', 'Content-Type': 'application/json' },
-                body: JSON.stringify({ message: `Add trade: ${ticker}`, content: btoa(unescape(encodeURIComponent(csvContent))), sha: sha })
+                body: JSON.stringify({ 
+                    message: `Add trade: ${ticker} ${shares} shares`, 
+                    content: btoa(unescape(encodeURIComponent(csvContent))), 
+                    sha: sha 
+                })
             });
             if (!putRes.ok) throw new Error('GitHub save failed');
-            alert(`✅ Saved to ${repo}/${CSV_PATH}\n${shares} shares ${ticker}\nNet: ${netProfit >= 0 ? '+' : ''}$${netProfit.toFixed(2)}`);
+            
+            // Reload trades from GitHub to update the display
+            await loadFromGitHub();
+            
+            alert(`✅ Trade appended to ${repo}/${CSV_PATH}\n${shares} shares ${ticker}\nNet: ${netProfit >= 0 ? '+' : ''}$${netProfit.toFixed(2)}`);
+            
+            // Clear form
             document.getElementById('entryPriceLog').value = '';
             document.getElementById('exitPriceLog').value = '';
             document.getElementById('sharesLog').value = '6';
-            updateAccount();
-            displayTrades();
+            
         } catch(e) { alert(`Error: ${e.message}`); }
     }
 
@@ -252,9 +277,9 @@
         return result;
     }
 
-    function tradesToCSV() {
-        if (!trades.length) return 'entry_date,exit_date,ticker,shares,entry_price,exit_price,gross_profit,commission,net_profit,exit_reason';
-        const rows = trades.map(t => `${t.entry_date},${t.exit_date},${t.ticker},${t.shares},${t.entry_price},${t.exit_price},${t.gross_profit},${t.commission},${t.net_profit},${t.exit_reason}`);
+    function tradesToCSV(allTrades) {
+        if (!allTrades.length) return 'entry_date,exit_date,ticker,shares,entry_price,exit_price,gross_profit,commission,net_profit,exit_reason';
+        const rows = allTrades.map(t => `${t.entry_date},${t.exit_date},${t.ticker},${t.shares},${t.entry_price},${t.exit_price},${t.gross_profit},${t.commission},${t.net_profit},${t.exit_reason}`);
         return ['entry_date,exit_date,ticker,shares,entry_price,exit_price,gross_profit,commission,net_profit,exit_reason', ...rows].join('\n');
     }
 
