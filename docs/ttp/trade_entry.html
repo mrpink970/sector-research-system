@@ -151,6 +151,15 @@
             grid-template-columns: 1fr 1fr;
             gap: 12px;
         }
+        .commission-note {
+            background: #1e293b;
+            border: 1px solid #f97316;
+            border-radius: 8px;
+            padding: 8px;
+            margin-top: 8px;
+            font-size: 12px;
+            text-align: center;
+        }
     </style>
 </head>
 <body>
@@ -159,7 +168,7 @@
         <div class="flex-between">
             <div>
                 <h1>📝 TTP Trade Manager & Calculator</h1>
-                <p style="color: #94a3b8;">Pre-trade position sizing + Post-trade logging</p>
+                <p style="color: #94a3b8;">Pre-trade position sizing + Post-trade logging (includes $1.50 commission)</p>
             </div>
             <button class="secondary" onclick="refreshAll()" style="width: auto; padding: 8px 16px;">🔄 Refresh Data</button>
         </div>
@@ -220,6 +229,10 @@
                 <div class="label" style="margin-top: 16px;">Your Quantity (override recommendation)</div>
                 <input type="number" id="userQuantity" class="quantity-input" step="1" min="1" max="20" value="6" oninput="updateWithUserQuantity()">
                 
+                <div class="commission-note">
+                    💰 Commission: $0.75 per order ($1.50 round trip)
+                </div>
+                
                 <button onclick="copyOrderDetails()" style="background: #8b5cf6; margin-top: 8px;">📋 Copy Order Details</button>
             </div>
         </div>
@@ -241,7 +254,7 @@
                     </div>
                     <div>
                         <div class="label">Entry Price ($)</div>
-                        <input type="number" id="entryPriceLog" step="0.01" placeholder="e.g., 224.00">
+                        <input type="number" id="entryPriceLog" step="0.01" placeholder="e.g., 227.03">
                     </div>
                 </div>
                 
@@ -252,20 +265,24 @@
                     </div>
                     <div>
                         <div class="label">Exit Price ($)</div>
-                        <input type="number" id="exitPriceLog" step="0.01" placeholder="e.g., 237.44">
+                        <input type="number" id="exitPriceLog" step="0.01" placeholder="e.g., 223.40">
                     </div>
                 </div>
                 
                 <div class="label">Shares</div>
-                <input type="number" id="sharesLog" step="1" min="1" value="2">
+                <input type="number" id="sharesLog" step="1" min="1" value="6">
                 
                 <div class="label">Exit Reason</div>
                 <select id="exitReasonLog">
-                    <option value="TAKE_PROFIT">🎯 Take Profit (6%)</option>
-                    <option value="STOP_LOSS">🛑 Stop Loss (2%)</option>
+                    <option value="TAKE_PROFIT">🎯 Take Profit</option>
+                    <option value="STOP_LOSS">🛑 Stop Loss</option>
                     <option value="TRAILING_STOP">🔒 Trailing Stop</option>
                     <option value="MANUAL">✋ Manual Close</option>
                 </select>
+                
+                <div class="commission-note" style="margin-bottom: 16px;">
+                    💰 $1.50 commission will be deducted automatically
+                </div>
                 
                 <button onclick="logCompletedTrade()">💾 Save Trade & Update Equity</button>
             </div>
@@ -273,6 +290,9 @@
             <div class="card">
                 <h2>📜 Trade History</h2>
                 <div id="tradeHistoryList">No trades yet</div>
+                <div class="commission-note" style="margin-top: 12px;">
+                    💰 All profits shown are NET after $1.50 commission
+                </div>
             </div>
         </div>
     </div>
@@ -286,7 +306,7 @@
     const MAX_PROFIT_PER_TRADE = 90;      // 30% of $300 target
     const DAILY_LOSS_LIMIT = 60;
     const MAX_DRAWDOWN = 140;
-    const COMMISSION_PER_ORDER = 0.75;
+    const COMMISSION = 1.50;               // $0.75 buy + $0.75 sell
     const STARTING_EQUITY = 2000;
 
     // ============================================================
@@ -346,7 +366,7 @@
         let completedTrades = trades.filter(t => t.status === 'completed');
         let totalProfit = 0;
         for (let t of completedTrades) {
-            totalProfit += t.profit || 0;
+            totalProfit += t.net_profit || t.profit || 0;
         }
         
         let calculatedEquity = STARTING_EQUITY + totalProfit;
@@ -354,7 +374,7 @@
         let allPeaks = [STARTING_EQUITY];
         let runningEquity = STARTING_EQUITY;
         for (let t of completedTrades.sort((a,b) => new Date(a.exit_date) - new Date(b.exit_date))) {
-            runningEquity += t.profit;
+            runningEquity += (t.net_profit || t.profit || 0);
             allPeaks.push(runningEquity);
         }
         let calculatedPeak = Math.max(...allPeaks);
@@ -375,8 +395,8 @@
         let todayLoss = 0;
         let completedTrades = trades.filter(t => t.status === 'completed');
         for (let t of completedTrades) {
-            if (t.exit_date && t.exit_date.split('T')[0] === today && (t.profit || 0) < 0) {
-                todayLoss += Math.abs(t.profit);
+            if (t.exit_date && t.exit_date.split('T')[0] === today && (t.net_profit || t.profit || 0) < 0) {
+                todayLoss += Math.abs(t.net_profit || t.profit || 0);
             }
         }
         const remainingDailyBuffer = DAILY_LOSS_LIMIT - todayLoss;
@@ -403,29 +423,35 @@
             <table style="width:100%; font-size:12px;">
                 <thead>
                     <tr>
-                        <th>Entry Date</th><th>Exit Date</th><th>Ticker</th><th>Shares</th><th>Entry</th><th>Exit</th><th>Profit</th><th>Reason</th>
+                        <th>Entry Date</th><th>Exit Date</th><th>Ticker</th><th>Shares</th><th>Entry</th><th>Exit</th><th>Gross</th><th>Comm</th><th>Net Profit</th><th>Reason</th>
                     </tr>
                 </thead>
                 <tbody>
-                    ${allTrades.map(t => `
-                        <tr>
-                            <td>${t.entry_date?.split('T')[0] || '--'} ${t.entry_date?.split('T')[1]?.slice(0,5) || ''}</td>
-                            <td>${t.exit_date?.split('T')[0] || '--'} ${t.exit_date?.split('T')[1]?.slice(0,5) || ''}</td>
-                            <td>${t.ticker}</td>
-                            <td>${t.shares}</td>
-                            <td>$${t.entry_price?.toFixed(2)}</td>
-                            <td>$${t.exit_price?.toFixed(2)}</td>
-                            <td class="${(t.profit || 0) >= 0 ? 'positive' : 'negative'}">${t.profit ? `${t.profit >= 0 ? '+' : ''}$${t.profit.toFixed(2)}` : '--'}</td>
-                            <td>${t.exit_reason || '--'}</td>
-                        </tr>
-                    `).join('')}
+                    ${allTrades.map(t => {
+                        const grossProfit = (t.exit_price - t.entry_price) * t.shares;
+                        const netProfit = t.net_profit || t.profit || 0;
+                        return `
+                            <tr>
+                                <td>${t.entry_date?.split('T')[0] || '--'} ${t.entry_date?.split('T')[1]?.slice(0,5) || ''}</td>
+                                <td>${t.exit_date?.split('T')[0] || '--'} ${t.exit_date?.split('T')[1]?.slice(0,5) || ''}</td>
+                                <td>${t.ticker}</td>
+                                <td>${t.shares}</td>
+                                <td>$${t.entry_price?.toFixed(2)}</td>
+                                <td>$${t.exit_price?.toFixed(2)}</td>
+                                <td class="${grossProfit >= 0 ? 'positive' : 'negative'}">${grossProfit >= 0 ? '+' : ''}$${grossProfit.toFixed(2)}</td>
+                                <td>$${COMMISSION.toFixed(2)}</td>
+                                <td class="${netProfit >= 0 ? 'positive' : 'negative'}">${netProfit >= 0 ? '+' : ''}$${netProfit.toFixed(2)}</td>
+                                <td>${t.exit_reason || '--'}</td>
+                            </tr>
+                        `;
+                    }).join('')}
                 </tbody>
             </table>
         `;
     }
     
     // ============================================================
-    // LOG COMPLETED TRADE
+    // LOG COMPLETED TRADE (WITH COMMISSION)
     // ============================================================
     function logCompletedTrade() {
         const symbol = document.getElementById('logSymbol').value;
@@ -457,7 +483,14 @@
             return;
         }
         
-        const profit = (exitPrice - entryPrice) * shares;
+        const grossProfit = (exitPrice - entryPrice) * shares;
+        const netProfit = grossProfit - COMMISSION;
+        const profitPerShare = netProfit / shares;
+        
+        let warningMsg = '';
+        if (netProfit > 0 && profitPerShare < 0.10) {
+            warningMsg = `\n\n⚠️ WARNING: Net profit per share is $${profitPerShare.toFixed(2)} (below $0.10 minimum). This trade may not count toward your profit target.`;
+        }
         
         const newTrade = {
             ticker: symbol,
@@ -466,7 +499,10 @@
             shares: shares,
             exit_date: new Date(exitDate).toISOString(),
             exit_price: exitPrice,
-            profit: parseFloat(profit.toFixed(2)),
+            gross_profit: parseFloat(grossProfit.toFixed(2)),
+            commission: COMMISSION,
+            net_profit: parseFloat(netProfit.toFixed(2)),
+            profit_per_share: parseFloat(profitPerShare.toFixed(4)),
             exit_reason: exitReason,
             status: 'completed'
         };
@@ -476,12 +512,18 @@
         recalculateAccountFromTrades();
         refreshAll();
         
-        alert(`✅ Trade saved: ${shares} shares ${symbol}\nProfit: ${profit >= 0 ? '+' : ''}$${profit.toFixed(2)}`);
+        alert(`✅ Trade saved: ${shares} shares ${symbol}\nGross: $${grossProfit.toFixed(2)}\nCommission: $${COMMISSION.toFixed(2)}\nNet Profit: ${netProfit >= 0 ? '+' : ''}$${netProfit.toFixed(2)}\nProfit/Share: $${profitPerShare.toFixed(4)}${warningMsg}`);
         
-        // Clear form
+        // Clear form (keep dates)
         document.getElementById('entryPriceLog').value = '';
         document.getElementById('exitPriceLog').value = '';
-        document.getElementById('sharesLog').value = '2';
+        document.getElementById('sharesLog').value = '6';
+        
+        // Reset dates to now
+        const now = new Date();
+        const localDateTime = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+        document.getElementById('entryDate').value = localDateTime;
+        document.getElementById('exitDate').value = localDateTime;
     }
     
     // ============================================================
@@ -508,8 +550,8 @@
         let todayLoss = 0;
         let completedTrades = trades.filter(t => t.status === 'completed');
         for (let t of completedTrades) {
-            if (t.exit_date && t.exit_date.split('T')[0] === today && (t.profit || 0) < 0) {
-                todayLoss += Math.abs(t.profit);
+            if (t.exit_date && t.exit_date.split('T')[0] === today && (t.net_profit || t.profit || 0) < 0) {
+                todayLoss += Math.abs(t.net_profit || t.profit || 0);
             }
         }
         const remainingDailyBuffer = DAILY_LOSS_LIMIT - todayLoss;
@@ -565,6 +607,7 @@
                 <div>Recommended Position Size</div>
                 <div style="font-size:12px; margin-top:8px;">Risk: $${currentCalc.riskAmount.toFixed(2)} (${stopPercent}%) | Reward: $${currentCalc.rewardAmount.toFixed(2)} (${targetPercent}%)</div>
                 <div style="font-size:12px;">Risk/Reward: 1:${(targetPercent/stopPercent).toFixed(1)}</div>
+                <div style="font-size:11px; color:#94a3b8; margin-top:4px;">💰 Commission: $${COMMISSION.toFixed(2)} round trip</div>
             </div>
         `;
         
@@ -591,14 +634,15 @@
         const targetProfitPerShare = price * (targetPercent / 100);
         const stopTicks = Math.round(stopLossPerShare / TICK_SIZE);
         const targetPrice = price * (1 + targetPercent / 100);
-        const commissionTotal = COMMISSION_PER_ORDER * 2;
+        const commissionPerShare = COMMISSION / userShares;
         
         const riskAmount = stopLossPerShare * userShares;
         const rewardAmount = targetProfitPerShare * userShares;
+        const netReward = rewardAmount - COMMISSION;
         
         let warningHtml = '';
         if (rewardAmount > MAX_PROFIT_PER_TRADE) {
-            warningHtml = '<div class="rule-warning">❌ WARNING: Profit exceeds $90 limit (30% rule)! Reduce shares.</div>';
+            warningHtml = '<div class="rule-warning">❌ WARNING: Gross profit exceeds $90 limit (30% rule)! Reduce shares.</div>';
         } else if (rewardAmount > MAX_PROFIT_PER_TRADE * 0.8) {
             warningHtml = '<div class="rule-caution">⚠️ CAUTION: Profit approaching $90 limit. Be careful.</div>';
         }
@@ -613,14 +657,16 @@
                 <div class="calc-row"><span class="calc-label">Limit Price:</span><span class="calc-value"><strong>$${price.toFixed(2)}</strong></span></div>
                 <div class="calc-row"><span class="calc-label">Stop Loss (TICKS):</span><span class="calc-value" style="color:#f97316;"><strong>${stopTicks.toLocaleString()} TICKS</strong> (${stopPercent}% below entry)</span></div>
                 <div class="calc-row"><span class="calc-label">Take Profit:</span><span class="calc-value" style="color:#22c55e;"><strong>$${targetPrice.toFixed(2)}</strong> (${targetPercent}% above entry)</span></div>
-                <div class="calc-row"><span class="calc-label">Commission (round trip):</span><span class="calc-value">$${commissionTotal.toFixed(2)}</span></div>
-                <div class="calc-row"><span class="calc-label">Breakeven Price:</span><span class="calc-value">$${(price + (commissionTotal / userShares)).toFixed(2)} (including commissions)</span></div>
+                <div class="calc-row"><span class="calc-label">Commission (round trip):</span><span class="calc-value">$${COMMISSION.toFixed(2)} ($${commissionPerShare.toFixed(2)}/share)</span></div>
+                <div class="calc-row"><span class="calc-label">Gross Profit at Target:</span><span class="calc-value ${rewardAmount > MAX_PROFIT_PER_TRADE ? 'danger' : (rewardAmount > MAX_PROFIT_PER_TRADE * 0.8 ? 'warning' : 'safe')}">$${rewardAmount.toFixed(2)}</span></div>
+                <div class="calc-row"><span class="calc-label">Net Profit after Commission:</span><span class="calc-value">$${netReward.toFixed(2)}</span></div>
+                <div class="calc-row"><span class="calc-label">Breakeven Price:</span><span class="calc-value">$${(price + (COMMISSION / userShares)).toFixed(2)} (including commissions)</span></div>
             </div>
             <div class="calc-box">
                 <div class="calc-row"><span class="calc-label">📋 RISK SUMMARY:</span><span class="calc-value"></span></div>
-                <div class="calc-row"><span class="calc-label">Profit at target:</span><span class="calc-value ${rewardAmount > MAX_PROFIT_PER_TRADE ? 'danger' : (rewardAmount > MAX_PROFIT_PER_TRADE * 0.8 ? 'warning' : 'safe')}">$${rewardAmount.toFixed(2)} (30% rule limit: $90)</span></div>
                 <div class="calc-row"><span class="calc-label">Loss at stop:</span><span class="calc-value">$${riskAmount.toFixed(2)}</span></div>
-                <div class="calc-row"><span class="calc-label">Risk/Reward:</span><span class="calc-value">1:${(targetPercent/stopPercent).toFixed(1)}</span></div>
+                <div class="calc-row"><span class="calc-label">Risk/Reward (gross):</span><span class="calc-value">1:${(targetPercent/stopPercent).toFixed(1)}</span></div>
+                <div class="calc-row"><span class="calc-label">Risk/Reward (net after commission):</span><span class="calc-value">1:${(netReward / riskAmount).toFixed(1)}</span></div>
             </div>
             ${warningHtml}
         `;
@@ -647,7 +693,7 @@
         const stopTicks = Math.round((price * stopPercent / 100) / TICK_SIZE);
         const targetPrice = price * (1 + targetPercent / 100);
         
-        const orderText = `${instrument} BUY ${userShares} SHARES LIMIT $${price.toFixed(2)} DAY | Stop: ${stopTicks} TICKS | Target: $${targetPrice.toFixed(2)}`;
+        const orderText = `${instrument} BUY ${userShares} SHARES LIMIT $${price.toFixed(2)} DAY | Stop: ${stopTicks} TICKS | Target: $${targetPrice.toFixed(2)} | Commission: $${COMMISSION.toFixed(2)} RT`;
         
         navigator.clipboard.writeText(orderText);
         const copyBtn = event.target;
