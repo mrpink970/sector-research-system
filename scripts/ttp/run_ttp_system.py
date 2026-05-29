@@ -2,13 +2,12 @@
 """
 Trade The Pool - Main System Runner
 Runs data collection and signal generation
-Includes TTP evaluation status display
+Includes git pull to avoid push conflicts
 """
 
 import subprocess
 import sys
 from pathlib import Path
-
 
 def main():
     print("=" * 60)
@@ -29,14 +28,29 @@ def main():
         print("❌ Signal generation failed")
         return
     
-    # Step 3: Show TTP evaluation status
-    print("\n📊 Step 3: TTP Evaluation Status...")
-    result = subprocess.run([sys.executable, "-c", 
-        "from scripts.ttp.trade_manager import print_review_status, get_performance_summary; print_review_status(); print('\n' + '='*50); print('PERFORMANCE SUMMARY'); print('='*50); perf = get_performance_summary(); [print(f'  {k}: {v}') for k, v in perf.items()]"])
+    # Step 3: Commit and push with pull first
+    print("\n📤 Step 3: Committing and pushing updates...")
+    
+    # Pull latest changes first to avoid conflicts
+    subprocess.run(["git", "pull", "origin", "main", "--rebase"], capture_output=True)
+    
+    # Add and commit
+    subprocess.run(["git", "config", "user.name", "github-actions[bot]"])
+    subprocess.run(["git", "config", "user.email", "github-actions[bot]@users.noreply.github.com"])
+    subprocess.run(["git", "add", "data/ttp/"])
+    subprocess.run(["git", "add", "docs/ttp/"])
+    
+    # Check if there are changes to commit
+    result = subprocess.run(["git", "diff", "--staged", "--quiet"])
+    if result.returncode != 0:
+        subprocess.run(["git", "commit", "-m", f"TTP system update {__import__('datetime').datetime.now().strftime('%Y-%m-%d %H:%M')}"])
+        subprocess.run(["git", "push", "origin", "main"])
+        print("✅ Changes committed and pushed")
+    else:
+        print("✅ No changes to commit")
     
     print("\n✅ TTP System complete")
     print("📊 Dashboard: https://mrpink970.github.io/sector-research-system/docs/ttp/ttp_dashboard.html")
-
 
 if __name__ == "__main__":
     main()
