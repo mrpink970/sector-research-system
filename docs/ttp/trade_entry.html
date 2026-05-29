@@ -250,7 +250,7 @@
                 <div class="grid-2-fields">
                     <div>
                         <div class="label">Entry Date</div>
-                        <input type="datetime-local" id="entryDate">
+                        <input type="date" id="entryDate">
                     </div>
                     <div>
                         <div class="label">Entry Price ($)</div>
@@ -261,7 +261,7 @@
                 <div class="grid-2-fields">
                     <div>
                         <div class="label">Exit Date</div>
-                        <input type="datetime-local" id="exitDate">
+                        <input type="date" id="exitDate">
                     </div>
                     <div>
                         <div class="label">Exit Price ($)</div>
@@ -430,10 +430,12 @@
                     ${allTrades.map(t => {
                         const grossProfit = (t.exit_price - t.entry_price) * t.shares;
                         const netProfit = t.net_profit || t.profit || 0;
+                        const entryDate = t.entry_date ? t.entry_date.split('T')[0] : '--';
+                        const exitDate = t.exit_date ? t.exit_date.split('T')[0] : '--';
                         return `
                             <tr>
-                                <td>${t.entry_date?.split('T')[0] || '--'} ${t.entry_date?.split('T')[1]?.slice(0,5) || ''}</td>
-                                <td>${t.exit_date?.split('T')[0] || '--'} ${t.exit_date?.split('T')[1]?.slice(0,5) || ''}</td>
+                                <td>${entryDate}</td>
+                                <td>${exitDate}</td>
                                 <td>${t.ticker}</td>
                                 <td>${t.shares}</td>
                                 <td>$${t.entry_price?.toFixed(2)}</td>
@@ -489,15 +491,15 @@
         
         let warningMsg = '';
         if (netProfit > 0 && profitPerShare < 0.10) {
-            warningMsg = `\n\n⚠️ WARNING: Net profit per share is $${profitPerShare.toFixed(2)} (below $0.10 minimum). This trade may not count toward your profit target.`;
+            warningMsg = `\n\n⚠️ WARNING: Net profit per share is $${profitPerShare.toFixed(4)} (below $0.10 minimum). This trade may not count toward your profit target.`;
         }
         
         const newTrade = {
             ticker: symbol,
-            entry_date: new Date(entryDate).toISOString(),
+            entry_date: entryDate + 'T00:00:00.000Z',
             entry_price: entryPrice,
             shares: shares,
-            exit_date: new Date(exitDate).toISOString(),
+            exit_date: exitDate + 'T00:00:00.000Z',
             exit_price: exitPrice,
             gross_profit: parseFloat(grossProfit.toFixed(2)),
             commission: COMMISSION,
@@ -519,11 +521,10 @@
         document.getElementById('exitPriceLog').value = '';
         document.getElementById('sharesLog').value = '6';
         
-        // Reset dates to now
-        const now = new Date();
-        const localDateTime = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
-        document.getElementById('entryDate').value = localDateTime;
-        document.getElementById('exitDate').value = localDateTime;
+        // Reset dates to today
+        const todayDate = new Date().toISOString().split('T')[0];
+        document.getElementById('entryDate').value = todayDate;
+        document.getElementById('exitDate').value = todayDate;
     }
     
     // ============================================================
@@ -722,11 +723,10 @@
     updateAccountDisplay();
     calculatePosition();
     
-    // Set default dates to now
-    const now = new Date();
-    const localDateTime = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
-    document.getElementById('entryDate').value = localDateTime;
-    document.getElementById('exitDate').value = localDateTime;
+    // Set default dates to today
+    const todayDate = new Date().toISOString().split('T')[0];
+    document.getElementById('entryDate').value = todayDate;
+    document.getElementById('exitDate').value = todayDate;
     
     // Add event listeners for real-time updates
     document.getElementById('instrument').addEventListener('change', () => { calculatePosition(); });
