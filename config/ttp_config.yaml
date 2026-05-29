@@ -49,7 +49,7 @@ compliance:
 # Email Recipients
 email_recipients:
   - "mrpink970@gmail.com"
-  - "mwhite7680@gmail.com"
+ # - "mwhite7680@gmail.com"
 
 # Data collection times (ET)
 data_times:
