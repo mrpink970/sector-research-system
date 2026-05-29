@@ -96,44 +96,6 @@
         }
         .positive { color: #22c55e; }
         .negative { color: #ef4444; }
-        .danger { color: #ef4444; }
-        .warning { color: #f97316; }
-        .safe { color: #22c55e; }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 12px;
-        }
-        th, td {
-            padding: 8px;
-            text-align: left;
-            border-bottom: 1px solid #334155;
-        }
-        th {
-            color: #94a3b8;
-            font-weight: 600;
-        }
-        .flex-between {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        .rule-warning {
-            background: #7f1d1d;
-            border-radius: 8px;
-            padding: 8px;
-            margin-top: 8px;
-            text-align: center;
-            font-weight: 700;
-        }
-        .rule-caution {
-            background: #7c2d12;
-            border-radius: 8px;
-            padding: 8px;
-            margin-top: 8px;
-            text-align: center;
-            font-weight: 700;
-        }
         .grid-2-fields {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -148,27 +110,15 @@
             font-size: 12px;
             text-align: center;
         }
-        .csv-actions {
-            display: flex;
-            gap: 10px;
-            margin-top: 16px;
-        }
-        .csv-actions button {
-            flex: 1;
-            margin-top: 0;
-        }
-        textarea {
-            width: 100%;
-            padding: 12px;
+        .token-input {
             background: #0f172a;
-            border: 1px solid #334155;
-            border-radius: 8px;
-            color: #e2e8f0;
-            font-size: 11px;
+            border: 1px solid #f97316;
+            color: #f97316;
             font-family: monospace;
-            margin-bottom: 16px;
-            resize: vertical;
+            font-size: 12px;
         }
+        .status-ok { color: #22c55e; }
+        .status-error { color: #ef4444; }
     </style>
 </head>
 <body>
@@ -177,15 +127,26 @@
         <div class="flex-between">
             <div>
                 <h1>📝 TTP Trade Manager & Calculator</h1>
-                <p style="color: #94a3b8;">Pre-trade position sizing + Post-trade logging (includes $1.50 commission)</p>
+                <p style="color: #94a3b8;">Direct GitHub integration - Saves trades to data/ttp/trades.csv</p>
             </div>
-            <button class="secondary" onclick="loadFromCSV()" style="width: auto; padding: 8px 16px;">🔄 Load from CSV</button>
+            <button class="secondary" onclick="loadFromGitHub()" style="width: auto; padding: 8px 16px;">🔄 Load from GitHub</button>
         </div>
     </div>
 
     <div class="grid-2">
         <!-- LEFT COLUMN: Pre-Trade Calculator -->
         <div>
+            <div class="card">
+                <h2>🔑 GitHub Settings</h2>
+                <div class="label">GitHub Token (classic)</div>
+                <input type="password" id="githubToken" class="token-input" placeholder="ghp_xxxxxxxxxxxx" value="">
+                <div class="label" style="margin-top: 8px;">Repository</div>
+                <input type="text" id="repoName" value="mrpink970/sector-research-system" placeholder="username/repo">
+                <div class="commission-note">
+                    🔐 Token needs 'repo' scope. Never share it. Stored only in your browser.
+                </div>
+            </div>
+
             <div class="card">
                 <h2>📊 Account Status</h2>
                 <div class="calc-row">
@@ -293,25 +254,12 @@
                     💰 $1.50 commission will be deducted automatically
                 </div>
                 
-                <button onclick="addTradeToCSV()">💾 Add Trade to CSV</button>
+                <button onclick="addTradeToGitHub()">💾 Save Trade to GitHub</button>
             </div>
 
             <div class="card">
-                <h2>📜 Trade History (CSV)</h2>
-                <textarea id="csvData" rows="6" placeholder="Paste your trades.csv content here..."></textarea>
-                <div class="csv-actions">
-                    <button class="secondary" onclick="loadFromCSV()">📂 Load from CSV</button>
-                    <button onclick="saveToCSV()">💾 Save to CSV File</button>
-                    <button onclick="clearAllTrades()" class="danger">🗑️ Clear All Trades</button>
-                </div>
-                <div class="commission-note" style="margin-top: 12px;">
-                    💰 All profits shown are NET after $1.50 commission
-                </div>
-            </div>
-
-            <div class="card">
-                <h2>📊 Trade Summary</h2>
-                <div id="tradeSummary">No trades loaded</div>
+                <h2>📜 Trade History</h2>
+                <div id="tradeHistoryList">No trades loaded. Click "Load from GitHub"</div>
             </div>
         </div>
     </div>
@@ -327,22 +275,206 @@
     const MAX_DRAWDOWN = 140;
     const COMMISSION = 1.50;
     const STARTING_EQUITY = 2000;
+    const CSV_PATH = 'data/ttp/trades.csv';
 
-    // ============================================================
-    // CSV STORAGE (instead of localStorage)
-    // ============================================================
     let trades = [];
     let accountStatus = {
         currentEquity: STARTING_EQUITY,
         peakEquity: STARTING_EQUITY
     };
 
+    // ============================================================
+    // GITHUB API FUNCTIONS
+    // ============================================================
+    function getRepoName() {
+        return document.getElementById('repoName').value.trim();
+    }
+
+    function getToken() {
+        return document.getElementById('githubToken').value.trim();
+    }
+
+    async function loadFromGitHub() {
+        const token = getToken();
+        const repo = getRepoName();
+        
+        if (!token) {
+            alert('Please enter your GitHub token');
+            return;
+        }
+        
+        const statusDiv = document.getElementById('tradeHistoryList');
+        statusDiv.innerHTML = '<p>Loading from GitHub...</p>';
+        
+        try {
+            // Get the current file from GitHub
+            const url = `https://api.github.com/repos/${repo}/contents/${CSV_PATH}`;
+            const response = await fetch(url, {
+                headers: {
+                    'Authorization': `token ${token}`,
+                    'Accept': 'application/vnd.github.v3+json'
+                }
+            });
+            
+            if (response.status === 404) {
+                // File doesn't exist yet - start with empty trades
+                trades = [];
+                statusDiv.innerHTML = '<p>No trades file found. Create one by adding a trade.</p>';
+                updateAccountFromTrades();
+                displayTradeHistory();
+                return;
+            }
+            
+            if (!response.ok) {
+                throw new Error(`GitHub API error: ${response.status}`);
+            }
+            
+            const data = await response.json();
+            const content = atob(data.content);
+            
+            // Parse CSV
+            trades = parseCSV(content);
+            updateAccountFromTrades();
+            displayTradeHistory();
+            
+            statusDiv.innerHTML = `<p class="status-ok">✅ Loaded ${trades.length} trades from GitHub</p>`;
+            
+        } catch (error) {
+            console.error(error);
+            statusDiv.innerHTML = `<p class="status-error">❌ Error loading: ${error.message}</p>`;
+        }
+    }
+
+    async function addTradeToGitHub() {
+        const token = getToken();
+        const repo = getRepoName();
+        
+        if (!token) {
+            alert('Please enter your GitHub token');
+            return;
+        }
+        
+        // Get form values
+        const symbol = document.getElementById('logSymbol').value;
+        const entryDate = document.getElementById('entryDate').value;
+        const entryPrice = parseFloat(document.getElementById('entryPriceLog').value);
+        const exitDate = document.getElementById('exitDate').value;
+        const exitPrice = parseFloat(document.getElementById('exitPriceLog').value);
+        const shares = parseInt(document.getElementById('sharesLog').value);
+        const exitReason = document.getElementById('exitReasonLog').value;
+        
+        if (!entryDate || !exitDate) {
+            alert('Please enter entry and exit dates');
+            return;
+        }
+        if (isNaN(entryPrice) || entryPrice <= 0) {
+            alert('Please enter valid entry price');
+            return;
+        }
+        if (isNaN(exitPrice) || exitPrice <= 0) {
+            alert('Please enter valid exit price');
+            return;
+        }
+        if (isNaN(shares) || shares < 1) {
+            alert('Please enter valid shares');
+            return;
+        }
+        
+        // Calculate profit with commission
+        const grossProfit = (exitPrice - entryPrice) * shares;
+        const netProfit = grossProfit - COMMISSION;
+        const profitPerShare = netProfit / shares;
+        
+        let warningMsg = '';
+        if (netProfit > 0 && profitPerShare < 0.10) {
+            warningMsg = `\n⚠️ WARNING: Net profit per share is $${profitPerShare.toFixed(4)} (below $0.10 minimum). This trade may not count toward your profit target.`;
+        }
+        
+        // Create new trade object
+        const newTrade = {
+            entry_date: entryDate,
+            exit_date: exitDate,
+            ticker: symbol,
+            shares: shares,
+            entry_price: entryPrice.toFixed(2),
+            exit_price: exitPrice.toFixed(2),
+            gross_profit: grossProfit.toFixed(2),
+            commission: COMMISSION.toFixed(2),
+            net_profit: netProfit.toFixed(2),
+            exit_reason: exitReason
+        };
+        
+        // Add to trades array
+        trades.push(newTrade);
+        
+        // Generate CSV content
+        const csvContent = tradesToCSV();
+        
+        try {
+            // First, get the current file SHA if it exists
+            const url = `https://api.github.com/repos/${repo}/contents/${CSV_PATH}`;
+            let sha = null;
+            
+            const getResponse = await fetch(url, {
+                headers: {
+                    'Authorization': `token ${token}`,
+                    'Accept': 'application/vnd.github.v3+json'
+                }
+            });
+            
+            if (getResponse.status === 200) {
+                const data = await getResponse.json();
+                sha = data.sha;
+            } else if (getResponse.status !== 404) {
+                throw new Error(`GitHub API error: ${getResponse.status}`);
+            }
+            
+            // Update or create the file
+            const putResponse = await fetch(url, {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `token ${token}`,
+                    'Accept': 'application/vnd.github.v3+json',
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    message: `Add trade: ${symbol} ${shares} shares ${entryDate}`,
+                    content: btoa(unescape(encodeURIComponent(csvContent))),
+                    sha: sha
+                })
+            });
+            
+            if (!putResponse.ok) {
+                const errorData = await putResponse.json();
+                throw new Error(`GitHub API error: ${putResponse.status} - ${errorData.message}`);
+            }
+            
+            alert(`✅ Trade saved to GitHub!\n\n${shares} shares ${symbol}\nGross: $${grossProfit.toFixed(2)}\nCommission: $${COMMISSION.toFixed(2)}\nNet Profit: ${netProfit >= 0 ? '+' : ''}$${netProfit.toFixed(2)}\nProfit/Share: $${profitPerShare.toFixed(4)}${warningMsg}`);
+            
+            // Clear form
+            document.getElementById('entryPriceLog').value = '';
+            document.getElementById('exitPriceLog').value = '';
+            document.getElementById('sharesLog').value = '6';
+            
+            const todayDate = new Date().toISOString().split('T')[0];
+            document.getElementById('entryDate').value = todayDate;
+            document.getElementById('exitDate').value = todayDate;
+            
+            // Refresh display
+            updateAccountFromTrades();
+            displayTradeHistory();
+            
+        } catch (error) {
+            console.error(error);
+            alert(`❌ Error saving to GitHub: ${error.message}`);
+        }
+    }
+
     function parseCSV(csvText) {
         if (!csvText.trim()) return [];
         const lines = csvText.trim().split('\n');
         if (lines.length < 2) return [];
         
-        const headers = lines[0].split(',').map(h => h.trim());
         const result = [];
         
         for (let i = 1; i < lines.length; i++) {
@@ -373,109 +505,6 @@
             return `${t.entry_date},${t.exit_date},${t.ticker},${t.shares},${t.entry_price},${t.exit_price},${t.gross_profit},${t.commission},${t.net_profit},${t.exit_reason}`;
         });
         return ['entry_date,exit_date,ticker,shares,entry_price,exit_price,gross_profit,commission,net_profit,exit_reason', ...rows].join('\n');
-    }
-
-    function loadFromCSV() {
-        const csvText = document.getElementById('csvData').value;
-        if (!csvText.trim()) {
-            trades = [];
-            updateAccountFromTrades();
-            displayTradeSummary();
-            return;
-        }
-        trades = parseCSV(csvText);
-        updateAccountFromTrades();
-        displayTradeSummary();
-        document.getElementById('csvData').value = tradesToCSV();
-    }
-
-    function saveToCSV() {
-        const csvContent = tradesToCSV();
-        const blob = new Blob([csvContent], { type: 'text/csv' });
-        const link = document.createElement('a');
-        const url = URL.createObjectURL(blob);
-        link.href = url;
-        link.download = 'trades.csv';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
-        alert('✅ trades.csv downloaded. Save it to your data/ttp/ folder on GitHub.');
-    }
-
-    function clearAllTrades() {
-        if (confirm('⚠️ Are you sure you want to delete ALL trades? This cannot be undone.')) {
-            trades = [];
-            document.getElementById('csvData').value = '';
-            updateAccountFromTrades();
-            displayTradeSummary();
-            alert('✅ All trades cleared.');
-        }
-    }
-
-    function addTradeToCSV() {
-        const symbol = document.getElementById('logSymbol').value;
-        const entryDate = document.getElementById('entryDate').value;
-        const entryPrice = parseFloat(document.getElementById('entryPriceLog').value);
-        const exitDate = document.getElementById('exitDate').value;
-        const exitPrice = parseFloat(document.getElementById('exitPriceLog').value);
-        const shares = parseInt(document.getElementById('sharesLog').value);
-        const exitReason = document.getElementById('exitReasonLog').value;
-        
-        if (!entryDate || !exitDate) {
-            alert('Please enter entry and exit dates');
-            return;
-        }
-        if (isNaN(entryPrice) || entryPrice <= 0) {
-            alert('Please enter valid entry price');
-            return;
-        }
-        if (isNaN(exitPrice) || exitPrice <= 0) {
-            alert('Please enter valid exit price');
-            return;
-        }
-        if (isNaN(shares) || shares < 1) {
-            alert('Please enter valid shares');
-            return;
-        }
-        
-        const grossProfit = (exitPrice - entryPrice) * shares;
-        const netProfit = grossProfit - COMMISSION;
-        const profitPerShare = netProfit / shares;
-        
-        let warningMsg = '';
-        if (netProfit > 0 && profitPerShare < 0.10) {
-            warningMsg = `\n⚠️ WARNING: Net profit per share is $${profitPerShare.toFixed(4)} (below $0.10 minimum). This trade may not count toward your profit target.`;
-        }
-        
-        const newTrade = {
-            entry_date: entryDate,
-            exit_date: exitDate,
-            ticker: symbol,
-            shares: shares,
-            entry_price: entryPrice.toFixed(2),
-            exit_price: exitPrice.toFixed(2),
-            gross_profit: grossProfit.toFixed(2),
-            commission: COMMISSION.toFixed(2),
-            net_profit: netProfit.toFixed(2),
-            exit_reason: exitReason
-        };
-        
-        trades.push(newTrade);
-        updateAccountFromTrades();
-        displayTradeSummary();
-        document.getElementById('csvData').value = tradesToCSV();
-        
-        alert(`✅ Trade added: ${shares} shares ${symbol}\nGross: $${grossProfit.toFixed(2)}\nCommission: $${COMMISSION.toFixed(2)}\nNet Profit: ${netProfit >= 0 ? '+' : ''}$${netProfit.toFixed(2)}\nProfit/Share: $${profitPerShare.toFixed(4)}${warningMsg}`);
-        
-        // Clear form
-        document.getElementById('entryPriceLog').value = '';
-        document.getElementById('exitPriceLog').value = '';
-        document.getElementById('sharesLog').value = '6';
-        
-        const todayDate = new Date().toISOString().split('T')[0];
-        document.getElementById('entryDate').value = todayDate;
-        document.getElementById('exitDate').value = todayDate;
     }
 
     function updateAccountFromTrades() {
@@ -521,42 +550,20 @@
         document.getElementById('displayDailyBuffer').innerHTML = `$${remainingDailyBuffer.toFixed(2)}`;
     }
 
-    function displayTradeSummary() {
-        const summaryDiv = document.getElementById('tradeSummary');
+    function displayTradeHistory() {
+        const historyDiv = document.getElementById('tradeHistoryList');
         if (trades.length === 0) {
-            summaryDiv.innerHTML = '<p style="color: #64748b;">No trades loaded. Paste CSV or add trades above.</p>';
+            historyDiv.innerHTML = '<p>No trades yet. Add a trade above.</p>';
             return;
         }
         
-        let totalGross = 0;
         let totalNet = 0;
-        let wins = 0;
-        let losses = 0;
-        let totalCommission = 0;
-        
         for (let t of trades) {
-            const gross = parseFloat(t.gross_profit);
-            const net = parseFloat(t.net_profit);
-            totalGross += gross;
-            totalNet += net;
-            totalCommission += parseFloat(t.commission);
-            if (net > 0) wins++;
-            if (net < 0) losses++;
+            totalNet += parseFloat(t.net_profit);
         }
         
-        summaryDiv.innerHTML = `
-            <div class="calc-box">
-                <div class="calc-row"><span class="calc-label">Total Trades:</span><span class="calc-value">${trades.length}</span></div>
-                <div class="calc-row"><span class="calc-label">Winning Trades:</span><span class="calc-value positive">${wins}</span></div>
-                <div class="calc-row"><span class="calc-label">Losing Trades:</span><span class="calc-value negative">${losses}</span></div>
-                <div class="calc-row"><span class="calc-label">Win Rate:</span><span class="calc-value">${trades.length > 0 ? ((wins/trades.length)*100).toFixed(1) : 0}%</span></div>
-                <div class="calc-row"><span class="calc-label">Total Gross Profit:</span><span class="calc-value">$${totalGross.toFixed(2)}</span></div>
-                <div class="calc-row"><span class="calc-label">Total Commission:</span><span class="calc-value">$${totalCommission.toFixed(2)}</span></div>
-                <div class="calc-row"><span class="calc-label">Total Net Profit:</span><span class="calc-value ${totalNet >= 0 ? 'positive' : 'negative'}">${totalNet >= 0 ? '+' : ''}$${totalNet.toFixed(2)}</span></div>
-                <div class="calc-row"><span class="calc-label">Current Equity:</span><span class="calc-value">$${accountStatus.currentEquity.toFixed(2)}</span></div>
-                <div class="calc-row"><span class="calc-label">Progress to $300:</span><span class="calc-value positive">${accountStatus.currentEquity - STARTING_EQUITY > 0 ? '+' : ''}$${(accountStatus.currentEquity - STARTING_EQUITY).toFixed(2)} / $300</span></div>
-            </div>
-            <div class="calc-box" style="max-height: 300px; overflow: auto;">
+        historyDiv.innerHTML = `
+            <div class="calc-box" style="max-height: 400px; overflow: auto;">
                 <table style="width:100%; font-size:11px;">
                     <thead>
                         <tr><th>Entry</th><th>Exit</th><th>Ticker</th><th>Shares</th><th>Entry $</th><th>Exit $</th><th>Net</th><th>Reason</th></tr>
@@ -577,11 +584,16 @@
                     </tbody>
                 </table>
             </div>
+            <div class="calc-box" style="margin-top: 12px;">
+                <div class="calc-row"><span class="calc-label">Total Trades:</span><span class="calc-value">${trades.length}</span></div>
+                <div class="calc-row"><span class="calc-label">Total Net Profit:</span><span class="calc-value ${totalNet >= 0 ? 'positive' : 'negative'}">${totalNet >= 0 ? '+' : ''}$${totalNet.toFixed(2)}</span></div>
+                <div class="calc-row"><span class="calc-label">Progress to $300:</span><span class="calc-value positive">${(accountStatus.currentEquity - STARTING_EQUITY) > 0 ? '+' : ''}$${(accountStatus.currentEquity - STARTING_EQUITY).toFixed(2)} / $300</span></div>
+            </div>
         `;
     }
 
     // ============================================================
-    // POSITION SIZING CALCULATOR (same as before)
+    // POSITION SIZING CALCULATOR
     // ============================================================
     let currentCalc = {};
 
@@ -736,15 +748,23 @@
     // ============================================================
     // INITIALIZATION
     // ============================================================
-    function refreshAll() {
-        loadFromCSV();
-        calculatePosition();
-    }
-    
     const todayDate = new Date().toISOString().split('T')[0];
     document.getElementById('entryDate').value = todayDate;
     document.getElementById('exitDate').value = todayDate;
     document.getElementById('currentPrice').value = '224.00';
+    
+    // Load saved token from localStorage (optional, for convenience)
+    const savedToken = localStorage.getItem('github_token');
+    const savedRepo = localStorage.getItem('github_repo');
+    if (savedToken) document.getElementById('githubToken').value = savedToken;
+    if (savedRepo) document.getElementById('repoName').value = savedRepo;
+    
+    document.getElementById('githubToken').addEventListener('change', () => {
+        localStorage.setItem('github_token', document.getElementById('githubToken').value);
+    });
+    document.getElementById('repoName').addEventListener('change', () => {
+        localStorage.setItem('github_repo', document.getElementById('repoName').value);
+    });
     
     document.getElementById('instrument').addEventListener('change', () => { calculatePosition(); });
     document.getElementById('currentPrice').addEventListener('input', () => { calculatePosition(); });
