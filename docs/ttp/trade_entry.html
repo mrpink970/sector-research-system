@@ -29,6 +29,7 @@
         th, td { padding: 8px; text-align: left; border-bottom: 1px solid #334155; }
         th { color: #94a3b8; font-weight: 600; }
         .flex-between { display: flex; justify-content: space-between; align-items: center; }
+        .section-title { margin-top: 16px; margin-bottom: 8px; font-weight: 600; color: #22c55e; }
     </style>
 </head>
 <body>
@@ -44,6 +45,7 @@
     </div>
 
     <div class="grid-2">
+        <!-- LEFT COLUMN -->
         <div>
             <div class="card">
                 <h2>🔑 GitHub Settings</h2>
@@ -67,7 +69,10 @@
             <div class="card">
                 <h2>🟢 Plan New Trade</h2>
                 <div class="label">Instrument</div>
-                <select id="instrument"><option value="SOXX">SOXX</option><option value="SOXL">SOXL</option></select>
+                <select id="instrument">
+                    <option value="SOXX">SOXX</option>
+                    <option value="SOXL">SOXL</option>
+                </select>
                 <div class="label">Current Price ($)</div>
                 <input type="number" id="currentPrice" step="0.01" value="224.00">
                 <div class="label">Stop Loss (%)</div>
@@ -83,19 +88,42 @@
             </div>
         </div>
 
+        <!-- RIGHT COLUMN -->
         <div>
             <div class="card">
                 <h2>📝 Add Completed Trade</h2>
+                
+                <div class="label">Symbol (Ticker)</div>
+                <select id="logSymbol">
+                    <option value="SOXX">SOXX</option>
+                    <option value="SOXL">SOXL</option>
+                </select>
+                
                 <div class="grid-2-fields">
-                    <div><div class="label">Entry Date</div><input type="date" id="entryDate"></div>
-                    <div><div class="label">Entry Price ($)</div><input type="number" id="entryPriceLog" step="0.01"></div>
+                    <div>
+                        <div class="label">Entry Date</div>
+                        <input type="date" id="entryDate">
+                    </div>
+                    <div>
+                        <div class="label">Entry Price ($)</div>
+                        <input type="number" id="entryPriceLog" step="0.01" placeholder="e.g., 227.03">
+                    </div>
                 </div>
+                
                 <div class="grid-2-fields">
-                    <div><div class="label">Exit Date</div><input type="date" id="exitDate"></div>
-                    <div><div class="label">Exit Price ($)</div><input type="number" id="exitPriceLog" step="0.01"></div>
+                    <div>
+                        <div class="label">Exit Date</div>
+                        <input type="date" id="exitDate">
+                    </div>
+                    <div>
+                        <div class="label">Exit Price ($)</div>
+                        <input type="number" id="exitPriceLog" step="0.01" placeholder="e.g., 223.40">
+                    </div>
                 </div>
+                
                 <div class="label">Shares</div>
                 <input type="number" id="sharesLog" step="1" min="1" value="6">
+                
                 <div class="label">Exit Reason</div>
                 <select id="exitReasonLog">
                     <option value="TAKE_PROFIT">Take Profit</option>
@@ -103,6 +131,7 @@
                     <option value="TRAILING_STOP">Trailing Stop</option>
                     <option value="MANUAL">Manual Close</option>
                 </select>
+                
                 <div class="commission-note">💰 $1.50 commission deducted from EVERY trade</div>
                 <button onclick="addTradeToGitHub()">💾 Save to GitHub</button>
             </div>
@@ -153,14 +182,15 @@
         const repo = getRepoName();
         if (!token) { alert('Enter GitHub token (starts with ghp_)'); return; }
 
+        const ticker = document.getElementById('logSymbol').value;
         const entryDate = document.getElementById('entryDate').value;
         const entryPrice = parseFloat(document.getElementById('entryPriceLog').value);
         const exitDate = document.getElementById('exitDate').value;
         const exitPrice = parseFloat(document.getElementById('exitPriceLog').value);
         const shares = parseInt(document.getElementById('sharesLog').value);
         const exitReason = document.getElementById('exitReasonLog').value;
-        const ticker = document.getElementById('logSymbol') ? document.getElementById('logSymbol').value : 'SOXL';
 
+        if (!ticker) { alert('Select symbol (SOXX or SOXL)'); return; }
         if (!entryDate || !exitDate) { alert('Enter dates'); return; }
         if (isNaN(entryPrice) || entryPrice <= 0) { alert('Valid entry price'); return; }
         if (isNaN(exitPrice) || exitPrice <= 0) { alert('Valid exit price'); return; }
@@ -195,9 +225,10 @@
                 body: JSON.stringify({ message: `Add trade: ${ticker}`, content: btoa(unescape(encodeURIComponent(csvContent))), sha: sha })
             });
             if (!putRes.ok) throw new Error('GitHub save failed');
-            alert(`✅ Saved to ${repo}/${CSV_PATH}\nNet: ${netProfit >= 0 ? '+' : ''}$${netProfit.toFixed(2)}`);
+            alert(`✅ Saved to ${repo}/${CSV_PATH}\n${shares} shares ${ticker}\nNet: ${netProfit >= 0 ? '+' : ''}$${netProfit.toFixed(2)}`);
             document.getElementById('entryPriceLog').value = '';
             document.getElementById('exitPriceLog').value = '';
+            document.getElementById('sharesLog').value = '6';
             updateAccount();
             displayTrades();
         } catch(e) { alert(`Error: ${e.message}`); }
@@ -262,7 +293,8 @@
         div.innerHTML = `
             <div class="calc-box" style="max-height:300px; overflow:auto;">
                 <table><thead><tr><th>Entry</th><th>Exit</th><th>Ticker</th><th>Shares</th><th>Entry $</th><th>Exit $</th><th>Net</th><th>Reason</th></tr></thead>
-                <tbody>${trades.slice().reverse().map(t => `<tr><td>${t.entry_date}</td><td>${t.exit_date}</td><td>${t.ticker}</td><td>${t.shares}</td><td>$${t.entry_price}</td><td>$${t.exit_price}</td><td class="${parseFloat(t.net_profit) >= 0 ? 'positive' : 'negative'}">${parseFloat(t.net_profit) >= 0 ? '+' : ''}$${parseFloat(t.net_profit).toFixed(2)}</td><td>${t.exit_reason}</td></tr>`).join('')}</tbody></table>
+                <tbody>${trades.slice().reverse().map(t => `<tr><td>${t.entry_date}</td><td>${t.exit_date}</td><td>${t.ticker}</td><td>${t.shares}</td><td>$${t.entry_price}</td><td>$${t.exit_price}</td><td class="${parseFloat(t.net_profit) >= 0 ? 'positive' : 'negative'}">${parseFloat(t.net_profit) >= 0 ? '+' : ''}$${parseFloat(t.net_profit).toFixed(2)}</td><td>${t.exit_reason}</td></tr>`).join('')}</tbody>
+            </table>
             </div>
             <div class="calc-box"><div class="calc-row"><span class="calc-label">Total Net:</span><span class="calc-value ${totalNet >= 0 ? 'positive' : 'negative'}">${totalNet >= 0 ? '+' : ''}$${totalNet.toFixed(2)}</span></div>
             <div class="calc-row"><span class="calc-label">Progress to $300:</span><span class="calc-value">${(accountStatus.currentEquity - STARTING_EQUITY) > 0 ? '+' : ''}$${(accountStatus.currentEquity - STARTING_EQUITY).toFixed(2)} / $300</span></div></div>
