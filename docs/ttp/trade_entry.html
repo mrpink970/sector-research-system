@@ -6,131 +6,30 @@
     <title>TTP - Trade Manager & Calculator</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            background: #0a0e17;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            padding: 20px;
-            color: #e2e8f0;
-        }
+        body { background: #0a0e17; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; padding: 20px; color: #e2e8f0; }
         .container { max-width: 1400px; margin: 0 auto; }
-        .grid-2 {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
-        }
-        .card {
-            background: #1e293b;
-            border-radius: 16px;
-            padding: 24px;
-            margin-bottom: 20px;
-            border: 1px solid #334155;
-        }
-        h1 { color: #38bdf8; margin-bottom: 8px; font-size: 1.5rem; }
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .card { background: #1e293b; border-radius: 16px; padding: 24px; margin-bottom: 20px; border: 1px solid #334155; }
+        h1 { color: #38bdf8; margin-bottom: 8px; }
         h2 { color: #22c55e; margin-bottom: 16px; font-size: 1.2rem; border-bottom: 1px solid #334155; padding-bottom: 8px; }
         .label { font-size: 12px; color: #94a3b8; margin-bottom: 4px; }
-        input, select {
-            width: 100%;
-            padding: 12px;
-            background: #0f172a;
-            border: 1px solid #334155;
-            border-radius: 8px;
-            color: #e2e8f0;
-            font-size: 14px;
-            margin-bottom: 16px;
-            font-family: monospace;
-        }
-        button {
-            width: 100%;
-            padding: 12px;
-            background: #22c55e;
-            border: none;
-            border-radius: 8px;
-            color: white;
-            font-weight: 700;
-            font-size: 14px;
-            cursor: pointer;
-            margin-top: 8px;
-        }
-        button.danger { background: #ef4444; }
-        button.danger:hover { background: #dc2626; }
+        input, select { width: 100%; padding: 12px; background: #0f172a; border: 1px solid #334155; border-radius: 8px; color: #e2e8f0; font-size: 14px; margin-bottom: 16px; font-family: monospace; }
+        button { width: 100%; padding: 12px; background: #22c55e; border: none; border-radius: 8px; color: white; font-weight: 700; font-size: 14px; cursor: pointer; margin-top: 8px; }
         button.secondary { background: #3b82f6; }
-        button.secondary:hover { background: #2563eb; }
-        button:hover { background: #16a34a; }
-        .calc-box {
-            background: #0f172a;
-            border-radius: 12px;
-            padding: 16px;
-            margin: 16px 0;
-        }
-        .calc-row {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 8px;
-            padding: 4px 0;
-            border-bottom: 1px solid #334155;
-        }
-        .recommendation {
-            background: #0f172a;
-            border-radius: 12px;
-            padding: 20px;
-            margin-top: 20px;
-            text-align: center;
-            border: 2px solid #22c55e;
-        }
-        .recommendation-value {
-            font-size: 32px;
-            font-weight: 800;
-            color: #22c55e;
-        }
-        .quantity-input {
-            font-size: 24px;
-            font-weight: 700;
-            text-align: center;
-        }
+        button.danger { background: #ef4444; }
+        .calc-box { background: #0f172a; border-radius: 12px; padding: 16px; margin: 16px 0; }
+        .calc-row { display: flex; justify-content: space-between; margin-bottom: 8px; padding: 4px 0; border-bottom: 1px solid #334155; }
+        .recommendation { background: #0f172a; border-radius: 12px; padding: 20px; text-align: center; border: 2px solid #22c55e; margin-top: 16px; }
+        .recommendation-value { font-size: 32px; font-weight: 800; color: #22c55e; }
         .positive { color: #22c55e; }
         .negative { color: #ef4444; }
-        .grid-2-fields {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 12px;
-        }
-        .commission-note {
-            background: #1e293b;
-            border: 1px solid #f97316;
-            border-radius: 8px;
-            padding: 8px;
-            margin-top: 8px;
-            font-size: 12px;
-            text-align: center;
-        }
-        .token-input {
-            background: #0f172a;
-            border: 1px solid #f97316;
-            color: #f97316;
-            font-family: monospace;
-            font-size: 12px;
-        }
-        .status-ok { color: #22c55e; }
-        .status-error { color: #ef4444; }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 12px;
-        }
-        th, td {
-            padding: 8px;
-            text-align: left;
-            border-bottom: 1px solid #334155;
-        }
-        th {
-            color: #94a3b8;
-            font-weight: 600;
-        }
-        .flex-between {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
+        .commission-note { background: #1e293b; border: 1px solid #f97316; border-radius: 8px; padding: 8px; margin-top: 8px; font-size: 12px; text-align: center; }
+        .token-input { background: #0f172a; border: 1px solid #f97316; color: #f97316; }
+        .grid-2-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        table { width: 100%; border-collapse: collapse; font-size: 12px; }
+        th, td { padding: 8px; text-align: left; border-bottom: 1px solid #334155; }
+        th { color: #94a3b8; font-weight: 600; }
+        .flex-between { display: flex; justify-content: space-between; align-items: center; }
     </style>
 </head>
 <body>
@@ -139,22 +38,21 @@
         <div class="flex-between">
             <div>
                 <h1>📝 TTP Trade Manager & Calculator</h1>
-                <p style="color: #94a3b8;">Pre-trade position sizing + Post-trade logging ($1.50 commission on ALL trades)</p>
+                <p>New CSV format: entry_date,exit_date,ticker,shares,entry_price,exit_price,gross_profit,commission,net_profit,exit_reason</p>
             </div>
             <button class="secondary" onclick="loadFromGitHub()" style="width: auto; padding: 8px 16px;">🔄 Load from GitHub</button>
         </div>
     </div>
 
     <div class="grid-2">
-        <!-- LEFT COLUMN -->
         <div>
             <div class="card">
                 <h2>🔑 GitHub Settings</h2>
                 <div class="label">GitHub Token</div>
                 <input type="password" id="githubToken" class="token-input" placeholder="ghp_xxxxxxxxxxxx">
-                <div class="label" style="margin-top: 8px;">Repository</div>
+                <div class="label">Repository</div>
                 <input type="text" id="repoName" value="mrpink970/sector-research-system">
-                <div class="commission-note">🔐 Token needs 'repo' scope</div>
+                <div class="commission-note">Token needs 'repo' scope | Saved in browser</div>
             </div>
 
             <div class="card">
@@ -170,10 +68,7 @@
             <div class="card">
                 <h2>🟢 Plan New Trade</h2>
                 <div class="label">Instrument</div>
-                <select id="instrument">
-                    <option value="SOXX">SOXX (1x)</option>
-                    <option value="SOXL">SOXL (3x)</option>
-                </select>
+                <select id="instrument"><option value="SOXX">SOXX</option><option value="SOXL">SOXL</option></select>
                 <div class="label">Current Price ($)</div>
                 <input type="number" id="currentPrice" step="0.01" value="224.00">
                 <div class="label">Stop Loss (%)</div>
@@ -183,21 +78,15 @@
                 <button onclick="calculatePosition()">🔍 Calculate Size</button>
                 <div id="calcResults"></div>
                 <div class="label">Your Quantity</div>
-                <input type="number" id="userQuantity" class="quantity-input" step="1" min="1" max="20" value="6" oninput="updateWithUserQuantity()">
-                <div class="commission-note">💰 $1.50 commission deducted from ALL trades</div>
+                <input type="number" id="userQuantity" step="1" min="1" max="20" value="6" oninput="updateWithUserQuantity()" style="font-size:24px; font-weight:700; text-align:center;">
+                <div class="commission-note">💰 $1.50 commission deducted from EVERY trade</div>
                 <button onclick="copyOrderDetails()" style="background:#8b5cf6;">📋 Copy Order Details</button>
             </div>
         </div>
 
-        <!-- RIGHT COLUMN -->
         <div>
             <div class="card">
-                <h2>📝 Log Completed Trade</h2>
-                <div class="label">Symbol</div>
-                <select id="logSymbol">
-                    <option value="SOXX">SOXX (1x)</option>
-                    <option value="SOXL">SOXL (3x)</option>
-                </select>
+                <h2>📝 Add Completed Trade</h2>
                 <div class="grid-2-fields">
                     <div><div class="label">Entry Date</div><input type="date" id="entryDate"></div>
                     <div><div class="label">Entry Price ($)</div><input type="number" id="entryPriceLog" step="0.01"></div>
@@ -210,10 +99,10 @@
                 <input type="number" id="sharesLog" step="1" min="1" value="6">
                 <div class="label">Exit Reason</div>
                 <select id="exitReasonLog">
-                    <option value="TAKE_PROFIT">🎯 Take Profit</option>
-                    <option value="STOP_LOSS">🛑 Stop Loss</option>
-                    <option value="TRAILING_STOP">🔒 Trailing Stop</option>
-                    <option value="MANUAL">✋ Manual Close</option>
+                    <option value="TAKE_PROFIT">Take Profit</option>
+                    <option value="STOP_LOSS">Stop Loss</option>
+                    <option value="TRAILING_STOP">Trailing Stop</option>
+                    <option value="MANUAL">Manual Close</option>
                 </select>
                 <div class="commission-note">💰 $1.50 commission deducted from EVERY trade</div>
                 <button onclick="addTradeToGitHub()">💾 Save to GitHub</button>
@@ -265,13 +154,13 @@
         const repo = getRepoName();
         if (!token) { alert('Enter GitHub token'); return; }
 
-        const symbol = document.getElementById('logSymbol').value;
         const entryDate = document.getElementById('entryDate').value;
         const entryPrice = parseFloat(document.getElementById('entryPriceLog').value);
         const exitDate = document.getElementById('exitDate').value;
         const exitPrice = parseFloat(document.getElementById('exitPriceLog').value);
         const shares = parseInt(document.getElementById('sharesLog').value);
         const exitReason = document.getElementById('exitReasonLog').value;
+        const ticker = document.getElementById('logSymbol') ? document.getElementById('logSymbol').value : 'SOXL';
 
         if (!entryDate || !exitDate) { alert('Enter dates'); return; }
         if (isNaN(entryPrice) || entryPrice <= 0) { alert('Valid entry price'); return; }
@@ -279,13 +168,19 @@
         if (isNaN(shares) || shares < 1) { alert('Valid shares'); return; }
 
         const grossProfit = (exitPrice - entryPrice) * shares;
-        const netProfit = grossProfit - COMMISSION;  // ← COMMISSION ON EVERY TRADE
+        const netProfit = grossProfit - COMMISSION;
 
         const newTrade = {
-            entry_date: entryDate, exit_date: exitDate, ticker: symbol, shares: shares,
-            entry_price: entryPrice.toFixed(2), exit_price: exitPrice.toFixed(2),
-            gross_profit: grossProfit.toFixed(2), commission: COMMISSION.toFixed(2),
-            net_profit: netProfit.toFixed(2), exit_reason: exitReason
+            entry_date: entryDate,
+            exit_date: exitDate,
+            ticker: ticker,
+            shares: shares,
+            entry_price: entryPrice.toFixed(2),
+            exit_price: exitPrice.toFixed(2),
+            gross_profit: grossProfit.toFixed(2),
+            commission: COMMISSION.toFixed(2),
+            net_profit: netProfit.toFixed(2),
+            exit_reason: exitReason
         };
         trades.push(newTrade);
         const csvContent = tradesToCSV();
@@ -298,7 +193,7 @@
             const putRes = await fetch(url, {
                 method: 'PUT',
                 headers: { 'Authorization': `token ${token}`, 'Accept': 'application/vnd.github.v3+json', 'Content-Type': 'application/json' },
-                body: JSON.stringify({ message: `Add trade: ${symbol}`, content: btoa(unescape(encodeURIComponent(csvContent))), sha: sha })
+                body: JSON.stringify({ message: `Add trade: ${ticker}`, content: btoa(unescape(encodeURIComponent(csvContent))), sha: sha })
             });
             if (!putRes.ok) throw new Error('GitHub save failed');
             alert(`✅ Saved! Net: ${netProfit >= 0 ? '+' : ''}$${netProfit.toFixed(2)}`);
@@ -313,18 +208,19 @@
         if (!csv.trim()) return [];
         const lines = csv.trim().split('\n');
         if (lines.length < 2) return [];
-        const trades = [];
+        const headers = lines[0].split(',');
+        const result = [];
         for (let i = 1; i < lines.length; i++) {
             const v = lines[i].split(',');
             if (v.length < 10) continue;
-            trades.push({
+            result.push({
                 entry_date: v[0], exit_date: v[1], ticker: v[2], shares: parseFloat(v[3]),
                 entry_price: parseFloat(v[4]), exit_price: parseFloat(v[5]),
                 gross_profit: parseFloat(v[6]), commission: parseFloat(v[7]),
                 net_profit: parseFloat(v[8]), exit_reason: v[9]
             });
         }
-        return trades;
+        return result;
     }
 
     function tradesToCSV() {
@@ -335,11 +231,11 @@
 
     function updateAccount() {
         let total = 0;
-        for (let t of trades) total += t.net_profit;
+        for (let t of trades) total += parseFloat(t.net_profit);
         let equity = STARTING_EQUITY + total;
         let peaks = [STARTING_EQUITY];
         let run = STARTING_EQUITY;
-        for (let t of trades) { run += t.net_profit; peaks.push(run); }
+        for (let t of trades) { run += parseFloat(t.net_profit); peaks.push(run); }
         let peak = Math.max(...peaks);
         accountStatus.currentEquity = equity;
         accountStatus.peakEquity = peak;
@@ -349,7 +245,7 @@
         const today = new Date().toISOString().split('T')[0];
         let todayLoss = 0;
         for (let t of trades) {
-            if (t.exit_date === today && t.net_profit < 0) todayLoss += Math.abs(t.net_profit);
+            if (t.exit_date === today && parseFloat(t.net_profit) < 0) todayLoss += Math.abs(parseFloat(t.net_profit));
         }
         const dailyBuffer = DAILY_LOSS_LIMIT - todayLoss;
         document.getElementById('displayCurrentEquity').innerHTML = `$${equity.toFixed(2)}`;
@@ -362,13 +258,13 @@
 
     function displayTrades() {
         const div = document.getElementById('tradeHistoryList');
-        if (!trades.length) { div.innerHTML = '<p>No trades</p>'; return; }
+        if (!trades.length) { div.innerHTML = '<p>No trades. Click "Load from GitHub"</p>'; return; }
         let totalNet = 0;
-        for (let t of trades) totalNet += t.net_profit;
+        for (let t of trades) totalNet += parseFloat(t.net_profit);
         div.innerHTML = `
             <div class="calc-box" style="max-height:300px; overflow:auto;">
                 <table><thead><tr><th>Entry</th><th>Exit</th><th>Ticker</th><th>Shares</th><th>Entry $</th><th>Exit $</th><th>Net</th><th>Reason</th></tr></thead>
-                <tbody>${trades.slice().reverse().map(t => `<tr><td>${t.entry_date}</td><td>${t.exit_date}</td><td>${t.ticker}</td><td>${t.shares}</td><td>$${t.entry_price}</td><td>$${t.exit_price}</td><td class="${t.net_profit >= 0 ? 'positive' : 'negative'}">${t.net_profit >= 0 ? '+' : ''}$${t.net_profit.toFixed(2)}</td><td>${t.exit_reason}</td></tr>`).join('')}</tbody></table>
+                <tbody>${trades.slice().reverse().map(t => `<tr><td>${t.entry_date}</td><td>${t.exit_date}</td><td>${t.ticker}</td><td>${t.shares}</td><td>$${t.entry_price}</td><td>$${t.exit_price}</td><td class="${parseFloat(t.net_profit) >= 0 ? 'positive' : 'negative'}">${parseFloat(t.net_profit) >= 0 ? '+' : ''}$${parseFloat(t.net_profit).toFixed(2)}</td><td>${t.exit_reason}</td></tr>`).join('')}</tbody></table>
             </div>
             <div class="calc-box"><div class="calc-row"><span class="calc-label">Total Net:</span><span class="calc-value ${totalNet >= 0 ? 'positive' : 'negative'}">${totalNet >= 0 ? '+' : ''}$${totalNet.toFixed(2)}</span></div>
             <div class="calc-row"><span class="calc-label">Progress to $300:</span><span class="calc-value">${(accountStatus.currentEquity - STARTING_EQUITY) > 0 ? '+' : ''}$${(accountStatus.currentEquity - STARTING_EQUITY).toFixed(2)} / $300</span></div></div>
@@ -386,7 +282,7 @@
         const remainingDrawdown = MAX_DRAWDOWN - drawdownSoFar;
         const today = new Date().toISOString().split('T')[0];
         let todayLoss = 0;
-        for (let t of trades) { if (t.exit_date === today && t.net_profit < 0) todayLoss += Math.abs(t.net_profit); }
+        for (let t of trades) { if (t.exit_date === today && parseFloat(t.net_profit) < 0) todayLoss += Math.abs(parseFloat(t.net_profit)); }
         const remainingDaily = DAILY_LOSS_LIMIT - todayLoss;
         let maxShares = Math.min(
             Math.floor(MAX_PROFIT_PER_TRADE / targetProfit),
@@ -394,8 +290,6 @@
             Math.floor(remainingDaily / stopLoss)
         );
         if (maxShares === 0 && (remainingDrawdown > 0 || remainingDaily > 0)) maxShares = 1;
-        const stopTicks = Math.round(stopLoss / TICK_SIZE);
-        const targetPrice = price * (1 + targetPct / 100);
         document.getElementById('calcResults').innerHTML = `
             <div class="calc-box"><div class="calc-row"><span class="calc-label">Max Shares:</span><span class="calc-value">${maxShares}</span></div></div>
             <div class="recommendation"><div class="recommendation-value">${maxShares} SHARES</div><div>Recommended Size</div><div style="font-size:12px;">Risk: $${(stopLoss * maxShares).toFixed(2)} | Reward: $${(targetProfit * maxShares).toFixed(2)}</div></div>`;
@@ -412,7 +306,7 @@
         if (isNaN(price) || price <= 0) return;
         const stopLoss = price * (stopPct / 100);
         const targetProfit = price * (targetPct / 100);
-        const stopTicks = Math.round(stopLoss / TICK_SIZE);
+        const stopTicks = Math.round(stopLoss / 0.01);
         const targetPrice = price * (1 + targetPct / 100);
         const netProfit = (targetProfit * shares) - COMMISSION;
         const existing = document.getElementById('calcResults').innerHTML;
@@ -433,7 +327,7 @@
         const stopPct = parseFloat(document.getElementById('stopPercent').value);
         const targetPct = parseFloat(document.getElementById('targetPercent').value);
         const instrument = document.getElementById('instrument').value;
-        const stopTicks = Math.round((price * stopPct / 100) / TICK_SIZE);
+        const stopTicks = Math.round((price * stopPct / 100) / 0.01);
         const targetPrice = price * (1 + targetPct / 100);
         const text = `${instrument} BUY ${shares} SHARES LIMIT $${price.toFixed(2)} DAY | Stop: ${stopTicks} TICKS | Target: $${targetPrice.toFixed(2)} | Commission: $${COMMISSION} RT`;
         navigator.clipboard.writeText(text);
