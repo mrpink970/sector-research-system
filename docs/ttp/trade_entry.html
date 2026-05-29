@@ -110,15 +110,6 @@
             font-size: 12px;
             text-align: center;
         }
-        .token-input {
-            background: #0f172a;
-            border: 1px solid #f97316;
-            color: #f97316;
-            font-family: monospace;
-            font-size: 12px;
-        }
-        .status-ok { color: #22c55e; }
-        .status-error { color: #ef4444; }
     </style>
 </head>
 <body>
@@ -127,7 +118,7 @@
         <div class="flex-between">
             <div>
                 <h1>📝 TTP Trade Manager & Calculator</h1>
-                <p style="color: #94a3b8;">Direct GitHub integration - Saves trades to data/ttp/trades.csv</p>
+                <p style="color: #94a3b8;">Pre-trade position sizing + Post-trade logging (includes $1.50 commission on ALL trades)</p>
             </div>
             <button class="secondary" onclick="loadFromGitHub()" style="width: auto; padding: 8px 16px;">🔄 Load from GitHub</button>
         </div>
@@ -143,7 +134,7 @@
                 <div class="label" style="margin-top: 8px;">Repository</div>
                 <input type="text" id="repoName" value="mrpink970/sector-research-system" placeholder="username/repo">
                 <div class="commission-note">
-                    🔐 Token needs 'repo' scope. Never share it. Stored only in your browser.
+                    🔐 Token needs 'repo' scope. Stored only in your browser.
                 </div>
             </div>
 
@@ -200,7 +191,7 @@
                 <input type="number" id="userQuantity" class="quantity-input" step="1" min="1" max="20" value="6" oninput="updateWithUserQuantity()">
                 
                 <div class="commission-note">
-                    💰 Commission: $0.75 per order ($1.50 round trip)
+                    💰 Commission: $0.75 per order ($1.50 round trip) - deducted from ALL trades
                 </div>
                 
                 <button onclick="copyOrderDetails()" style="background: #8b5cf6; margin-top: 8px;">📋 Copy Order Details</button>
@@ -251,7 +242,7 @@
                 </select>
                 
                 <div class="commission-note" style="margin-bottom: 16px;">
-                    💰 $1.50 commission will be deducted automatically
+                    💰 $1.50 commission deducted from EVERY trade (win or loss)
                 </div>
                 
                 <button onclick="addTradeToGitHub()">💾 Save Trade to GitHub</button>
@@ -303,11 +294,10 @@
             return;
         }
         
-        const statusDiv = document.getElementById('tradeHistoryList');
-        statusDiv.innerHTML = '<p>Loading from GitHub...</p>';
+        const historyDiv = document.getElementById('tradeHistoryList');
+        historyDiv.innerHTML = '<p>Loading from GitHub...</p>';
         
         try {
-            // Get the current file from GitHub
             const url = `https://api.github.com/repos/${repo}/contents/${CSV_PATH}`;
             const response = await fetch(url, {
                 headers: {
@@ -317,9 +307,8 @@
             });
             
             if (response.status === 404) {
-                // File doesn't exist yet - start with empty trades
                 trades = [];
-                statusDiv.innerHTML = '<p>No trades file found. Create one by adding a trade.</p>';
+                historyDiv.innerHTML = '<p>No trades file found. Create one by adding a trade.</p>';
                 updateAccountFromTrades();
                 displayTradeHistory();
                 return;
@@ -331,17 +320,15 @@
             
             const data = await response.json();
             const content = atob(data.content);
-            
-            // Parse CSV
             trades = parseCSV(content);
             updateAccountFromTrades();
             displayTradeHistory();
             
-            statusDiv.innerHTML = `<p class="status-ok">✅ Loaded ${trades.length} trades from GitHub</p>`;
+            historyDiv.innerHTML = `<p class="status-ok" style="color:#22c55e;">✅ Loaded ${trades.length} trades from GitHub</p>`;
             
         } catch (error) {
             console.error(error);
-            statusDiv.innerHTML = `<p class="status-error">❌ Error loading: ${error.message}</p>`;
+            historyDiv.innerHTML = `<p class="status-error" style="color:#ef4444;">❌ Error loading: ${error.message}</p>`;
         }
     }
 
@@ -354,7 +341,6 @@
             return;
         }
         
-        // Get form values
         const symbol = document.getElementById('logSymbol').value;
         const entryDate = document.getElementById('entryDate').value;
         const entryPrice = parseFloat(document.getElementById('entryPriceLog').value);
@@ -380,9 +366,9 @@
             return;
         }
         
-        // Calculate profit with commission
+        // Calculate profit with commission - ALWAYS deduct $1.50
         const grossProfit = (exitPrice - entryPrice) * shares;
-        const netProfit = grossProfit - COMMISSION;
+        const netProfit = grossProfit - COMMISSION;  // ← THE FIX: Always subtract commission
         const profitPerShare = netProfit / shares;
         
         let warningMsg = '';
@@ -390,7 +376,6 @@
             warningMsg = `\n⚠️ WARNING: Net profit per share is $${profitPerShare.toFixed(4)} (below $0.10 minimum). This trade may not count toward your profit target.`;
         }
         
-        // Create new trade object
         const newTrade = {
             entry_date: entryDate,
             exit_date: exitDate,
@@ -404,14 +389,10 @@
             exit_reason: exitReason
         };
         
-        // Add to trades array
         trades.push(newTrade);
-        
-        // Generate CSV content
         const csvContent = tradesToCSV();
         
         try {
-            // First, get the current file SHA if it exists
             const url = `https://api.github.com/repos/${repo}/contents/${CSV_PATH}`;
             let sha = null;
             
@@ -429,7 +410,6 @@
                 throw new Error(`GitHub API error: ${getResponse.status}`);
             }
             
-            // Update or create the file
             const putResponse = await fetch(url, {
                 method: 'PUT',
                 headers: {
@@ -451,7 +431,6 @@
             
             alert(`✅ Trade saved to GitHub!\n\n${shares} shares ${symbol}\nGross: $${grossProfit.toFixed(2)}\nCommission: $${COMMISSION.toFixed(2)}\nNet Profit: ${netProfit >= 0 ? '+' : ''}$${netProfit.toFixed(2)}\nProfit/Share: $${profitPerShare.toFixed(4)}${warningMsg}`);
             
-            // Clear form
             document.getElementById('entryPriceLog').value = '';
             document.getElementById('exitPriceLog').value = '';
             document.getElementById('sharesLog').value = '6';
@@ -460,7 +439,6 @@
             document.getElementById('entryDate').value = todayDate;
             document.getElementById('exitDate').value = todayDate;
             
-            // Refresh display
             updateAccountFromTrades();
             displayTradeHistory();
             
@@ -476,7 +454,6 @@
         if (lines.length < 2) return [];
         
         const result = [];
-        
         for (let i = 1; i < lines.length; i++) {
             const values = lines[i].split(',');
             if (values.length < 10) continue;
@@ -753,7 +730,6 @@
     document.getElementById('exitDate').value = todayDate;
     document.getElementById('currentPrice').value = '224.00';
     
-    // Load saved token from localStorage (optional, for convenience)
     const savedToken = localStorage.getItem('github_token');
     const savedRepo = localStorage.getItem('github_repo');
     if (savedToken) document.getElementById('githubToken').value = savedToken;
