@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """
-Trade The Pool - SOXX Signal Generator (Email Only)
-Sends pre-market email with Green Day/Red Day signal and TTP rule warnings
-NO automatic trade creation. NO position tracking. Email and signals.csv only.
+Trade The Pool - SOXX Signal Generator with Window Analysis
+Analyzes all 15-minute data since last email
+Always sends email with market context
+Supports scheduled and manual runs
 """
 
 import os
@@ -12,7 +13,7 @@ from email.utils import formataddr
 import pandas as pd
 import yaml
 from pathlib import Path
-from datetime import datetime
+from datetime import datetime, timedelta
 import sys
 
 # Add parent directory to path for imports
@@ -22,6 +23,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 CONFIG_PATH = Path("config/ttp_config.yaml")
 DATA_DIR = Path("data/ttp")
 SIGNALS_PATH = DATA_DIR / "signals.csv"
+LAST_RUN_PATH = DATA_DIR / "last_email_run.txt"
 
 # Import TTP compliance module
 compliance_available = False
@@ -72,8 +74,28 @@ def get_email_recipients(config):
     return recipients
 
 
-def load_latest_data():
-    """Load the most recent price data"""
+def get_last_run_time():
+    """Get timestamp of last email sent"""
+    if LAST_RUN_PATH.exists():
+        with open(LAST_RUN_PATH, 'r') as f:
+            timestamp_str = f.read().strip()
+            try:
+                return datetime.fromisoformat(timestamp_str)
+            except:
+                # Default to today at 9:30 AM if invalid
+                return datetime.now().replace(hour=9, minute=30, second=0, microsecond=0)
+    # No previous run - default to today at 9:30 AM ET
+    return datetime.now().replace(hour=9, minute=30, second=0, microsecond=0)
+
+
+def save_last_run_time(dt):
+    """Save timestamp of this email"""
+    with open(LAST_RUN_PATH, 'w') as f:
+        f.write(dt.isoformat())
+
+
+def load_window_data(last_run, current_time):
+    """Load all 15-minute data rows between last_run and current_time"""
     log_path = DATA_DIR / "price_log.csv"
     if not log_path.exists():
         return None
@@ -82,51 +104,132 @@ def load_latest_data():
     if df.empty:
         return None
     
-    return df.iloc[-1].to_dict()
+    # Parse timestamps
+    df['timestamp_dt'] = pd.to_datetime(df['timestamp'])
+    
+    # Filter to window
+    mask = (df['timestamp_dt'] > last_run) & (df['timestamp_dt'] <= current_time)
+    window_df = df[mask].copy()
+    
+    if window_df.empty:
+        return None
+    
+    return window_df
 
 
-def check_green_day(data: dict, config: dict) -> tuple:
-    """
-    Check if conditions meet Green Day criteria.
-    PRIMARY: Day return from market open (>= 0.5%)
-    """
-    conditions = []
-    all_met = False
+def analyze_trend(returns_list):
+    """Determine if trend is UP, FLAT, or DOWN based on start-to-end change"""
+    if len(returns_list) < 2:
+        return "FLAT"
     
-    min_return = config['entry_conditions']['min_1h_return']
+    start_return = returns_list[0]
+    end_return = returns_list[-1]
+    change = end_return - start_return
     
-    day_return = data.get('day_return_pct', 0)
-    one_hour_return = data['return_1h_pct']
-    session = data.get('session', 'unknown')
-    
-    if day_return == 0 and session != 'premarket':
-        day_return = one_hour_return
-    
-    if day_return >= min_return:
-        conditions.append(f"✅ DAY RETURN: {day_return:.2f}%")
-        all_met = True
+    if change > 0.2:
+        return "UP"
+    elif change < -0.2:
+        return "DOWN"
     else:
-        conditions.append(f"❌ DAY RETURN: {day_return:.2f}%")
+        return "FLAT"
+
+
+def analyze_window(window_df):
+    """Analyze the window and return market context"""
+    if window_df is None or window_df.empty:
+        return None
     
-    if config['entry_conditions']['above_ma20']:
-        if data['above_ma20']:
-            conditions.append(f"✅ Above MA20 (${data['ma20']:.2f})")
-        else:
-            conditions.append(f"❌ Below MA20 (${data['ma20']:.2f})")
-            all_met = False
+    # SOXX returns in window
+    soxx_returns = window_df['soxx_day_return_pct'].tolist()
     
-    rsi_min = config['entry_conditions']['rsi_min']
-    if data['rsi'] >= rsi_min:
-        conditions.append(f"✅ RSI: {data['rsi']:.1f}")
+    # Find best and worst candles
+    best_idx = window_df['soxx_day_return_pct'].idxmax()
+    worst_idx = window_df['soxx_day_return_pct'].idxmin()
+    
+    best_candle = {
+        'time': window_df.loc[best_idx, 'timestamp'],
+        'return': round(window_df.loc[best_idx, 'soxx_day_return_pct'], 2)
+    }
+    worst_candle = {
+        'time': window_df.loc[worst_idx, 'timestamp'],
+        'return': round(window_df.loc[worst_idx, 'soxx_day_return_pct'], 2)
+    }
+    
+    # Trend analysis
+    trend = analyze_trend(soxx_returns)
+    
+    # QQQ trend
+    qqq_returns = window_df['qqq_day_return_pct'].tolist()
+    qqq_trend = analyze_trend(qqq_returns)
+    
+    # Start and end values
+    window_start = window_df.iloc[0]['timestamp']
+    window_end = window_df.iloc[-1]['timestamp']
+    start_return = round(soxx_returns[0], 2)
+    end_return = round(soxx_returns[-1], 2)
+    qqq_start = round(qqq_returns[0], 2)
+    qqq_end = round(qqq_returns[-1], 2)
+    
+    # Current state (last row)
+    last_row = window_df.iloc[-1]
+    soxx_current = {
+        'price': round(last_row['soxx_price'], 2),
+        'day_return': round(last_row['soxx_day_return_pct'], 2),
+        'rsi': round(last_row['soxx_rsi'], 1),
+        'above_ma20': last_row['soxx_above_ma20']
+    }
+    qqq_current = {
+        'price': round(last_row['qqq_price'], 2),
+        'day_return': round(last_row['qqq_day_return_pct'], 2),
+        'rsi': round(last_row['qqq_rsi'], 1),
+        'above_ma20': last_row['qqq_above_ma20']
+    }
+    
+    # Check if Green Day (any candle ≥ 0.5%)
+    green_day = any(r >= 0.5 for r in soxx_returns)
+    best_green = max([r for r in soxx_returns if r >= 0.5], default=None)
+    
+    return {
+        'window_start': window_start,
+        'window_end': window_end,
+        'num_candles': len(window_df),
+        'trend': trend,
+        'start_return': start_return,
+        'end_return': end_return,
+        'best_candle': best_candle,
+        'worst_candle': worst_candle,
+        'soxx_current': soxx_current,
+        'qqq_trend': qqq_trend,
+        'qqq_start': qqq_start,
+        'qqq_end': qqq_end,
+        'qqq_current': qqq_current,
+        'green_day': green_day,
+        'best_green_return': best_green,
+        'window_df': window_df
+    }
+
+
+def get_action_recommendation(analysis):
+    """Generate action recommendation based on analysis"""
+    if not analysis:
+        return "⚠️ No data available. Check data collection."
+    
+    if not analysis['green_day']:
+        return "🔴 No Green Day conditions met. Wait for next window."
+    
+    # Green Day exists
+    if analysis['trend'] == "UP" and analysis['qqq_trend'] != "DOWN":
+        return "✅ Green Day with building momentum. Ready to buy on pullback confirmation."
+    elif analysis['trend'] == "FLAT" and analysis['qqq_trend'] != "DOWN":
+        return "🟡 Green Day but choppy. Wait for pullback and confirmation candle."
+    elif analysis['trend'] == "DOWN":
+        return "⚠️ Green Day occurred but momentum faded. Caution - wait for reversal confirmation."
     else:
-        conditions.append(f"❌ RSI: {data['rsi']:.1f}")
-        all_met = False
-    
-    return all_met, conditions
+        return "🟢 Green Day confirmed. Use standard entry rules."
 
 
-def send_email(is_green: bool, data: dict, conditions: list, recipients: list):
-    """Send decision email to multiple recipients with TTP rule warnings"""
+def send_email(analysis, recipients, is_manual=False):
+    """Send analysis email"""
     mail_username = os.environ.get("MAIL_USERNAME")
     mail_password = os.environ.get("MAIL_PASSWORD")
     
@@ -138,150 +241,58 @@ def send_email(is_green: bool, data: dict, conditions: list, recipients: list):
         print("❌ No email recipients configured")
         return False
     
-    date_str = datetime.now().strftime("%Y-%m-%d %H:%M ET")
-    trade_entry_url = "https://mrpink970.github.io/sector-research-system/docs/ttp/trade_entry.html"
-    day_return = data.get('day_return_pct', 0)
+    date_str = datetime.now().strftime("%Y-%m-%d %I:%M %p ET")
     separator = "━" * 60
     
-    if is_green:
-        subject = f"🟢 TTP DECISION ENGINE - GREEN DAY - Prepare to Buy ({date_str})"
-        action = "PREPARE TO BUY"
-        signal_icon = "🟢"
-        signal_text = "GREEN DAY"
-        
-        body = f"""
-{separator}
-  TTP DECISION ENGINE - {date_str}
-{separator}
-
-{signal_icon} MARKET CONDITION: {signal_text} (Day Return: {day_return:.1f}%)
-
-   → Action: {action}
-
-{separator}
-
-📈 TRADE PLAN (to be entered at order placement):
-
-   Symbol: SOXX (or SOXL - use Trade Entry Calculator)
-   Direction: BUY
-   Order Type: LIMIT (enter your desired price)
-   Good For: DAY
-   Overnight: OFF
-
-   Use the Trade Entry Calculator to determine:
-   - Position size based on your account equity
-   - Stop loss in TICKS
-   - Take profit in DOLLARS
-
-{separator}
-
-⚠️ ⚠️ ⚠️ CRITICAL RULE WARNINGS ⚠️ ⚠️ ⚠️
-
-   ❌ MAX DRAWDOWN: 7% ($140 from peak)
-      → Violation will cause IMMEDIATE ACCOUNT TERMINATION
-      → All profits will be FORFEITED
-
-   ❌ MAX POSITION PROFIT: 30% of target ($90)
-      → Any single trade exceeding $90 profit will be INVALIDATED
-      → You may need additional trades to pass
-
-   ❌ MINIMUM TRADES: 5 trades required to scale to next level
-      → Cannot pass evaluation or scale without 5 completed trades
-
-{separator}
-
-✅ COMPLIANCE CHECK:
-   ✅ No earnings expected today
-   ✅ No dividend restrictions
-
-{separator}
-
-📊 CURRENT MARKET DATA (for reference):
-
-   Current Price: ${data['price']:.2f}
-   Day Return: {day_return:.1f}%
-   1h Return: {data['return_1h_pct']:.1f}%
-   RSI: {data['rsi']:.1f}
-   Above MA20: {'YES' if data['above_ma20'] else 'NO'}
-
-{separator}
-
-📊 CONDITIONS CHECK:
-{chr(10).join([f'   {c}' for c in conditions])}
-
-{separator}
-
-🔗 TRADE ENTRY CALCULATOR:
-   {trade_entry_url}
-
-   Use this tool to:
-   - Enter your current account equity and peak equity
-   - Calculate safe position size
-   - Get stop loss in TICKS and take profit in DOLLARS
-   - Log your completed trades
-
-{separator}
-"""
+    if not analysis:
+        subject = f"⚠️ TTP DATA ERROR - No Data Available ({date_str})"
+        body = f"{separator}\n  TTP DECISION ENGINE - DATA ERROR - {date_str}\n{separator}\n\n❌ No price data found in window.\n\nRun collect_data.py first and ensure data is being collected."
     else:
-        subject = f"🔴 TTP DECISION ENGINE - RED DAY - Wait ({date_str})"
-        action = "WAIT - Check again next run"
-        signal_icon = "🔴"
-        signal_text = "RED DAY"
+        signal_icon = "🟢" if analysis['green_day'] else "🔴"
+        signal_text = "GREEN DAY" if analysis['green_day'] else "RED DAY"
+        best_info = f"Best signal: {analysis['best_candle']['time']} (+{analysis['best_green_return']}%)" if analysis['green_day'] else "No qualifying candles"
+        
+        subject = f"{signal_icon} TTP MARKET ANALYSIS - {signal_text} - {date_str}"
+        
+        action = get_action_recommendation(analysis)
         
         body = f"""
 {separator}
   TTP DECISION ENGINE - {date_str}
 {separator}
 
-{signal_icon} MARKET CONDITION: {signal_text} (Day Return: {day_return:.1f}%)
+{signal_icon} MARKET CONDITION: {signal_text}
+   {best_info}
 
-   → Action: {action}
+📈 WINDOW ANALYSIS ({analysis['window_start']} → {analysis['window_end']} ET):
+   Trend: {analysis['trend']} (start: {analysis['start_return']}% → end: {analysis['end_return']}%)
+   Best candle: {analysis['best_candle']['time']} (+{analysis['best_candle']['return']}%)
+   Worst candle: {analysis['worst_candle']['time']} ({analysis['worst_candle']['return']}%)
+   Candles in window: {analysis['num_candles']}
 
-{separator}
+📊 QQQ CONTEXT:
+   Trend: {analysis['qqq_trend']} (start: {analysis['qqq_start']}% → end: {analysis['qqq_end']}%)
+   Current: +{analysis['qqq_current']['day_return']}% | Price: ${analysis['qqq_current']['price']}
+   RSI: {analysis['qqq_current']['rsi']} | Above MA20: {'YES' if analysis['qqq_current']['above_ma20'] else 'NO'}
 
-⏸️ Conditions not met this run. Market may change.
-   Check again at next scheduled run.
+📊 SOXX CONTEXT:
+   Current: +{analysis['soxx_current']['day_return']}% | Price: ${analysis['soxx_current']['price']}
+   RSI: {analysis['soxx_current']['rsi']} | Above MA20: {'YES' if analysis['soxx_current']['above_ma20'] else 'NO'}
 
-{separator}
-
-⚠️ ⚠️ ⚠️ CRITICAL RULE WARNINGS ⚠️ ⚠️ ⚠️
-
-   ❌ MAX DRAWDOWN: 7% ($140 from peak)
-      → Violation will cause IMMEDIATE ACCOUNT TERMINATION
-      → All profits will be FORFEITED
-
-   ❌ MAX POSITION PROFIT: 30% of target ($90)
-      → Any single trade exceeding $90 profit will be INVALIDATED
-      → You may need additional trades to pass
-
-   ❌ MINIMUM TRADES: 5 trades required to scale to next level
-      → Cannot pass evaluation or scale without 5 completed trades
+{action}
 
 {separator}
 
-✅ COMPLIANCE CHECK:
-   ✅ No earnings expected today
-   ✅ No dividend restrictions
-
-{separator}
-
-📊 CURRENT MARKET DATA (for reference):
-
-   Current Price: ${data['price']:.2f}
-   Day Return: {day_return:.1f}%
-   1h Return: {data['return_1h_pct']:.1f}%
-   RSI: {data['rsi']:.1f}
-   Above MA20: {'YES' if data['above_ma20'] else 'NO'}
-
-{separator}
-
-📊 CONDITIONS CHECK:
-{chr(10).join([f'   {c}' for c in conditions])}
+⚠️ RULE REMINDERS:
+   ❌ Max Drawdown: $140 (7%)
+   ❌ Max Profit Per Trade: $90 (30% of $300)
+   ❌ Daily Loss Limit: $60
+   ✅ Minimum 5 trades to pass
 
 {separator}
 
 🔗 TRADE ENTRY CALCULATOR:
-   {trade_entry_url}
+   https://mrpink970.github.io/sector-research-system/docs/ttp/trade_entry.html
 
 {separator}
 """
@@ -296,90 +307,37 @@ def send_email(is_green: bool, data: dict, conditions: list, recipients: list):
         with smtplib.SMTP_SSL("smtp.gmail.com", 465) as smtp:
             smtp.login(mail_username, mail_password)
             smtp.send_message(msg)
-        print(f"✅ Decision email sent to {len(recipients)} recipient(s): {', '.join(recipients)}")
+        print(f"✅ Analysis email sent to {len(recipients)} recipient(s)")
         return True
     except Exception as e:
         print(f"❌ Failed to send email: {e}")
         return False
 
 
-def send_compliance_email(data: dict, compliance_reason: str, recipients: list):
-    """Send compliance block email to multiple recipients"""
-    mail_username = os.environ.get("MAIL_USERNAME")
-    mail_password = os.environ.get("MAIL_PASSWORD")
+def save_signal(analysis):
+    """Save signal analysis to CSV"""
+    if not analysis:
+        return
     
-    if not mail_username or not mail_password:
-        print("❌ Email credentials not found")
-        return False
-    
-    if not recipients:
-        print("❌ No email recipients configured")
-        return False
-    
-    date_str = datetime.now().strftime("%Y-%m-%d %H:%M ET")
-    trade_entry_url = "https://mrpink970.github.io/sector-research-system/docs/ttp/trade_entry.html"
-    day_return = data.get('day_return_pct', 0)
-    separator = "━" * 60
-    
-    body = f"""
-{separator}
-  TTP DECISION ENGINE - COMPLIANCE BLOCKED - {date_str}
-{separator}
-
-⚠️ COMPLIANCE RESTRICTION: {compliance_reason}
-
-   → Action: DO NOT TRADE TODAY
-
-{separator}
-
-📊 CURRENT MARKET DATA:
-   Price: ${data['price']:.2f}
-   Day Return: {day_return:.1f}%
-
-{separator}
-
-🔗 TRADE ENTRY CALCULATOR:
-   {trade_entry_url}
-
-{separator}
-"""
-    
-    msg = EmailMessage()
-    msg.set_content(body)
-    msg["Subject"] = f"⚠️ TTP COMPLIANCE - No Trading Today ({date_str})"
-    msg["From"] = formataddr(("TTP Decision Engine", mail_username))
-    msg["To"] = ", ".join(recipients)
-    
-    try:
-        with smtplib.SMTP_SSL("smtp.gmail.com", 465) as smtp:
-            smtp.login(mail_username, mail_password)
-            smtp.send_message(msg)
-        print(f"✅ Compliance email sent to {len(recipients)} recipient(s)")
-        return True
-    except Exception as e:
-        print(f"❌ Failed to send email: {e}")
-        return False
-
-
-def save_signal(data: dict, is_green: bool, conditions: list):
-    """Save signal to CSV for reference (no position tracking)"""
-    signal_type = 'GREEN' if is_green else 'RED'
+    signal_type = 'GREEN' if analysis['green_day'] else 'RED'
     
     new_row = pd.DataFrame([{
         'timestamp': datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-        'session': data['session'],
         'signal': signal_type,
-        'price': data['price'],
-        'day_return': data.get('day_return_pct', 0),
-        'one_hour_return': data.get('return_1h_pct', 0),
-        'rsi': data['rsi'],
-        'above_ma20': data['above_ma20'],
-        'conditions': ' | '.join(conditions)
+        'window_start': analysis['window_start'],
+        'window_end': analysis['window_end'],
+        'trend': analysis['trend'],
+        'best_candle_time': analysis['best_candle']['time'],
+        'best_candle_return': analysis['best_candle']['return'],
+        'worst_candle_return': analysis['worst_candle']['return'],
+        'soxx_current_return': analysis['soxx_current']['day_return'],
+        'qqq_current_return': analysis['qqq_current']['day_return'],
+        'action': get_action_recommendation(analysis)
     }])
     
     if SIGNALS_PATH.exists():
         existing = pd.read_csv(SIGNALS_PATH)
-        updated = pd.concat([existing, new_row], ignore_index=True).tail(100)
+        updated = pd.concat([existing, new_row], ignore_index=True).tail(500)
     else:
         DATA_DIR.mkdir(parents=True, exist_ok=True)
         updated = new_row
@@ -388,31 +346,15 @@ def save_signal(data: dict, is_green: bool, conditions: list):
 
 
 def main():
-    print("=" * 50)
-    print("TTP DECISION ENGINE (Email Only - No Auto Trades)")
-    print("=" * 50)
+    print("=" * 60)
+    print("TTP MARKET ANALYSIS ENGINE (Window-Based)")
+    print("=" * 60)
     
     config = load_config()
-    
     recipients = get_email_recipients(config)
     print(f"📧 Email recipients: {len(recipients)}")
-    for r in recipients:
-        print(f"   - {r}")
     
-    data = load_latest_data()
-    
-    if not data:
-        print("❌ No data available. Run collect_data.py first.")
-        return
-    
-    current_price = data['price']
-    session = data.get('session', 'unknown')
-    day_return = data.get('day_return_pct', 0)
-    
-    print(f"Current SOXX price: ${current_price:.2f}")
-    print(f"Day Return: {day_return:.2f}%")
-    print(f"Session: {session}")
-    
+    # Check compliance first
     if compliance_available:
         can_enter, compliance_reason = can_enter_swing_trade(config)
     else:
@@ -420,24 +362,51 @@ def main():
     
     if not can_enter:
         print(f"\n⚠️ COMPLIANCE RESTRICTION: {compliance_reason}")
-        print("   Sending compliance warning email")
-        send_compliance_email(data, compliance_reason, recipients)
+        # Still send email but with warning
+        analysis = None
+        send_email(None, recipients)
         return
     
-    is_green, conditions = check_green_day(data, config)
+    # Get last run time and current time
+    last_run = get_last_run_time()
+    current_time = datetime.now()
     
-    print(f"\n📊 Signal: {'GREEN DAY' if is_green else 'RED DAY'}")
-    for c in conditions:
-        print(f"   {c}")
+    print(f"\n📅 Last email: {last_run}")
+    print(f"📅 Current run: {current_time}")
     
-    # Send email only - NO automatic trade creation
-    send_email(is_green, data, conditions, recipients)
+    # Load window data
+    window_df = load_window_data(last_run, current_time)
     
-    # Save signal to CSV for reference only
-    save_signal(data, is_green, conditions)
+    if window_df is None or window_df.empty:
+        print("⚠️ No new data since last email")
+        # Still send email to indicate no data
+        send_email(None, recipients)
+        save_last_run_time(current_time)
+        return
     
-    print("\n✅ Decision engine complete")
-    print("=" * 50)
+    print(f"📊 Found {len(window_df)} new 15-min candles")
+    
+    # Analyze window
+    analysis = analyze_window(window_df)
+    
+    if analysis:
+        print(f"\n📈 Analysis complete:")
+        print(f"   Green Day: {analysis['green_day']}")
+        print(f"   Trend: {analysis['trend']}")
+        print(f"   Best candle: {analysis['best_candle']['time']} (+{analysis['best_candle']['return']}%)")
+        print(f"   QQQ Trend: {analysis['qqq_trend']}")
+    
+    # Send email
+    send_email(analysis, recipients)
+    
+    # Save signal to CSV
+    save_signal(analysis)
+    
+    # Update last run time
+    save_last_run_time(current_time)
+    
+    print("\n✅ Analysis complete")
+    print("=" * 60)
 
 
 if __name__ == "__main__":
