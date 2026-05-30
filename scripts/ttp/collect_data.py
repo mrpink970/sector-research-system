@@ -4,10 +4,12 @@ Trade The Pool - SOXX + QQQ Data Collector
 Collects SOXX and QQQ data at 15-minute intervals
 INCLUDES PRE-MARKET DATA (prepost=True)
 INCLUDES DAY RETURN from market open (9:30 AM ET)
+ADDED: Volume tracking + automatic column migration
 """
 
 import yfinance as yf
 import pandas as pd
+import numpy as np
 from pathlib import Path
 from datetime import datetime, time, timedelta
 
@@ -17,6 +19,39 @@ LOG_PATH = DATA_DIR / "price_log.csv"
 # Market open time (9:30 AM ET)
 MARKET_OPEN_HOUR = 9
 MARKET_OPEN_MINUTE = 30
+
+# Required columns for the new schema
+REQUIRED_COLUMNS = [
+    'timestamp', 'session',
+    'soxx_price', 'soxx_day_open', 'soxx_day_return_pct', 'soxx_ma20', 'soxx_above_ma20',
+    'soxx_return_1h_pct', 'soxx_rsi', 'soxx_volume', 'soxx_avg_volume_20', 'soxx_volume_ratio',
+    'qqq_price', 'qqq_day_open', 'qqq_day_return_pct', 'qqq_ma20', 'qqq_above_ma20',
+    'qqq_return_1h_pct', 'qqq_rsi'
+]
+
+
+def migrate_existing_csv():
+    """Add missing columns to existing price_log.csv without deleting data"""
+    if not LOG_PATH.exists():
+        return
+    
+    df = pd.read_csv(LOG_PATH)
+    original_columns = set(df.columns)
+    required_columns = set(REQUIRED_COLUMNS)
+    
+    missing_columns = required_columns - original_columns
+    
+    if missing_columns:
+        print(f"📋 Migrating existing CSV: Adding {len(missing_columns)} missing columns")
+        for col in missing_columns:
+            if 'volume' in col.lower():
+                df[col] = 0  # Default volume to 0 for historical rows
+            else:
+                df[col] = None  # Default other columns to None
+        df.to_csv(LOG_PATH, index=False)
+        print(f"✅ Migration complete. Added: {', '.join(sorted(missing_columns))}")
+    else:
+        print(f"✅ Existing CSV already has all required columns")
 
 
 def get_day_open_price(ticker_symbol):
@@ -48,7 +83,7 @@ def get_day_open_price(ticker_symbol):
 
 
 def get_ticker_data(ticker_symbol):
-    """Get current data for a single ticker including pre-market and technical indicators"""
+    """Get current data for a single ticker including pre-market, technical indicators, and volume"""
     ticker = yf.Ticker(ticker_symbol)
     
     # Get current price with PRE-MARKET data enabled
@@ -58,6 +93,7 @@ def get_ticker_data(ticker_symbol):
     
     latest = current.iloc[-1]
     price = round(latest['Close'], 2)
+    current_volume = int(latest['Volume']) if not pd.isna(latest['Volume']) else 0
     
     # Get day open price (9:30 AM ET)
     day_open = get_day_open_price(ticker_symbol)
@@ -74,8 +110,17 @@ def get_ticker_data(ticker_symbol):
     
     hist.index = pd.to_datetime(hist.index).tz_localize(None)
     
-    # Calculate 20-period MA
+    # Calculate 20-period MA for price
     ma20 = round(hist['Close'].rolling(window=20).mean().iloc[-1], 2) if len(hist) >= 20 else price
+    
+    # Calculate 20-period average volume (for volume ratio)
+    if len(hist) >= 20:
+        avg_volume = int(hist['Volume'].rolling(window=20).mean().iloc[-1])
+    else:
+        avg_volume = current_volume if current_volume > 0 else 1
+    
+    # Calculate volume ratio
+    volume_ratio = round(current_volume / avg_volume, 1) if avg_volume > 0 else 1.0
     
     # Calculate 1-hour return (4 x 15min candles)
     if len(hist) >= 5:
@@ -100,7 +145,10 @@ def get_ticker_data(ticker_symbol):
         'ma20': ma20,
         'above_ma20': above_ma20,
         'return_1h_pct': return_1h,
-        'rsi': rsi
+        'rsi': rsi,
+        'volume': current_volume,
+        'avg_volume_20': avg_volume,
+        'volume_ratio': volume_ratio
     }
 
 
@@ -135,6 +183,9 @@ def get_soxx_qqq_data():
         'soxx_above_ma20': soxx_data['above_ma20'],
         'soxx_return_1h_pct': soxx_data['return_1h_pct'],
         'soxx_rsi': soxx_data['rsi'],
+        'soxx_volume': soxx_data['volume'],
+        'soxx_avg_volume_20': soxx_data['avg_volume_20'],
+        'soxx_volume_ratio': soxx_data['volume_ratio'],
         'qqq_price': qqq_data['price'],
         'qqq_day_open': qqq_data['day_open'],
         'qqq_day_return_pct': qqq_data['day_return_pct'],
@@ -147,8 +198,11 @@ def get_soxx_qqq_data():
 
 def main():
     print("=" * 50)
-    print("SOXX + QQQ Data Collector")
+    print("SOXX + QQQ Data Collector (with Volume)")
     print("=" * 50)
+    
+    # Migrate existing CSV if needed
+    migrate_existing_csv()
     
     data = get_soxx_qqq_data()
     if not data:
@@ -158,6 +212,7 @@ def main():
     print(f"\n📊 Data collected at {data['timestamp']}")
     print(f"   Session: {data['session']}")
     print(f"   SOXX: ${data['soxx_price']} | Day: {data['soxx_day_return_pct']}% | RSI: {data['soxx_rsi']}")
+    print(f"   SOXX Volume: {data['soxx_volume']:,} | Ratio: {data['soxx_volume_ratio']}x")
     print(f"   QQQ:  ${data['qqq_price']} | Day: {data['qqq_day_return_pct']}% | RSI: {data['qqq_rsi']}")
     
     # Save to CSV
