@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Trade The Pool - SOXX Data Collector
-Collects SOXX data at 15-minute intervals
+Trade The Pool - SOXX + QQQ Data Collector
+Collects SOXX and QQQ data at 15-minute intervals
 INCLUDES PRE-MARKET DATA (prepost=True)
 INCLUDES DAY RETURN from market open (9:30 AM ET)
 """
@@ -18,27 +18,23 @@ LOG_PATH = DATA_DIR / "price_log.csv"
 MARKET_OPEN_HOUR = 9
 MARKET_OPEN_MINUTE = 30
 
-def get_day_open_price(ticker):
-    """Get today's opening price at 9:30 AM ET"""
+
+def get_day_open_price(ticker_symbol):
+    """Get today's opening price at 9:30 AM ET for a given ticker"""
     try:
-        # Get 1-minute data for the last 2 days (includes today's open)
+        ticker = yf.Ticker(ticker_symbol)
         data = ticker.history(period="2d", interval="1m", prepost=False)
         
         if data is None or data.empty:
             return None
         
-        # Remove timezone info for comparison
         data.index = pd.to_datetime(data.index).tz_localize(None)
-        
-        # Get today's date
         today = datetime.now().date()
         
-        # Find the first candle at or after 9:30 AM today
         for idx, row in data.iterrows():
             if idx.date() == today and idx.hour >= MARKET_OPEN_HOUR and idx.minute >= MARKET_OPEN_MINUTE:
                 return round(float(row['Open']), 2)
         
-        # If no data for today yet (pre-market), use yesterday's close as reference
         yesterday = today - timedelta(days=1)
         yesterday_data = data[data.index.date == yesterday]
         if not yesterday_data.empty:
@@ -47,13 +43,13 @@ def get_day_open_price(ticker):
         return None
         
     except Exception as e:
-        print(f"   Error getting day open: {e}")
+        print(f"   Error getting day open for {ticker_symbol}: {e}")
         return None
 
 
-def get_soxx_data():
-    """Get current SOXX data including pre-market and technical indicators"""
-    ticker = yf.Ticker("SOXX")
+def get_ticker_data(ticker_symbol):
+    """Get current data for a single ticker including pre-market and technical indicators"""
+    ticker = yf.Ticker(ticker_symbol)
     
     # Get current price with PRE-MARKET data enabled
     current = ticker.history(period="2d", interval="1m", prepost=True)
@@ -64,24 +60,19 @@ def get_soxx_data():
     price = round(latest['Close'], 2)
     
     # Get day open price (9:30 AM ET)
-    day_open = get_day_open_price(ticker)
+    day_open = get_day_open_price(ticker_symbol)
     
     # Calculate day return (from market open to now)
     day_return_pct = 0
     if day_open and day_open > 0:
         day_return_pct = round((price - day_open) / day_open * 100, 2)
-        print(f"   Day open: ${day_open}, Day return: {day_return_pct}%")
-    else:
-        print(f"   Could not get day open, using 0%")
     
     # Get historical data for indicators (15-min candles, including pre-market)
     hist = ticker.history(period="3d", interval="15m", prepost=True)
     if hist.empty:
         return None
     
-    # Remove timezone for comparison
     hist.index = pd.to_datetime(hist.index).tz_localize(None)
-    now = datetime.now()
     
     # Calculate 20-period MA
     ma20 = round(hist['Close'].rolling(window=20).mean().iloc[-1], 2) if len(hist) >= 20 else price
@@ -100,7 +91,28 @@ def get_soxx_data():
     rs = gain / loss
     rsi = round(100 - (100 / (1 + rs.iloc[-1])), 1) if len(hist) >= 14 and not pd.isna(rs.iloc[-1]) else 50
     
-    # Determine session
+    above_ma20 = price > ma20
+    
+    return {
+        'price': price,
+        'day_open': day_open,
+        'day_return_pct': day_return_pct,
+        'ma20': ma20,
+        'above_ma20': above_ma20,
+        'return_1h_pct': return_1h,
+        'rsi': rsi
+    }
+
+
+def get_soxx_qqq_data():
+    """Get current data for both SOXX and QQQ"""
+    soxx_data = get_ticker_data("SOXX")
+    qqq_data = get_ticker_data("QQQ")
+    
+    if not soxx_data or not qqq_data:
+        return None
+    
+    now = datetime.now()
     hour = now.hour
     minute = now.minute
     
@@ -116,43 +128,44 @@ def get_soxx_data():
     return {
         'timestamp': now.strftime("%Y-%m-%d %H:%M:%S"),
         'session': session,
-        'price': price,
-        'day_open': day_open,
-        'day_return_pct': day_return_pct,
-        'ma20': ma20,
-        'above_ma20': price > ma20,
-        'return_1h_pct': return_1h,
-        'rsi': rsi
+        'soxx_price': soxx_data['price'],
+        'soxx_day_open': soxx_data['day_open'],
+        'soxx_day_return_pct': soxx_data['day_return_pct'],
+        'soxx_ma20': soxx_data['ma20'],
+        'soxx_above_ma20': soxx_data['above_ma20'],
+        'soxx_return_1h_pct': soxx_data['return_1h_pct'],
+        'soxx_rsi': soxx_data['rsi'],
+        'qqq_price': qqq_data['price'],
+        'qqq_day_open': qqq_data['day_open'],
+        'qqq_day_return_pct': qqq_data['day_return_pct'],
+        'qqq_ma20': qqq_data['ma20'],
+        'qqq_above_ma20': qqq_data['above_ma20'],
+        'qqq_return_1h_pct': qqq_data['return_1h_pct'],
+        'qqq_rsi': qqq_data['rsi']
     }
 
 
 def main():
     print("=" * 50)
-    print("SOXX Data Collector")
+    print("SOXX + QQQ Data Collector")
     print("=" * 50)
     
-    data = get_soxx_data()
+    data = get_soxx_qqq_data()
     if not data:
-        print("❌ Failed to fetch SOXX data")
+        print("❌ Failed to fetch data")
         return
     
-    print(f"\n📊 Data collected:")
-    print(f"   Time: {data['timestamp']}")
+    print(f"\n📊 Data collected at {data['timestamp']}")
     print(f"   Session: {data['session']}")
-    print(f"   Price: ${data['price']}")
-    print(f"   Day Open: ${data['day_open']}")
-    print(f"   Day Return: {data['day_return_pct']}%")
-    print(f"   MA20: ${data['ma20']}")
-    print(f"   Above MA20: {data['above_ma20']}")
-    print(f"   1h Return: {data['return_1h_pct']}%")
-    print(f"   RSI: {data['rsi']}")
+    print(f"   SOXX: ${data['soxx_price']} | Day: {data['soxx_day_return_pct']}% | RSI: {data['soxx_rsi']}")
+    print(f"   QQQ:  ${data['qqq_price']} | Day: {data['qqq_day_return_pct']}% | RSI: {data['qqq_rsi']}")
     
     # Save to CSV
     new_row = pd.DataFrame([data])
     
     if LOG_PATH.exists():
         existing = pd.read_csv(LOG_PATH)
-        updated = pd.concat([existing, new_row], ignore_index=True).tail(100)
+        updated = pd.concat([existing, new_row], ignore_index=True).tail(500)
     else:
         DATA_DIR.mkdir(parents=True, exist_ok=True)
         updated = new_row
