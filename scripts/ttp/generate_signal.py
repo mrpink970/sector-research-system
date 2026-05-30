@@ -4,6 +4,7 @@ Trade The Pool - SOXX Signal Generator with Window Analysis
 Analyzes all 15-minute data since last email
 Always sends email with market context
 Supports scheduled and manual runs
+ADDED: Volume ratio tracking and conviction scoring
 """
 
 import os
@@ -134,6 +135,19 @@ def analyze_trend(returns_list):
         return "FLAT"
 
 
+def get_volume_conviction(volume_ratio):
+    """Return conviction level based on volume ratio"""
+    if pd.isna(volume_ratio) or volume_ratio == 0:
+        return "Unknown", ""
+    
+    if volume_ratio >= 1.5:
+        return "High conviction", "✅"
+    elif volume_ratio >= 0.8:
+        return "Normal", "📊"
+    else:
+        return "Low volume — caution", "⚠️"
+
+
 def analyze_window(window_df):
     """Analyze the window and return market context"""
     if window_df is None or window_df.empty:
@@ -172,11 +186,21 @@ def analyze_window(window_df):
     
     # Current state (last row)
     last_row = window_df.iloc[-1]
+    
+    # Volume ratio and conviction
+    volume_ratio = last_row.get('soxx_volume_ratio', 1.0)
+    if pd.isna(volume_ratio):
+        volume_ratio = 1.0
+    volume_conviction, volume_icon = get_volume_conviction(volume_ratio)
+    
     soxx_current = {
         'price': round(last_row['soxx_price'], 2),
         'day_return': round(last_row['soxx_day_return_pct'], 2),
         'rsi': round(last_row['soxx_rsi'], 1),
-        'above_ma20': last_row['soxx_above_ma20']
+        'above_ma20': last_row['soxx_above_ma20'],
+        'volume_ratio': round(volume_ratio, 1),
+        'volume_conviction': volume_conviction,
+        'volume_icon': volume_icon
     }
     qqq_current = {
         'price': round(last_row['qqq_price'], 2),
@@ -218,14 +242,19 @@ def get_action_recommendation(analysis):
         return "🔴 No Green Day conditions met. Wait for next window."
     
     # Green Day exists
-    if analysis['trend'] == "UP" and analysis['qqq_trend'] != "DOWN":
-        return "✅ Green Day with building momentum. Ready to buy on pullback confirmation."
+    volume_ratio = analysis['soxx_current']['volume_ratio']
+    volume_conviction = analysis['soxx_current']['volume_conviction']
+    
+    if volume_ratio < 0.8:
+        return f"⚠️ Green Day but {volume_conviction}. Wait for volume confirmation before entering."
+    elif analysis['trend'] == "UP" and analysis['qqq_trend'] != "DOWN":
+        return f"✅ Green Day with building momentum. Volume: {volume_conviction}. Ready to buy on pullback confirmation."
     elif analysis['trend'] == "FLAT" and analysis['qqq_trend'] != "DOWN":
-        return "🟡 Green Day but choppy. Wait for pullback and confirmation candle."
+        return f"🟡 Green Day but choppy. Volume: {volume_conviction}. Wait for pullback and confirmation candle."
     elif analysis['trend'] == "DOWN":
-        return "⚠️ Green Day occurred but momentum faded. Caution - wait for reversal confirmation."
+        return f"⚠️ Green Day occurred but momentum faded. Volume: {volume_conviction}. Caution - wait for reversal confirmation."
     else:
-        return "🟢 Green Day confirmed. Use standard entry rules."
+        return f"🟢 Green Day confirmed. Volume: {volume_conviction}. Use standard entry rules."
 
 
 def send_email(analysis, recipients, is_manual=False):
@@ -246,11 +275,25 @@ def send_email(analysis, recipients, is_manual=False):
     
     if not analysis:
         subject = f"⚠️ TTP DATA ERROR - No Data Available ({date_str})"
-        body = f"{separator}\n  TTP DECISION ENGINE - DATA ERROR - {date_str}\n{separator}\n\n❌ No price data found in window.\n\nRun collect_data.py first and ensure data is being collected."
+        body = f"""
+{separator}
+  TTP DECISION ENGINE - DATA ERROR - {date_str}
+{separator}
+
+❌ No price data found in window.
+
+Run collect_data.py first and ensure data is being collected.
+
+{separator}
+"""
     else:
         signal_icon = "🟢" if analysis['green_day'] else "🔴"
         signal_text = "GREEN DAY" if analysis['green_day'] else "RED DAY"
-        best_info = f"Best signal: {analysis['best_candle']['time']} (+{analysis['best_green_return']}%)" if analysis['green_day'] else "No qualifying candles"
+        
+        if analysis['green_day']:
+            best_info = f"Best signal: {analysis['best_candle']['time']} (+{analysis['best_green_return']}%)"
+        else:
+            best_info = "No qualifying candles (requires ≥0.5%)"
         
         subject = f"{signal_icon} TTP MARKET ANALYSIS - {signal_text} - {date_str}"
         
@@ -278,6 +321,7 @@ def send_email(analysis, recipients, is_manual=False):
 📊 SOXX CONTEXT:
    Current: +{analysis['soxx_current']['day_return']}% | Price: ${analysis['soxx_current']['price']}
    RSI: {analysis['soxx_current']['rsi']} | Above MA20: {'YES' if analysis['soxx_current']['above_ma20'] else 'NO'}
+   Volume ratio: {analysis['soxx_current']['volume_ratio']}x {analysis['soxx_current']['volume_icon']} ({analysis['soxx_current']['volume_conviction']})
 
 {action}
 
@@ -331,6 +375,7 @@ def save_signal(analysis):
         'best_candle_return': analysis['best_candle']['return'],
         'worst_candle_return': analysis['worst_candle']['return'],
         'soxx_current_return': analysis['soxx_current']['day_return'],
+        'soxx_volume_ratio': analysis['soxx_current']['volume_ratio'],
         'qqq_current_return': analysis['qqq_current']['day_return'],
         'action': get_action_recommendation(analysis)
     }])
@@ -347,7 +392,7 @@ def save_signal(analysis):
 
 def main():
     print("=" * 60)
-    print("TTP MARKET ANALYSIS ENGINE (Window-Based)")
+    print("TTP MARKET ANALYSIS ENGINE (Window-Based + Volume)")
     print("=" * 60)
     
     config = load_config()
@@ -364,7 +409,7 @@ def main():
         print(f"\n⚠️ COMPLIANCE RESTRICTION: {compliance_reason}")
         # Still send email but with warning
         analysis = None
-        send_email(None, recipients)
+        send_email(analysis, recipients)
         return
     
     # Get last run time and current time
@@ -395,6 +440,7 @@ def main():
         print(f"   Trend: {analysis['trend']}")
         print(f"   Best candle: {analysis['best_candle']['time']} (+{analysis['best_candle']['return']}%)")
         print(f"   QQQ Trend: {analysis['qqq_trend']}")
+        print(f"   Volume Ratio: {analysis['soxx_current']['volume_ratio']}x")
     
     # Send email
     send_email(analysis, recipients)
