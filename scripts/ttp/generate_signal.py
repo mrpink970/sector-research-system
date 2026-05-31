@@ -6,6 +6,7 @@ Always sends email with market context
 Supports scheduled and manual runs
 ADDED: Volume ratio tracking and conviction scoring
 ADDED: ATR-based Green Day detection (replaces fixed 0.5%)
+ADDED: Pre-market volume confirmation
 """
 
 import os
@@ -115,39 +116,11 @@ def load_window_data(last_run, current_time):
     return window_df
 
 
-def calculate_atr(df, period=14):
-    """Calculate ATR from 15-minute candles"""
-    if df is None or len(df) < period + 1:
-        return None
-    
-    # Calculate True Range
-    high = df['soxx_price'].values
-    low = df['soxx_price'].values  # We don't have high/low in current schema
-    prev_close = df['soxx_price'].shift(1).values
-    
-    # Simplified ATR using only close prices (since we don't have high/low)
-    # This is less accurate but works with available data
-    tr = np.abs(df['soxx_price'].diff()).fillna(0).values
-    
-    # Wilder's smoothing
-    atr = np.zeros(len(df))
-    atr[period - 1] = np.mean(tr[:period])
-    
-    for i in range(period, len(df)):
-        atr[i] = (atr[i - 1] * (period - 1) + tr[i]) / period
-    
-    return round(atr[-1], 4)
-
-
 def calculate_atr_from_returns(returns_series, period=14):
-    """
-    Calculate ATR from return series when high/low not available.
-    Uses the standard deviation of returns as a proxy for volatility.
-    """
+    """Calculate ATR from return series using rolling standard deviation"""
     if len(returns_series) < period:
         return None
     
-    # Use rolling standard deviation as volatility proxy
     rolling_std = returns_series.rolling(window=period).std()
     atr_value = rolling_std.iloc[-1]
     
@@ -187,17 +160,26 @@ def get_volume_conviction(volume_ratio):
         return "Low volume — caution", "⚠️"
 
 
+def get_premarket_conviction(premarket_ratio):
+    """Return conviction level based on pre-market volume ratio"""
+    if pd.isna(premarket_ratio) or premarket_ratio == 0:
+        return "Unknown", ""
+    
+    if premarket_ratio >= 1.2:
+        return "Strong pre-market interest", "🔥"
+    elif premarket_ratio >= 0.7:
+        return "Moderate pre-market interest", "📈"
+    else:
+        return "Weak pre-market interest — caution", "⚠️"
+
+
 def check_green_day_atr(returns_list, atr_value, multiplier=0.5):
-    """
-    ATR-based Green Day detection.
-    Green Day = any 15-min return >= multiplier * ATR
-    Default: 0.5x ATR (adapts to volatility)
-    """
+    """ATR-based Green Day detection"""
     if atr_value is None or len(returns_list) == 0:
-        return False, None, 0.5  # Fallback to fixed 0.5%
+        return False, None, 0.5
     
     threshold = multiplier * atr_value
-    threshold_pct = round(threshold * 100, 2)  # Convert to percentage
+    threshold_pct = round(threshold * 100, 2)
     
     for r in returns_list:
         if r >= threshold_pct:
@@ -207,22 +189,33 @@ def check_green_day_atr(returns_list, atr_value, multiplier=0.5):
 
 
 def analyze_window(window_df):
-    """Analyze the window and return market context with ATR"""
+    """Analyze the window and return market context with ATR and pre-market volume"""
     if window_df is None or window_df.empty:
         return None
     
     # Get SOXX returns in window
     soxx_returns = window_df['soxx_day_return_pct'].tolist()
     
-    # Calculate ATR from returns (volatility proxy)
+    # Calculate ATR from returns
     returns_series = window_df['soxx_day_return_pct']
     atr_value = calculate_atr_from_returns(returns_series, period=14)
     
     # ATR-based Green Day detection
     green_day, threshold_pct, used_threshold = check_green_day_atr(soxx_returns, atr_value, multiplier=0.5)
     
-    # Also calculate fixed threshold for comparison
+    # Fixed threshold for comparison
     fixed_green_day = any(r >= 0.5 for r in soxx_returns)
+    
+    # Get pre-market volume from the most recent row
+    last_row = window_df.iloc[-1]
+    premarket_volume_ratio = last_row.get('soxx_premarket_volume_ratio', 1.0)
+    if pd.isna(premarket_volume_ratio):
+        premarket_volume_ratio = 1.0
+    
+    premarket_ok = premarket_volume_ratio >= 0.7
+    
+    # Final signal: Green Day AND pre-market volume OK
+    final_green_day = green_day and premarket_ok
     
     # Find best and worst candles
     best_idx = window_df['soxx_day_return_pct'].idxmax()
@@ -252,14 +245,14 @@ def analyze_window(window_df):
     qqq_start = round(qqq_returns[0], 2)
     qqq_end = round(qqq_returns[-1], 2)
     
-    # Current state (last row)
-    last_row = window_df.iloc[-1]
-    
     # Volume ratio and conviction
     volume_ratio = last_row.get('soxx_volume_ratio', 1.0)
     if pd.isna(volume_ratio):
         volume_ratio = 1.0
     volume_conviction, volume_icon = get_volume_conviction(volume_ratio)
+    
+    # Pre-market conviction
+    premarket_conviction, premarket_icon = get_premarket_conviction(premarket_volume_ratio)
     
     soxx_current = {
         'price': round(last_row['soxx_price'], 2) if not pd.isna(last_row['soxx_price']) else 0,
@@ -268,7 +261,10 @@ def analyze_window(window_df):
         'above_ma20': last_row['soxx_above_ma20'] if not pd.isna(last_row.get('soxx_above_ma20')) else False,
         'volume_ratio': round(volume_ratio, 1),
         'volume_conviction': volume_conviction,
-        'volume_icon': volume_icon
+        'volume_icon': volume_icon,
+        'premarket_volume_ratio': round(premarket_volume_ratio, 1),
+        'premarket_conviction': premarket_conviction,
+        'premarket_icon': premarket_icon
     }
     qqq_current = {
         'price': round(last_row['qqq_price'], 2) if not pd.isna(last_row['qqq_price']) else 0,
@@ -293,11 +289,14 @@ def analyze_window(window_df):
         'qqq_start': qqq_start,
         'qqq_end': qqq_end,
         'qqq_current': qqq_current,
-        'green_day': green_day,
+        'green_day': final_green_day,
+        'raw_green_day': green_day,
+        'premarket_ok': premarket_ok,
         'fixed_green_day': fixed_green_day,
         'best_green_return': best_green,
         'atr_value': atr_value,
         'atr_threshold_pct': used_threshold,
+        'premarket_volume_ratio': premarket_volume_ratio,
         'window_df': window_df
     }
 
@@ -308,21 +307,26 @@ def get_action_recommendation(analysis):
         return "⚠️ No data available. Check data collection."
     
     if not analysis['green_day']:
-        return "🔴 No Green Day conditions met (ATR-based). Wait for next window."
+        if not analysis['raw_green_day']:
+            return f"🔴 No Green Day conditions met (ATR threshold: {analysis['atr_threshold_pct']}%). Wait for next window."
+        elif not analysis['premarket_ok']:
+            return f"⚠️ Green Day detected but pre-market volume weak (ratio: {analysis['premarket_volume_ratio']}x). Wait for stronger pre-market confirmation."
     
     volume_ratio = analysis['soxx_current']['volume_ratio']
     volume_conviction = analysis['soxx_current']['volume_conviction']
+    premarket_ratio = analysis['premarket_volume_ratio']
+    premarket_conviction = analysis['soxx_current']['premarket_conviction']
     
     if volume_ratio < 0.8:
-        return f"⚠️ Green Day but {volume_conviction}. Wait for volume confirmation before entering."
+        return f"⚠️ Green Day confirmed but low volume ({volume_conviction}). Pre-market: {premarket_conviction}. Consider smaller position."
     elif analysis['trend'] == "UP" and analysis['qqq_trend'] != "DOWN":
-        return f"✅ Green Day with building momentum (ATR threshold: {analysis['atr_threshold_pct']}%). Volume: {volume_conviction}. Ready to buy on pullback confirmation."
+        return f"✅ Green Day with building momentum (ATR: {analysis['atr_threshold_pct']}%). Volume: {volume_conviction}. Pre-market: {premarket_conviction}. Ready to buy on pullback."
     elif analysis['trend'] == "FLAT" and analysis['qqq_trend'] != "DOWN":
-        return f"🟡 Green Day but choppy (ATR threshold: {analysis['atr_threshold_pct']}%). Volume: {volume_conviction}. Wait for pullback and confirmation candle."
+        return f"🟡 Green Day but choppy (ATR: {analysis['atr_threshold_pct']}%). Volume: {volume_conviction}. Pre-market: {premarket_conviction}. Wait for confirmation candle."
     elif analysis['trend'] == "DOWN":
-        return f"⚠️ Green Day occurred but momentum faded (ATR threshold: {analysis['atr_threshold_pct']}%). Volume: {volume_conviction}. Caution - wait for reversal confirmation."
+        return f"⚠️ Green Day but momentum faded (ATR: {analysis['atr_threshold_pct']}%). Volume: {volume_conviction}. Pre-market: {premarket_conviction}. Caution - wait for reversal."
     else:
-        return f"🟢 Green Day confirmed (ATR threshold: {analysis['atr_threshold_pct']}%). Volume: {volume_conviction}. Use standard entry rules."
+        return f"🟢 Green Day confirmed (ATR: {analysis['atr_threshold_pct']}%). Volume: {volume_conviction}. Pre-market: {premarket_conviction}. Use standard entry rules."
 
 
 def send_email(analysis, recipients, is_manual=False):
@@ -355,15 +359,23 @@ Run collect_data.py first and ensure data is being collected.
 {separator}
 """
     else:
-        signal_icon = "🟢" if analysis['green_day'] else "🔴"
-        signal_text = "GREEN DAY" if analysis['green_day'] else "RED DAY"
+        signal_icon = "🟢" if analysis['green_day'] else ("🟡" if analysis['raw_green_day'] else "🔴")
+        
+        if analysis['green_day']:
+            signal_text = "GREEN DAY - CONFIRMED"
+        elif analysis['raw_green_day'] and not analysis['premarket_ok']:
+            signal_text = "GREEN DAY - PRE-MARKET REJECTED"
+        else:
+            signal_text = "RED DAY - NO TRADE"
         
         atr_info = f"ATR: {analysis['atr_value']}% | Threshold: ≥{analysis['atr_threshold_pct']}%"
         
         if analysis['green_day']:
-            best_info = f"Best signal: {analysis['best_candle']['time']} (+{analysis['best_green_return']}%) | {atr_info}"
+            best_info = f"Best signal: {analysis['best_candle']['time']} (+{analysis['best_green_return']}%) | {atr_info} | Pre-market: {analysis['premarket_volume_ratio']}x ✅"
+        elif analysis['raw_green_day'] and not analysis['premarket_ok']:
+            best_info = f"Best signal: {analysis['best_candle']['time']} (+{analysis['best_green_return']}%) | {atr_info} | Pre-market: {analysis['premarket_volume_ratio']}x ❌ (needs ≥0.7x)"
         else:
-            best_info = f"No qualifying candles (ATR threshold: {analysis['atr_threshold_pct']}%) | Fixed 0.5% would be: {'YES' if analysis['fixed_green_day'] else 'NO'}"
+            best_info = f"No qualifying candles (ATR threshold: {analysis['atr_threshold_pct']}%) | Fixed 0.5%: {'YES' if analysis['fixed_green_day'] else 'NO'}"
         
         subject = f"{signal_icon} TTP MARKET ANALYSIS - {signal_text} - {date_str}"
         
@@ -388,6 +400,10 @@ Run collect_data.py first and ensure data is being collected.
    Green Day threshold: ≥{analysis['atr_threshold_pct']}% (0.5x ATR)
    Fixed 0.5% threshold would show: {'GREEN DAY' if analysis['fixed_green_day'] else 'RED DAY'}
 
+📊 PRE-MARKET CONFIRMATION:
+   Pre-market volume ratio: {analysis['premarket_volume_ratio']}x {analysis['soxx_current']['premarket_icon']}
+   Status: {'✅ CONFIRMED' if analysis['premarket_ok'] else '❌ REJECTED (needs ≥0.7x)'}
+
 📊 QQQ CONTEXT:
    Trend: {analysis['qqq_trend']} (start: {analysis['qqq_start']}% → end: {analysis['qqq_end']}%)
    Current: +{analysis['qqq_current']['day_return']}% | Price: ${analysis['qqq_current']['price']}
@@ -408,6 +424,7 @@ Run collect_data.py first and ensure data is being collected.
    ❌ Daily Loss Limit: $60
    ✅ Minimum 5 trades to pass
    ✅ ATR-based Green Day: Adapts to market volatility
+   ✅ Pre-market volume: Requires ≥0.7x average
 
 {separator}
 
@@ -439,7 +456,7 @@ def save_signal(analysis):
     if not analysis:
         return
     
-    signal_type = 'GREEN' if analysis['green_day'] else 'RED'
+    signal_type = 'GREEN' if analysis['green_day'] else ('PREMARKET_REJECTED' if analysis['raw_green_day'] else 'RED')
     
     new_row = pd.DataFrame([{
         'timestamp': datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
@@ -452,11 +469,13 @@ def save_signal(analysis):
         'worst_candle_return': analysis['worst_candle']['return'],
         'soxx_current_return': analysis['soxx_current']['day_return'],
         'soxx_volume_ratio': analysis['soxx_current']['volume_ratio'],
+        'soxx_premarket_ratio': analysis['premarket_volume_ratio'],
         'qqq_current_return': analysis['qqq_current']['day_return'],
         'action': get_action_recommendation(analysis),
         'atr_value': analysis['atr_value'],
         'atr_threshold': analysis['atr_threshold_pct'],
-        'fixed_green_day': analysis['fixed_green_day']
+        'fixed_green_day': analysis['fixed_green_day'],
+        'premarket_ok': analysis['premarket_ok']
     }])
     
     if SIGNALS_PATH.exists():
@@ -471,7 +490,7 @@ def save_signal(analysis):
 
 def main():
     print("=" * 60)
-    print("TTP MARKET ANALYSIS ENGINE (ATR-Based Green Day)")
+    print("TTP MARKET ANALYSIS ENGINE (ATR + Pre-Market Volume)")
     print("=" * 60)
     
     config = load_config()
@@ -511,8 +530,11 @@ def main():
         print(f"\n📈 Analysis complete:")
         print(f"   ATR Value: {analysis['atr_value']}%")
         print(f"   Green Day threshold: ≥{analysis['atr_threshold_pct']}%")
-        print(f"   Green Day (ATR): {analysis['green_day']}")
-        print(f"   Green Day (fixed 0.5%): {analysis['fixed_green_day']}")
+        print(f"   Raw Green Day (ATR): {analysis['raw_green_day']}")
+        print(f"   Pre-market ratio: {analysis['premarket_volume_ratio']}x")
+        print(f"   Pre-market OK: {analysis['premarket_ok']}")
+        print(f"   FINAL SIGNAL: {analysis['green_day']}")
+        print(f"   Fixed 0.5% comparison: {analysis['fixed_green_day']}")
         print(f"   Trend: {analysis['trend']}")
         print(f"   QQQ Trend: {analysis['qqq_trend']}")
         print(f"   Volume Ratio: {analysis['soxx_current']['volume_ratio']}x")
