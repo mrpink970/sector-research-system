@@ -2,8 +2,7 @@
 """
 Trade The Pool - SOXX + QQQ Data Collector
 Collects SOXX and QQQ data at 15-minute intervals
-SIMPLIFIED: Removed pre-market volume due to Yahoo API limits
-Uses 5-minute intervals for current data to avoid rate limiting
+SIMPLIFIED: Handles zero volume during non-trading hours
 """
 
 import yfinance as yf
@@ -52,7 +51,6 @@ def get_day_open_price(ticker_symbol):
     """Get today's opening price at 9:30 AM ET"""
     try:
         ticker = yf.Ticker(ticker_symbol)
-        # Use 5m interval to avoid 1m rate limits
         data = ticker.history(period="2d", interval="5m", prepost=False)
         
         if data is None or data.empty:
@@ -82,10 +80,9 @@ def get_ticker_data(ticker_symbol):
     try:
         ticker = yf.Ticker(ticker_symbol)
         
-        # Get current price using 5m interval (bypasses 1m rate limit)
+        # Get current price using 5m interval
         current = ticker.history(period="1d", interval="5m", prepost=True)
         if current.empty:
-            # Fallback to 15m if 5m fails
             current = ticker.history(period="1d", interval="15m", prepost=True)
             if current.empty:
                 return None
@@ -105,7 +102,6 @@ def get_ticker_data(ticker_symbol):
         # Get historical data for indicators (15m interval, last 5 days)
         hist = ticker.history(period="5d", interval="15m", prepost=True)
         if hist.empty or len(hist) < 5:
-            # Fallback to without pre-market
             hist = ticker.history(period="5d", interval="15m", prepost=False)
         
         if hist.empty:
@@ -116,18 +112,21 @@ def get_ticker_data(ticker_symbol):
         # Calculate MA20
         ma20 = round(hist['Close'].rolling(window=20).mean().iloc[-1], 2) if len(hist) >= 20 else price
         
-        # Calculate average volume (last 10 periods to avoid zeros)
+        # Calculate average volume (only from rows with volume > 0)
         volume_series = hist['Volume'][hist['Volume'] > 0]
         if len(volume_series) >= 10:
             avg_volume = int(volume_series.rolling(window=10).mean().iloc[-1])
-        elif len(hist) >= 10:
-            avg_volume = int(hist['Volume'].rolling(window=10).mean().iloc[-1])
         else:
-            avg_volume = current_volume if current_volume > 0 else 1
+            # Use a default typical volume for SOXX (~500k) when no data
+            avg_volume = 500000 if ticker_symbol == "SOXX" else 40000000
         
-        volume_ratio = round(current_volume / avg_volume, 1) if avg_volume > 0 else 1.0
+        # Volume ratio (handle zero)
+        if current_volume > 0 and avg_volume > 0:
+            volume_ratio = round(current_volume / avg_volume, 1)
+        else:
+            volume_ratio = 1.0  # Neutral during non-trading hours
         
-        # Calculate 1-hour return (4 x 15min candles)
+        # Calculate 1-hour return
         if len(hist) >= 5:
             hour_ago = hist['Close'].iloc[-5]
             return_1h = round((price - hour_ago) / hour_ago * 100, 2)
