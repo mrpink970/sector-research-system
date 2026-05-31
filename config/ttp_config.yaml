@@ -35,16 +35,21 @@ commission:
 compliance:
   earnings_restricted_days: 1
   earnings_symbols:
-    - "NVDA"
-    - "AMD"
-    - "INTC"
-    - "QCOM"
-    - "TSM"
-    - "MU"
-    - "ADI"
-    - "LRCX"
-    - "AMAT"
-    - "KLAC"
+    earnings_symbols:
+  - "NVDA"
+  - "AMD"
+  - "INTC"
+  - "QCOM"
+  - "TSM"
+  - "MU"
+  - "ADI"
+  - "LRCX"
+  - "AMAT"
+  - "KLAC"
+  - "AVGO"
+  - "MRVL"
+  - "TXN"
+  - "NXPI"
 
 # Email Recipients
 email_recipients:
