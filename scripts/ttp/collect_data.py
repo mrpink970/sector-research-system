@@ -5,6 +5,7 @@ Collects SOXX and QQQ data at 15-minute intervals
 INCLUDES PRE-MARKET DATA (prepost=True)
 INCLUDES DAY RETURN from market open (9:30 AM ET)
 ADDED: Volume tracking + automatic column migration
+FIXED: Volume fallback when pre-market volume returns 0
 """
 
 import yfinance as yf
@@ -45,9 +46,9 @@ def migrate_existing_csv():
         print(f"📋 Migrating existing CSV: Adding {len(missing_columns)} missing columns")
         for col in missing_columns:
             if 'volume' in col.lower():
-                df[col] = 0  # Default volume to 0 for historical rows
+                df[col] = 0
             else:
-                df[col] = None  # Default other columns to None
+                df[col] = None
         df.to_csv(LOG_PATH, index=False)
         print(f"✅ Migration complete. Added: {', '.join(sorted(missing_columns))}")
     else:
@@ -84,72 +85,89 @@ def get_day_open_price(ticker_symbol):
 
 def get_ticker_data(ticker_symbol):
     """Get current data for a single ticker including pre-market, technical indicators, and volume"""
-    ticker = yf.Ticker(ticker_symbol)
-    
-    # Get current price with PRE-MARKET data enabled
-    current = ticker.history(period="2d", interval="1m", prepost=True)
-    if current.empty:
+    try:
+        ticker = yf.Ticker(ticker_symbol)
+        
+        # Get current price with PRE-MARKET data enabled
+        current = ticker.history(period="2d", interval="1m", prepost=True)
+        if current.empty:
+            return None
+        
+        latest = current.iloc[-1]
+        price = round(latest['Close'], 2)
+        
+        # FIX: Volume often returns 0 in pre-market. Fallback to regular hours data
+        current_volume = int(latest['Volume']) if not pd.isna(latest['Volume']) else 0
+        
+        # If volume is 0, try getting last 15-min candle from regular hours
+        if current_volume == 0:
+            reg_hist = ticker.history(period="1d", interval="15m", prepost=False)
+            if not reg_hist.empty:
+                last_reg = reg_hist.iloc[-1]
+                current_volume = int(last_reg['Volume']) if not pd.isna(last_reg['Volume']) else 0
+        
+        # Get day open price (9:30 AM ET)
+        day_open = get_day_open_price(ticker_symbol)
+        
+        # Calculate day return (from market open to now)
+        day_return_pct = 0
+        if day_open and day_open > 0:
+            day_return_pct = round((price - day_open) / day_open * 100, 2)
+        
+        # Get historical data for indicators (15-min candles, including pre-market)
+        hist = ticker.history(period="3d", interval="15m", prepost=True)
+        if hist.empty:
+            return None
+        
+        hist.index = pd.to_datetime(hist.index).tz_localize(None)
+        
+        # Calculate 20-period MA for price
+        ma20 = round(hist['Close'].rolling(window=20).mean().iloc[-1], 2) if len(hist) >= 20 else price
+        
+        # Calculate 20-period average volume (using only rows with volume > 0)
+        volume_series = hist['Volume'][hist['Volume'] > 0]
+        if len(volume_series) >= 20:
+            avg_volume = int(volume_series.rolling(window=20).mean().iloc[-1])
+        elif len(hist) >= 20:
+            # Fallback to all volume including zeros
+            avg_volume = int(hist['Volume'].rolling(window=20).mean().iloc[-1])
+        else:
+            avg_volume = current_volume if current_volume > 0 else 1
+        
+        # Calculate volume ratio (avoid division by zero)
+        volume_ratio = round(current_volume / avg_volume, 1) if avg_volume > 0 else 1.0
+        
+        # Calculate 1-hour return (4 x 15min candles)
+        if len(hist) >= 5:
+            hour_ago = hist['Close'].iloc[-5]
+            return_1h = round((price - hour_ago) / hour_ago * 100, 2)
+        else:
+            return_1h = 0
+        
+        # Calculate RSI
+        delta = hist['Close'].diff()
+        gain = (delta.where(delta > 0, 0)).rolling(window=14).mean()
+        loss = (-delta.where(delta < 0, 0)).rolling(window=14).mean()
+        rs = gain / loss
+        rsi = round(100 - (100 / (1 + rs.iloc[-1])), 1) if len(hist) >= 14 and not pd.isna(rs.iloc[-1]) else 50
+        
+        above_ma20 = price > ma20
+        
+        return {
+            'price': price,
+            'day_open': day_open,
+            'day_return_pct': day_return_pct,
+            'ma20': ma20,
+            'above_ma20': above_ma20,
+            'return_1h_pct': return_1h,
+            'rsi': rsi,
+            'volume': current_volume,
+            'avg_volume_20': avg_volume,
+            'volume_ratio': volume_ratio
+        }
+    except Exception as e:
+        print(f"   Error fetching {ticker_symbol}: {e}")
         return None
-    
-    latest = current.iloc[-1]
-    price = round(latest['Close'], 2)
-    current_volume = int(latest['Volume']) if not pd.isna(latest['Volume']) else 0
-    
-    # Get day open price (9:30 AM ET)
-    day_open = get_day_open_price(ticker_symbol)
-    
-    # Calculate day return (from market open to now)
-    day_return_pct = 0
-    if day_open and day_open > 0:
-        day_return_pct = round((price - day_open) / day_open * 100, 2)
-    
-    # Get historical data for indicators (15-min candles, including pre-market)
-    hist = ticker.history(period="3d", interval="15m", prepost=True)
-    if hist.empty:
-        return None
-    
-    hist.index = pd.to_datetime(hist.index).tz_localize(None)
-    
-    # Calculate 20-period MA for price
-    ma20 = round(hist['Close'].rolling(window=20).mean().iloc[-1], 2) if len(hist) >= 20 else price
-    
-    # Calculate 20-period average volume (for volume ratio)
-    if len(hist) >= 20:
-        avg_volume = int(hist['Volume'].rolling(window=20).mean().iloc[-1])
-    else:
-        avg_volume = current_volume if current_volume > 0 else 1
-    
-    # Calculate volume ratio
-    volume_ratio = round(current_volume / avg_volume, 1) if avg_volume > 0 else 1.0
-    
-    # Calculate 1-hour return (4 x 15min candles)
-    if len(hist) >= 5:
-        hour_ago = hist['Close'].iloc[-5]
-        return_1h = round((price - hour_ago) / hour_ago * 100, 2)
-    else:
-        return_1h = 0
-    
-    # Calculate RSI
-    delta = hist['Close'].diff()
-    gain = (delta.where(delta > 0, 0)).rolling(window=14).mean()
-    loss = (-delta.where(delta < 0, 0)).rolling(window=14).mean()
-    rs = gain / loss
-    rsi = round(100 - (100 / (1 + rs.iloc[-1])), 1) if len(hist) >= 14 and not pd.isna(rs.iloc[-1]) else 50
-    
-    above_ma20 = price > ma20
-    
-    return {
-        'price': price,
-        'day_open': day_open,
-        'day_return_pct': day_return_pct,
-        'ma20': ma20,
-        'above_ma20': above_ma20,
-        'return_1h_pct': return_1h,
-        'rsi': rsi,
-        'volume': current_volume,
-        'avg_volume_20': avg_volume,
-        'volume_ratio': volume_ratio
-    }
 
 
 def get_soxx_qqq_data():
@@ -198,7 +216,7 @@ def get_soxx_qqq_data():
 
 def main():
     print("=" * 50)
-    print("SOXX + QQQ Data Collector (with Volume)")
+    print("SOXX + QQQ Data Collector (with Volume - Fixed)")
     print("=" * 50)
     
     # Migrate existing CSV if needed
