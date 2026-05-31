@@ -35,26 +35,27 @@ commission:
 compliance:
   earnings_restricted_days: 1
   earnings_symbols:
-    earnings_symbols:
-  - "NVDA"
-  - "AMD"
-  - "INTC"
-  - "QCOM"
-  - "TSM"
-  - "MU"
-  - "ADI"
-  - "LRCX"
-  - "AMAT"
-  - "KLAC"
-  - "AVGO"
-  - "MRVL"
-  - "TXN"
-  - "NXPI"
+    # SOXX Top 10 Holdings (as of May 2026)
+    - "MU"      # Micron Technology
+    - "AMD"     # Advanced Micro Devices
+    - "AVGO"    # Broadcom (earnings June 3, 2026)
+    - "NVDA"    # NVIDIA
+    - "INTC"    # Intel
+    - "MRVL"    # Marvell Technology
+    - "AMAT"    # Applied Materials
+    - "TXN"     # Texas Instruments
+    - "QCOM"    # Qualcomm
+    - "NXPI"    # NXP Semiconductors
+    # Additional semiconductor holdings for safety
+    - "TSM"     # Taiwan Semiconductor
+    - "ADI"     # Analog Devices
+    - "LRCX"    # Lam Research
+    - "KLAC"    # KLA Corporation
 
 # Email Recipients
 email_recipients:
   - "mrpink970@gmail.com"
- # - "mwhite7680@gmail.com"
+  # - "mwhite7680@gmail.com"
 
 # Data collection times (ET)
 data_times:
