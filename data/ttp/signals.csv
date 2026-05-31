@@ -58,3 +58,4 @@ timestamp,session,signal,price,stop_price,target_price,shares,net_profit,conditi
 2026-05-31 14:25:19,,RED,,,,,,,,,,,,,2026-05-31 14:25:17,2026-05-31 14:25:17,FLAT,2026-05-31 14:25:17,0.0,0.0,0.0,0.0,🔴 No Green Day conditions met. Wait for next window.,4.8,,,,,
 2026-05-31 14:30:14,,RED,,,,,,,,,,,,,2026-05-31 14:30:11,2026-05-31 14:30:11,FLAT,2026-05-31 14:30:11,0.0,0.0,0.0,0.0,🔴 No Green Day conditions met (ATR-based). Wait for next window.,4.8,,0.5,False,,
 2026-05-31 14:40:27,,RED,,,,,,,,,,,,,2026-05-31 14:40:24,2026-05-31 14:40:24,FLAT,2026-05-31 14:40:24,0.0,0.0,0.0,0.0,🔴 No Green Day conditions met (ATR threshold: 0.5%). Wait for next window.,4.8,,0.5,False,0.0,False
+2026-05-31 14:46:25,,RED,,,,,,,,,,,,,2026-05-31 14:46:23,2026-05-31 14:46:23,FLAT,,0.0,,0.0,,,4.8,,0.5,False,,
