@@ -2,7 +2,9 @@ name: Collect SOXX Data
 
 on:
   schedule:
-    - cron: '*/15 14-20 * * 1-5'   # Every 15 min from 9:30 AM to 3:00 PM ET
+    # Every 15 minutes from 9:15 AM to 4:15 PM ET (13:15 to 20:15 UTC during EDT)
+    # UTC hours: 13-20 covers 9 AM to 4 PM ET
+    - cron: '*/15 13-20 * * 1-5'
   workflow_dispatch:
 
 jobs:
@@ -21,7 +23,7 @@ jobs:
           python-version: '3.11'
       
       - name: Install dependencies
-        run: pip install pandas yfinance
+        run: pip install pandas yfinance pytz
       
       - name: Create data directory
         run: mkdir -p data/ttp
