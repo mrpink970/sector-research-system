@@ -1,10 +1,7 @@
 #!/usr/bin/env python3
 """
 Alpaca SOXL Signal Generator
-Fetches SOXL data from Alpaca API
-Detects Green Day conditions (>=0.5% in any 5-min candle)
-Sends email alerts
-Reads API keys from environment variables (GitHub Secrets)
+Fetches SOXL data from Alpaca API using CORRECT endpoint for individual accounts
 """
 
 import os
@@ -17,7 +14,7 @@ from email.utils import formataddr
 from datetime import datetime
 
 # ============================================================
-# READ CONFIGURATION FROM ENVIRONMENT VARIABLES (GitHub Secrets)
+# READ FROM ENVIRONMENT VARIABLES (GitHub Secrets)
 # ============================================================
 
 ALPACA_API_KEY = os.environ.get("ALPACA_API_KEY", "")
@@ -25,14 +22,12 @@ ALPACA_SECRET_KEY = os.environ.get("ALPACA_SECRET_KEY", "")
 EMAIL_USERNAME = os.environ.get("EMAIL_USERNAME", "")
 EMAIL_PASSWORD = os.environ.get("EMAIL_PASSWORD", "")
 
-# Email Recipients
 EMAIL_RECIPIENTS = ["mrpink970@gmail.com"]
+GREEN_DAY_THRESHOLD_PERCENT = 0.5
 
-# Signal Parameters
-GREEN_DAY_THRESHOLD_PERCENT = 0.5  # 0.5% move in any 5-min candle
-
-# Alpaca API Endpoint (Paper Trading)
-ALPACA_BASE_URL = "https://paper-api.alpaca.markets"
+# CRITICAL FIX: Use data.alpaca.markets, NOT paper-api.alpaca.markets
+# The paper-api endpoint is for Broker API users only
+ALPACA_DATA_URL = "https://data.alpaca.markets"
 
 # ============================================================
 # NO EDITS NEEDED BELOW THIS LINE
@@ -47,8 +42,9 @@ def get_alpaca_headers():
     }
 
 def fetch_soxl_bars(limit=10, timeframe="5Min"):
-    """Fetch SOXL bars from Alpaca API"""
-    url = f"{ALPACA_BASE_URL}/v2/stocks/SOXL/bars?timeframe={timeframe}&limit={limit}"
+    """Fetch SOXL bars from Alpaca data endpoint"""
+    url = f"{ALPACA_DATA_URL}/v2/stocks/SOXL/bars?timeframe={timeframe}&limit={limit}"
+    
     req = urllib.request.Request(url, headers=get_alpaca_headers())
     
     try:
@@ -56,12 +52,13 @@ def fetch_soxl_bars(limit=10, timeframe="5Min"):
             data = json.loads(response.read().decode())
             return data.get("bars", [])
     except Exception as e:
-        print(f"Error fetching SOXL data: {e}")
+        print(f"Error fetching SOXL bars: {e}")
         return None
 
 def fetch_soxl_latest():
-    """Fetch latest SOXL trade"""
-    url = f"{ALPACA_BASE_URL}/v2/stocks/SOXL/trades/latest"
+    """Fetch latest SOXL trade from Alpaca data endpoint"""
+    url = f"{ALPACA_DATA_URL}/v2/stocks/SOXL/trades/latest"
+    
     req = urllib.request.Request(url, headers=get_alpaca_headers())
     
     try:
@@ -86,7 +83,7 @@ def send_email(subject, body):
     msg = EmailMessage()
     msg.set_content(body)
     msg["Subject"] = subject
-    msg["From"] = formataddr(("Alpaca Signal", EMAIL_USERNAME))
+    msg["From"] = f"Alpaca Signal <{EMAIL_USERNAME}>"
     msg["To"] = ", ".join(EMAIL_RECIPIENTS)
     
     try:
@@ -125,14 +122,18 @@ def main():
     print("=" * 50)
     
     if not ALPACA_API_KEY or not ALPACA_SECRET_KEY:
-        print("❌ Alpaca API keys not found in environment variables")
+        print("❌ Alpaca API keys not found")
         return
+    
+    print(f"\n📊 Using endpoint: {ALPACA_DATA_URL}")
     
     # Fetch latest price
     print("\n📊 Fetching latest SOXL...")
     latest = fetch_soxl_latest()
     if latest and latest["price"] > 0:
         print(f"   SOXL: ${latest['price']:.2f}")
+    else:
+        print("   ⚠️ Could not fetch latest price")
     
     # Fetch bars
     print("\n📈 Fetching 5-min bars...")
@@ -140,7 +141,7 @@ def main():
     
     if not bars:
         print("❌ No bar data")
-        send_email("⚠️ ALPACA DATA ERROR", "Could not fetch SOXL data.")
+        send_email("⚠️ ALPACA DATA ERROR", "Could not fetch SOXL bar data from Alpaca.")
         return
     
     print(f"   Fetched {len(bars)} bars")
@@ -151,7 +152,7 @@ def main():
     now = datetime.now().strftime("%Y-%m-%d %I:%M %p ET")
     separator = "=" * 50
     
-    if is_green_day:
+    if is_green_day and best_candle:
         subject = f"🟢 GREEN DAY - SOXL +{return_pct}% - {now}"
         body = f"""
 {separator}
