@@ -2,7 +2,6 @@ name: Alpaca SOXL Signal
 
 on:
   schedule:
-    # Every 5 minutes from 9:00 AM to 4:15 PM ET (13:00 to 20:15 UTC during EDT)
     - cron: '*/5 13-20 * * 1-5'
   workflow_dispatch:
 
@@ -11,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
-      - name: Checkout repository
+      - name: Checkout code
         uses: actions/checkout@v4
       
       - name: Set up Python
@@ -20,7 +19,9 @@ jobs:
           python-version: '3.11'
       
       - name: Install dependencies
-        run: pip install requests
+        run: |
+          pip install --upgrade pip
+          pip install requests
       
       - name: Run Alpaca Signal Script
         run: python scripts/ttp/alpaca_signal.py
@@ -29,3 +30,11 @@ jobs:
           ALPACA_SECRET_KEY: ${{ secrets.ALPACA_SECRET_KEY }}
           EMAIL_USERNAME: ${{ secrets.MAIL_USERNAME }}
           EMAIL_PASSWORD: ${{ secrets.MAIL_PASSWORD }}
+      
+      - name: Debug - Check if secrets are available (safe)
+        run: |
+          if [ -n "$ALPACA_API_KEY" ]; then echo "ALPACA_API_KEY is set"; else echo "ALPACA_API_KEY is NOT set"; fi
+          if [ -n "$ALPACA_SECRET_KEY" ]; then echo "ALPACA_SECRET_KEY is set"; else echo "ALPACA_SECRET_KEY is NOT set"; fi
+        env:
+          ALPACA_API_KEY: ${{ secrets.ALPACA_API_KEY }}
+          ALPACA_SECRET_KEY: ${{ secrets.ALPACA_SECRET_KEY }}
