@@ -4,6 +4,7 @@ Trade The Pool - SOXX Signal Generator with Window Analysis
 Analyzes all 15-minute data since last email
 Always sends email with market context
 ADDED: ATR-based Green Day detection (replaces fixed 0.5%)
+ADDED: pytz for correct Eastern Time (no more UTC offset)
 """
 
 import os
@@ -15,6 +16,7 @@ import numpy as np
 import yaml
 from pathlib import Path
 from datetime import datetime, timedelta
+import pytz
 import sys
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
@@ -23,6 +25,13 @@ CONFIG_PATH = Path("config/ttp_config.yaml")
 DATA_DIR = Path("data/ttp")
 SIGNALS_PATH = DATA_DIR / "signals.csv"
 LAST_RUN_PATH = DATA_DIR / "last_email_run.txt"
+
+# Eastern Time Zone
+ET = pytz.timezone('US/Eastern')
+
+def get_eastern_now():
+    """Return current datetime in Eastern Time"""
+    return datetime.now(ET)
 
 compliance_available = False
 can_enter_swing_trade = None
@@ -72,22 +81,31 @@ def get_email_recipients(config):
 
 
 def get_last_run_time():
+    """Get timestamp of last email sent (in Eastern Time)"""
     if LAST_RUN_PATH.exists():
         with open(LAST_RUN_PATH, 'r') as f:
             timestamp_str = f.read().strip()
             try:
-                return datetime.fromisoformat(timestamp_str)
+                # Parse and make timezone-aware
+                dt = datetime.fromisoformat(timestamp_str)
+                if dt.tzinfo is None:
+                    dt = ET.localize(dt)
+                return dt
             except:
-                return datetime.now().replace(hour=9, minute=30, second=0, microsecond=0)
-    return datetime.now().replace(hour=9, minute=30, second=0, microsecond=0)
+                # Default to today at 9:30 AM ET
+                return get_eastern_now().replace(hour=9, minute=30, second=0, microsecond=0)
+    # No previous run - default to today at 9:30 AM ET
+    return get_eastern_now().replace(hour=9, minute=30, second=0, microsecond=0)
 
 
 def save_last_run_time(dt):
+    """Save timestamp of this email (store as ISO string)"""
     with open(LAST_RUN_PATH, 'w') as f:
         f.write(dt.isoformat())
 
 
 def load_window_data(last_run, current_time):
+    """Load all 15-minute data rows between last_run and current_time"""
     log_path = DATA_DIR / "price_log.csv"
     if not log_path.exists():
         return None
@@ -97,6 +115,9 @@ def load_window_data(last_run, current_time):
         return None
     
     df['timestamp_dt'] = pd.to_datetime(df['timestamp'])
+    # Make timezone-aware for comparison
+    df['timestamp_dt'] = df['timestamp_dt'].dt.tz_localize(ET)
+    
     mask = (df['timestamp_dt'] > last_run) & (df['timestamp_dt'] <= current_time)
     window_df = df[mask].copy()
     
@@ -281,7 +302,9 @@ def send_email(analysis, recipients):
         print("❌ No email recipients configured")
         return False
     
-    date_str = datetime.now().strftime("%Y-%m-%d %I:%M %p ET")
+    # Use Eastern Time for email timestamp
+    now_et = get_eastern_now()
+    date_str = now_et.strftime("%Y-%m-%d %I:%M %p ET")
     separator = "━" * 60
     
     if not analysis:
@@ -358,8 +381,11 @@ def save_signal(analysis):
     
     signal_type = 'GREEN' if analysis['green_day'] else 'RED'
     
+    # Use Eastern Time for signal timestamp
+    now_et = get_eastern_now()
+    
     new_row = pd.DataFrame([{
-        'timestamp': datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        'timestamp': now_et.strftime("%Y-%m-%d %H:%M:%S"),
         'signal': signal_type,
         'window_start': analysis['window_start'],
         'window_end': analysis['window_end'],
@@ -399,15 +425,15 @@ def main():
             return
     
     last_run = get_last_run_time()
-    current_time = datetime.now()
+    current_time = get_eastern_now()
     
-    print(f"📅 Last: {last_run}")
-    print(f"📅 Now: {current_time}")
+    print(f"📅 Last run (ET): {last_run.strftime('%Y-%m-%d %I:%M:%S %p')}")
+    print(f"📅 Current (ET): {current_time.strftime('%Y-%m-%d %I:%M:%S %p')}")
     
     window_df = load_window_data(last_run, current_time)
     
     if window_df is None or window_df.empty:
-        print("⚠️ No new data")
+        print("⚠️ No new data since last email")
         send_email(None, recipients)
         save_last_run_time(current_time)
         return
