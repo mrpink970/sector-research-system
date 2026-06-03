@@ -76,6 +76,12 @@ jobs:
         run: python scripts/stocks/run_stock_trading.py
       
       # ============================================================
+      # 4.5 GENERATE STOCK DASHBOARD (FIXED)
+      # ============================================================
+      - name: Generate Stock Dashboard
+        run: python scripts/generate_stock_dashboard.py
+      
+      # ============================================================
       # 5. RUN AI SYSTEM
       # ============================================================
       - name: Run AI System
@@ -88,7 +94,7 @@ jobs:
         run: python scripts/quantum/run_quantum_system.py
       
       # ============================================================
-      # 7. GENERATE DASHBOARDS
+      # 7. GENERATE SECTOR DASHBOARD
       # ============================================================
       - name: Generate Sector Dashboard
         run: python scripts/generate_dashboard.py
@@ -103,7 +109,7 @@ jobs:
           MAIL_PASSWORD: ${{ secrets.MAIL_PASSWORD }}
       
       # ============================================================
-      # 9. COMMIT AND PUSH UPDATES (INCLUDING DASHBOARDS)
+      # 9. COMMIT AND PUSH UPDATES (INCLUDING ALL DASHBOARDS)
       # ============================================================
       - name: Commit and push updates
         run: |
