@@ -29,7 +29,7 @@ jobs:
           mkdir -p data/quantum
       
       # ============================================================
-      # SECTOR SYSTEM DATA PIPELINE (FIXED)
+      # SECTOR SYSTEM DATA PIPELINE
       # ============================================================
       - name: Collect market data (sector ETFs)
         run: python scripts/collect_market_data.py
@@ -44,7 +44,7 @@ jobs:
         run: python scripts/rank_sectors.py
       
       # ============================================================
-      # 1. UPDATE 2 ETF DATA (Fetch latest prices into Excel)
+      # 1. UPDATE 2 ETF DATA
       # ============================================================
       - name: Update 2 ETF Data
         run: python scripts/4_etf/update_4etf_data.py
@@ -76,10 +76,10 @@ jobs:
         run: python scripts/stocks/run_stock_trading.py
       
       # ============================================================
-      # 4.5 GENERATE STOCK DASHBOARD (FIXED)
+      # 4.5 GENERATE STOCK DASHBOARD (FIXED PATH)
       # ============================================================
       - name: Generate Stock Dashboard
-        run: python scripts/generate_stock_dashboard.py
+        run: python scripts/stocks/generate_stock_dashboard.py
       
       # ============================================================
       # 5. RUN AI SYSTEM
