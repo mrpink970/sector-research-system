@@ -1,139 +1,113 @@
 # TTP Evaluation Passing Guide - Plain English
 
+**Account Type:** SWING MAX - 2K ($2,000)
+**Time Limit:** 100 days to pass the challenge
+
 ## Your Goal
 
 Start with $2,000. Make $300 profit. Complete at least 5 trades. Then request review.
 
 ---
 
-## The Three Rules That Can Fail You
+## The Three Rules
 
-### Rule 1: Maximum Drawdown ($140)
+### Rule 1: Maximum Drawdown ($140) — ❌ THIS WILL FAIL YOU
 
-- Your account cannot drop more than $140 from its highest point
-- If you hit $2,000, then drop to $1,860 → ❌ You fail
+- Your account cannot drop below **$1,860** (starting balance of $2,000 minus $140)
+- This is a **static** drawdown — the floor does not move up with your profits
+- If your account balance hits $1,860 at any time → ❌ **Your evaluation fails immediately**
 
-**How to avoid:** Never risk more than $20-40 per trade. If you lose 2 trades in a row, stop for the day.
-
----
-
-### Rule 2: Daily Loss Limit ($60)
-
-- You cannot lose more than $60 in a single day
-- If you lose $60, you cannot trade again until tomorrow
-
-**How to avoid:** Stop trading after 2 losing trades (approx $40 loss). Don't try to recover losses the same day.
+**How to avoid:** Risk small per trade. If you lose 2 trades in a row, stop for the day. Never hold overnight.
 
 ---
 
-### Rule 3: Maximum Position Profit Ratio (50%)
+### Rule 2: Daily Loss Limit ($60) — ⏸️ THIS PAUSES YOU (does NOT fail)
 
-- No single trade can make more than 50% of your total profit ($150)
-- If one trade makes $151, your evaluation fails
+- You cannot lose more than $60 in realized losses in a single day
+- If you hit $60 in losses, your account is **paused** until the next trading day
+- This does **NOT** fail your evaluation — you can continue tomorrow
 
-**How to avoid:** Set a hard stop at $150 profit per trade. Close the trade manually if it gets close.
-
----
-
-## What Will Cause You to Fail (Checklist)
-
-| Failure Mode | How It Happens | How to Prevent |
-|--------------|----------------|----------------|
-| Drawdown breach | Account drops $140 from peak | Risk small ($20-40 per trade). Stop after 2 losses. |
-| Daily loss limit | Lose $60 in one day | Stop trading after 2 losing trades. |
-| Max profit rule | One trade makes over $150 | Close trade at $140-145 profit. |
-| Minimum trades | Less than 5 trades | You need at least 5 trades to pass. |
-| Overnight gap down | SOXX gaps down 14% while you hold | Day trade only. Be flat by 3:45 PM ET. |
-| Earnings holding | Hold SOXX overnight before NVDA/AMD earnings | Check earnings calendar. Close before. |
-| Dividend holding | Hold overnight before SOXX ex-dividend | Check dividend calendar. Close before. |
+**How to avoid:** Stop trading after 2 losing trades. Don't try to recover losses the same day.
 
 ---
 
-## What You Must Do to Pass (Simple Steps)
+### Rule 3: Consistency Rule (30% of Total Profit) — ⏳ THIS REQUIRES MORE PROFIT (does NOT fail)
 
-### Step 1: Set Up Your Trades Correctly
+- Your largest trade cannot account for more than **30% of your total profit** when you request review
+- This does NOT fail you — it just means you need to earn more profit to "dilute" the large trade
 
-| Setting | Value | Why |
-|---------|-------|-----|
-| Shares | 2 | Small position = small risk |
-| Stop loss | -2% | Risk ~$20 per trade |
-| Take profit | +6% | Profit ~$60 per trade |
-| Max profit per trade | $150 (close before) | Don't break the 50% rule |
+**How it works:**
+- If your largest trade is $91, you need total profit of at least $304 ($91 ÷ 0.30)
+- Once you reach $304 total profit, the $91 trade is now under 30% and you can request review
 
-### Step 2: Trade Only During the Day
+**This does NOT fail you. It just means you keep trading until your total profit is high enough.**
 
-| Time | Action |
-|------|--------|
-| 9:30 AM | Market opens (wait 15 minutes) |
-| 9:45 AM - 3:30 PM | Look for EMA crossover signals |
-| 3:30 PM | Stop taking new trades |
-| 3:45 PM | **Close any open position** (even if not at target) |
+---
 
-**Why:** Being flat by 3:45 PM means no overnight gap risk. No earnings risk. No dividend risk.
+## What You Must Do to Pass
 
-### Step 3: Track Your Progress
+### Position Sizing
 
-| Milestone | What You Need |
-|-----------|---------------|
-| Profit target | $300 total |
-| Minimum trades | 5 completed trades |
-| No single trade > $150 | Keep each trade under $150 profit |
+- Use as many shares as your buying power allows without exceeding it
+- As SOXL (or whatever ticker you are trading) increases in price, share count will need to decrease
+- If the ticker decreases in value, share count can increase
 
-### Step 4: Know When to Stop Each Day
+### Trade Only on Green Days
 
-| Losses in a day | Action |
-|-----------------|--------|
-| 0-1 losses | Keep trading |
-| 2 losses | Stop for the day (you're near $40 loss) |
-| 3 losses | You hit $60 daily limit (stop immediately) |
+- Only trade when you receive a GREEN DAY email from your signal system
+- No Green Day = No trade
 
-### Step 5: Know When You've Passed
+### Always Use a Trailing Stop
+
+- Always enter a trailing stop when placing your order
+- Always enter a take profit price when placing your order
+- You can sell manually before the take profit price if you want to lock in gains early
+- You can exit manually before the trailing stop hits if the trade starts going against you
+
+### Trading Hours (General Guideline)
+
+- These are general guidelines, not hard rules
+- Some days all hours are good for trading, other days are not
+- **9:30 - 10:30 AM ET** — Primary trading window (highest liquidity)
+- **10:30 AM - 1:00 PM ET** — Often flat, but can be good some days
+- **1:00 - 3:30 PM ET** — Secondary window (lower confidence)
+
+### Know When to Stop Each Day
+
+- 0-1 losses → Keep trading
+- 2 losses → Stop for the day (you are near daily loss limit)
+
+---
+
+## Day Trading vs. Swing Trading
+
+**Day trading (flat by 3:45 PM ET) is strongly preferred.**
+
+| | Day Trade | Swing Trade (Hold Overnight) |
+|---|----------|------------------------------|
+| Gap down risk | None | Can blow your $140 floor instantly |
+| Earnings risk | None | TTP closes your position automatically |
+| Overnight news risk | None | Can gap against you before you react |
+
+**The most dangerous thing you can do is hold overnight.**
+
+**The safest thing you can do is be flat by 3:45 PM every single day.**
+
+---
+
+## How to Check Your Progress
+
+Your current profit, trades completed, largest trade, and drawdown status are all displayed on your Trade The Pool dashboard. Check it regularly.
+
+---
+
+## When You Have Passed
 
 | Condition | Status |
 |-----------|--------|
 | Total profit ≥ $300 | ✅ |
+| Largest trade ≤ 30% of total profit | ✅ |
 | Trades completed ≥ 5 | ✅ |
-| No trade > $150 profit | ✅ |
-| Never hit drawdown or daily limit | ✅ |
+| Never hit drawdown limit | ✅ |
 
 **When all are true:** Close all positions. Request review.
-
----
-
-## The One Big Decision: Day Trade vs Swing Trade
-
-| | Day Trade (Flat by 3:45 PM) | Swing Trade (Hold Overnight) |
-|---|----------------------------|------------------------------|
-| Gap down risk | None | You can lose the whole account |
-| Earnings risk | None | You cannot hold before earnings |
-| Dividend risk | None | You cannot hold before ex-dividend |
-| Profit per trade | Same | Same |
-| Trades needed | ~10-12 | ~8-10 |
-
-**Recommendation:** Day trade. The extra few trades are worth never waking up to a blown account.
-
----
-
-## Final Summary (What to Remember)
-
-| Do This | Don't Do This |
-|---------|----------------|
-| Risk $20-40 per trade | Risk more than $60 in a day |
-| Close by 3:45 PM every day | Hold overnight |
-| Take profit at $60 per trade | Let one trade exceed $150 |
-| Stop after 2 losing trades | Try to recover losses same day |
-| Make at least 5 trades | Try to pass with 4 trades |
-
----
-
-## The Most Dangerous Thing You Can Do
-
-**Hold SOXX overnight.**
-
-One bad gap down and your $2,000 account is gone.
-
-## The Safest Thing You Can Do
-
-**Be flat by 3:45 PM every single day.**
-
-Follow this guide, and you pass. Break any of these rules, and you fail.
