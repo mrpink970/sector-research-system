@@ -68,7 +68,10 @@ Start with $2,000. Make $300 profit. Complete at least 5 trades. Then request re
 
 - These are general guidelines, not hard rules
 - Some days all hours are good for trading, other days are not
-- **9:30 - 10:30 AM ET** — Primary trading window (highest liquidity)
+- Market opens at **9:30 AM ET**
+- **Wait for market direction before entering a trade**
+- **Preferably no trades before 9:45 - 9:50 AM ET** (let the market establish direction)
+- **9:45 - 10:30 AM ET** — Primary trading window (highest liquidity)
 - **10:30 AM - 1:00 PM ET** — Often flat, but can be good some days
 - **1:00 - 3:30 PM ET** — Secondary window (lower confidence)
 
