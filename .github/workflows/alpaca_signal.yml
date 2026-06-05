@@ -38,3 +38,11 @@ jobs:
         env:
           ALPACA_API_KEY: ${{ secrets.ALPACA_API_KEY }}
           ALPACA_SECRET_KEY: ${{ secrets.ALPACA_SECRET_KEY }}
+      
+      - name: Commit and push updates
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/ttp/soxl_candles.csv
+          git diff --staged --quiet || git commit -m "Alpaca SOXL data update $(date '+%Y-%m-%d %H:%M')"
+          git push
