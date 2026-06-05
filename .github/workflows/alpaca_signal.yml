@@ -2,7 +2,7 @@ name: Alpaca SOXL Signal
 
 on:
   schedule:
-    - cron: '*/5 13-20 * * 1-5'
+    - cron: '*/5 13-20 * * 1-5'  # 9:00 AM - 4:00 PM ET
   workflow_dispatch:
 
 jobs:
@@ -30,14 +30,6 @@ jobs:
           ALPACA_SECRET_KEY: ${{ secrets.ALPACA_SECRET_KEY }}
           EMAIL_USERNAME: ${{ secrets.MAIL_USERNAME }}
           EMAIL_PASSWORD: ${{ secrets.MAIL_PASSWORD }}
-      
-      - name: Debug - Check if secrets are available (safe)
-        run: |
-          if [ -n "$ALPACA_API_KEY" ]; then echo "ALPACA_API_KEY is set"; else echo "ALPACA_API_KEY is NOT set"; fi
-          if [ -n "$ALPACA_SECRET_KEY" ]; then echo "ALPACA_SECRET_KEY is set"; else echo "ALPACA_SECRET_KEY is NOT set"; fi
-        env:
-          ALPACA_API_KEY: ${{ secrets.ALPACA_API_KEY }}
-          ALPACA_SECRET_KEY: ${{ secrets.ALPACA_SECRET_KEY }}
       
       - name: Commit and push updates
         run: |
