@@ -3,6 +3,7 @@
 Alpaca SOXL Signal Generator with Logging
 Fetches SOXL data, detects Green Day, logs volume and candle size
 Uses Eastern Time for all timestamps
+Only logs candles between 8:00 AM and 8:00 PM ET
 """
 
 import os
@@ -37,6 +38,10 @@ LOG_FILE = Path("data/ttp/soxl_candles.csv")
 # Eastern Time Zone
 ET = pytz.timezone('US/Eastern')
 
+# Logging hours: 8:00 AM to 8:00 PM ET
+LOG_START_HOUR = 8
+LOG_END_HOUR = 20
+
 # ============================================================
 # NO EDITS NEEDED BELOW THIS LINE
 # ============================================================
@@ -49,7 +54,8 @@ def get_alpaca_headers():
     auth = base64.b64encode(f"{ALPACA_API_KEY}:{ALPACA_SECRET_KEY}".encode()).decode()
     return {"Authorization": f"Basic {auth}", "Accept": "application/json"}
 
-def fetch_soxl_bars(limit=20, timeframe="5Min"):
+def fetch_soxl_bars(limit=30, timeframe="5Min"):
+    """Fetch SOXL bars from Alpaca API"""
     url = f"{ALPACA_DATA_URL}/v2/stocks/SOXL/bars?timeframe={timeframe}&limit={limit}"
     req = urllib.request.Request(url, headers=get_alpaca_headers())
     try:
@@ -61,6 +67,7 @@ def fetch_soxl_bars(limit=20, timeframe="5Min"):
         return None
 
 def fetch_soxl_latest():
+    """Fetch latest SOXL trade"""
     url = f"{ALPACA_DATA_URL}/v2/stocks/SOXL/trades/latest"
     req = urllib.request.Request(url, headers=get_alpaca_headers())
     try:
@@ -73,6 +80,7 @@ def fetch_soxl_latest():
         return None
 
 def send_email(subject, body):
+    """Send email alert"""
     if not EMAIL_PASSWORD:
         print("❌ Email password not set")
         return False
@@ -91,8 +99,20 @@ def send_email(subject, body):
         print(f"❌ Email failed: {e}")
         return False
 
+def is_within_logging_hours(timestamp_utc):
+    """Check if timestamp is between 8:00 AM and 8:00 PM ET"""
+    try:
+        utc_time = datetime.strptime(timestamp_utc, "%Y-%m-%dT%H:%M:%SZ")
+        utc_time = pytz.UTC.localize(utc_time)
+        et_time = utc_time.astimezone(ET)
+        hour = et_time.hour
+        # Log between LOG_START_HOUR and LOG_END_HOUR ET (8am-8pm)
+        return LOG_START_HOUR <= hour < LOG_END_HOUR
+    except:
+        return True  # If parsing fails, log it
+
 def log_candles(bars):
-    """Log candle data to CSV with volume and range trends"""
+    """Log candle data to CSV with volume and range trends (8am-8pm ET only)"""
     if not bars or len(bars) < 10:
         print("⚠️ Not enough bars to log trends")
         return
@@ -100,12 +120,20 @@ def log_candles(bars):
     # Create directory if needed
     Path("data/ttp").mkdir(parents=True, exist_ok=True)
     
+    logged_count = 0
+    
     # Calculate rolling metrics
     for i in range(5, len(bars)):
         current_5 = bars[i-4:i+1]  # last 5 candles
         prev_5 = bars[i-9:i-4]     # previous 5 candles
         
         if len(current_5) < 5 or len(prev_5) < 5:
+            continue
+        
+        latest = bars[i]
+        
+        # Check if this candle is within logging hours
+        if not is_within_logging_hours(latest.get("t", "")):
             continue
         
         current_vol = sum(float(c.get("v", 0)) for c in current_5) / 5
@@ -116,8 +144,16 @@ def log_candles(bars):
         prev_range = sum(float(c.get("h", 0)) - float(c.get("l", 0)) for c in prev_5) / 5
         range_change = ((current_range - prev_range) / prev_range * 100) if prev_range > 0 else 0
         
-        latest = bars[i]
-        timestamp = latest.get("t", "")
+        # Convert UTC timestamp to Eastern Time
+        utc_str = latest.get("t", "")
+        try:
+            utc_time = datetime.strptime(utc_str, "%Y-%m-%dT%H:%M:%SZ")
+            utc_time = pytz.UTC.localize(utc_time)
+            et_time = utc_time.astimezone(ET)
+            timestamp = et_time.strftime("%Y-%m-%d %H:%M:%S ET")
+        except:
+            timestamp = utc_str
+        
         close = float(latest.get("c", 0))
         volume = float(latest.get("v", 0))
         high = float(latest.get("h", 0))
@@ -144,10 +180,12 @@ def log_candles(bars):
             if not file_exists:
                 writer.writeheader()
             writer.writerow(row)
+        logged_count += 1
     
-    print(f"✅ Logged {len(bars)-5} candles to {LOG_FILE}")
+    print(f"✅ Logged {logged_count} candles to {LOG_FILE}")
 
 def check_green_day(bars):
+    """Check if any 5-min candle meets Green Day threshold (>=0.5%)"""
     if not bars or len(bars) < 2:
         return False, None, None
     for i in range(1, len(bars)):
@@ -168,9 +206,9 @@ def main():
         print("❌ Alpaca API keys not found")
         return
     
-    # Fetch bars
-    print("\n📈 Fetching 20 bars (5-min)...")
-    bars = fetch_soxl_bars(limit=20, timeframe="5Min")
+    # Fetch bars (increase limit to 30 to have more data after filtering)
+    print("\n📈 Fetching 30 bars (5-min)...")
+    bars = fetch_soxl_bars(limit=30, timeframe="5Min")
     
     if not bars:
         print("❌ No bar data")
@@ -179,7 +217,7 @@ def main():
     
     print(f"   Fetched {len(bars)} bars")
     
-    # Log candle data with trends
+    # Log candle data with trends (only 8am-8pm ET)
     log_candles(bars)
     
     # Check for Green Day
@@ -200,15 +238,18 @@ def main():
 {separator}
 
 🟢 Green Day Confirmed
-   Time: {best_candle['time']}
-   Price: ${best_candle['price']:.2f}
-   Move: +{best_candle['return_pct']}%
+   Candle Time (UTC): {best_candle['time']}
+   Candle Close: ${best_candle['price']:.2f}
+   Candle Move: +{best_candle['return_pct']}%
 
 📈 Latest SOXL: ${latest_price:.2f}
+   (This is the most recent trade, not an entry price)
 
-✅ Action: Ready to buy on pullback
+✅ Action: Wait for market open (9:30 AM ET)
+   No trades before 9:45 AM ET
+   Look for pullback to support before entering
 
-📊 Data logged to: soxl_candles.csv
+📊 Data logged to: soxl_candles.csv (8am-8pm ET only)
 
 ⚠️ Rules: $140 DD | $90/trade | $60/day | 2% stop | 6% target
 {separator}"""
@@ -223,9 +264,11 @@ def main():
 
 📈 Latest SOXL: ${latest_price:.2f}
 
-📊 Data logged to: soxl_candles.csv
+📊 Data logged to: soxl_candles.csv (8am-8pm ET only)
 
 ⏳ Status: Wait for Green Day confirmation
+
+⚠️ Rules: $140 DD | $90/trade | $60/day | 2% stop | 6% target
 {separator}"""
     
     send_email(subject, body)
