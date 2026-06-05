@@ -1,3 +1,2 @@
 sector,ticker,direction,entry_date,entry_price,shares,highest_price,stop_pct,trailing_stop,entry_signal,entry_strength
-Healthcare,CURE,long,2026-05-27,93.1,47,99.995,0.14,85.9957,Bull,4.0
-Semiconductors,SOXL,long,2026-06-04,242.04,22,274.5,0.18,225.09,Strong Bull,6.0
+Healthcare,CURE,long,2026-05-27,93.1,47,104.26,0.11,92.7914,Bull,4.0
