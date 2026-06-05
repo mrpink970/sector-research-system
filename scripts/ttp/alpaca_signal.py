@@ -2,6 +2,7 @@
 """
 Alpaca SOXL Signal Generator with Logging
 Fetches SOXL data, detects Green Day, logs volume and candle size
+Uses Eastern Time for all timestamps
 """
 
 import os
@@ -14,6 +15,7 @@ from email.message import EmailMessage
 from email.utils import formataddr
 from datetime import datetime
 from pathlib import Path
+import pytz
 
 # ============================================================
 # READ FROM ENVIRONMENT VARIABLES (GitHub Secrets)
@@ -32,9 +34,16 @@ ALPACA_DATA_URL = "https://data.alpaca.markets"
 # Log file path
 LOG_FILE = Path("data/ttp/soxl_candles.csv")
 
+# Eastern Time Zone
+ET = pytz.timezone('US/Eastern')
+
 # ============================================================
 # NO EDITS NEEDED BELOW THIS LINE
 # ============================================================
+
+def get_eastern_now():
+    """Return current datetime in Eastern Time"""
+    return datetime.now(ET)
 
 def get_alpaca_headers():
     auth = base64.b64encode(f"{ALPACA_API_KEY}:{ALPACA_SECRET_KEY}".encode()).decode()
@@ -180,7 +189,8 @@ def main():
     latest = fetch_soxl_latest()
     latest_price = latest["price"] if latest else 0
     
-    now = datetime.now().strftime("%Y-%m-%d %I:%M %p ET")
+    # Use Eastern Time for email
+    now = get_eastern_now().strftime("%Y-%m-%d %I:%M %p ET")
     separator = "=" * 50
     
     if is_green_day and best_candle:
