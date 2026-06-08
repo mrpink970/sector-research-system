@@ -1,2 +1,2 @@
 sector,ticker,direction,entry_date,entry_price,shares,highest_price,stop_pct,trailing_stop,entry_signal,entry_strength
-Healthcare,CURE,long,2026-05-27,93.1,47,104.26,0.11,92.7914,Bull,4.0
+Healthcare,CURE,long,2026-05-27,93.1,47,104.28,0.11,92.8092,Bull,4.0
