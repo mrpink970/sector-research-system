@@ -1,9 +1,9 @@
 name: Alpaca SOXL Signal
 
 on:
-  schedule:
-    - cron: '*/5 13-20 * * 1-5'  # 9:00 AM - 4:00 PM ET
   workflow_dispatch:
+  schedule:
+    - cron: '*/5 13-20 * * 1-5'
 
 jobs:
   check_signal:
