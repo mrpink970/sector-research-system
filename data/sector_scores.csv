@@ -7008,8 +7008,8 @@ date,sector,signal_etf,selected_etf,direction,total_score,signal_state,score_cha
 2026-06-18,Materials,XLB,UYM,long,3,Bull,-4,4
 2026-06-18,Nasdaq Growth,QQQ,TQQQ,long,3,Bull,-2,4
 2026-06-18,Utilities,XLU,,none,1,Neutral,0,5
-2026-06-18,Consumer Discretionary,XLY,,none,-1,Neutral,0,6
-2026-06-18,Real Estate,XLRE,,none,-1,Neutral,-1,6
-2026-06-18,Consumer Staples,XLP,,none,-2,Neutral,-4,7
-2026-06-18,Communication Services,XLC,,short,-4,Bear,-1,8
-2026-06-18,Energy,XLE,ERY,short,-7,Strong Bear,0,9
+2026-06-18,Communication Services,XLC,,none,0,Neutral,3,6
+2026-06-18,Consumer Discretionary,XLY,,none,0,Neutral,1,6
+2026-06-18,Consumer Staples,XLP,,none,0,Neutral,-2,6
+2026-06-18,Real Estate,XLRE,,none,0,Neutral,0,6
+2026-06-18,Energy,XLE,ERY,short,-7,Strong Bear,0,7
