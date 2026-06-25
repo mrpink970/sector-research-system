@@ -1,3 +1,3 @@
 sector,ticker,direction,entry_date,entry_price,shares,highest_price,stop_pct,trailing_stop,entry_signal,entry_strength
-Biotechnology,LABU,long,2026-06-18,211.2,25,257.2899,0.12,226.4151,Strong Bull,7.0
-Semiconductors,SOXL,long,2026-06-23,236.0,20,252.98,0.18,207.4436,Bull,5.0
+Biotechnology,LABU,long,2026-06-18,211.2,25,272.45,0.12,239.756,Strong Bull,7.0
+Semiconductors,SOXL,long,2026-06-23,236.0,20,268.33,0.14,230.7638,Bull,5.0
