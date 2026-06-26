@@ -1,28 +1,33 @@
 #!/usr/bin/env python3
 """
-Quantum Computing Paper Trading System - FIXED VERSION
+Quantum Computing Paper Trading System - FIXED VERSION v2.0
 - 25% trailing stop
 - 18.0 min score (dashboard aligned)
 - 35/35/30 weights (dashboard aligned)
 - 5-day cooldown on re-entry
 - 5-day time stop
 - Position sizing: 100% of cash (unchanged)
+- SYSTEM RESET: June 26, 2026
 """
 
 from pathlib import Path
 from datetime import datetime, timedelta
 import pandas as pd
 import yfinance as yf
+import shutil
+import json
 
 DATA_DIR = Path("data/quantum")
 DATA_DIR.mkdir(parents=True, exist_ok=True)
 
+# ===== FILE PATHS =====
 PRICES_PATH = DATA_DIR / "prices.csv"
 SCORES_PATH = DATA_DIR / "scores.csv"
 POSITIONS_PATH = DATA_DIR / "positions.csv"
 TRADE_LOG_PATH = DATA_DIR / "trade_log.csv"
 PERFORMANCE_PATH = DATA_DIR / "performance.csv"
 HISTORICAL_QUOTES_PATH = DATA_DIR / "historical_quotes.csv"
+RESET_HISTORY_PATH = DATA_DIR / "reset_history.json"
 
 TICKERS = ["IONQ", "QBTS", "RGTI", "QUBT", "XNDU", "INFQ", "HQ"]
 STARTING_BALANCE = 5000.0
@@ -31,9 +36,9 @@ STARTING_BALANCE = 5000.0
 MIN_SCORE = 18.0                    # Dashboard: 18.0
 TRAILING_STOP_PCT = 0.25            # Dashboard: 25%
 MIN_DATA_DAYS = 20
-COOLDOWN_DAYS = 5                   # NEW: Don't re-enter same ticker for 5 days
-MAX_HOLD_DAYS = 5                   # NEW: Time stop after 5 days
-TIME_STOP_MIN_RETURN = 3.0          # NEW: Exit if < 3% after 5 days
+COOLDOWN_DAYS = 5                   # Don't re-enter same ticker for 5 days
+MAX_HOLD_DAYS = 5                   # Time stop after 5 days
+TIME_STOP_MIN_RETURN = 3.0          # Exit if < 3% after 5 days
 
 # Score weights (Dashboard: 35/35/30)
 WEIGHT_1D = 0.35
@@ -43,6 +48,94 @@ WEIGHT_5D = 0.30
 # Track last exited ticker for cooldown
 _last_exit_ticker = None
 _last_exit_date = None
+
+# ===== RESET HISTORY =====
+RESET_DATE = "2026-06-26"
+RESET_REASON = "System reset with improved parameters: 25% trailing stop, 18.0 min score, 35/35/30 weights, 5-day cooldown, 5-day time stop"
+PREVIOUS_SYSTEM_RETURN = "-690.8%"  # From dashboard
+
+def load_reset_history():
+    """Load reset history or create new"""
+    if RESET_HISTORY_PATH.exists():
+        with open(RESET_HISTORY_PATH, 'r') as f:
+            return json.load(f)
+    return {"resets": []}
+
+def save_reset_history(history):
+    """Save reset history"""
+    with open(RESET_HISTORY_PATH, 'w') as f:
+        json.dump(history, f, indent=2)
+
+def perform_system_reset():
+    """Reset all trading data to starting balance"""
+    print("\n" + "=" * 60)
+    print("🔄 PERFORMING SYSTEM RESET")
+    print("=" * 60)
+    
+    # Load existing reset history
+    history = load_reset_history()
+    
+    # Add this reset to history
+    reset_entry = {
+        "reset_date": RESET_DATE,
+        "reset_reason": RESET_REASON,
+        "previous_return": PREVIOUS_SYSTEM_RETURN,
+        "parameters": {
+            "trailing_stop_pct": TRAILING_STOP_PCT,
+            "min_score": MIN_SCORE,
+            "weights": f"{WEIGHT_1D}/{WEIGHT_3D}/{WEIGHT_5D}",
+            "cooldown_days": COOLDOWN_DAYS,
+            "max_hold_days": MAX_HOLD_DAYS,
+            "time_stop_min_return": TIME_STOP_MIN_RETURN
+        }
+    }
+    history["resets"].append(reset_entry)
+    save_reset_history(history)
+    
+    # Delete old data files
+    files_to_delete = [
+        POSITIONS_PATH,
+        TRADE_LOG_PATH,
+        PERFORMANCE_PATH,
+    ]
+    
+    for file_path in files_to_delete:
+        if file_path.exists():
+            file_path.unlink()
+            print(f"   🗑️  Deleted: {file_path.name}")
+    
+    # Create fresh positions file (empty)
+    empty_positions = pd.DataFrame(columns=["ticker","entry_date","entry_price","shares","highest_price","trailing_stop","entry_score"])
+    empty_positions.to_csv(POSITIONS_PATH, index=False)
+    
+    # Create fresh trade log (empty)
+    empty_trade_log = pd.DataFrame(columns=["ticker","entry_date","exit_date","entry_price","exit_price","shares","return_pct","gross_pl","exit_reason"])
+    empty_trade_log.to_csv(TRADE_LOG_PATH, index=False)
+    
+    # Create fresh performance
+    perf = pd.DataFrame([{
+        "total_trades": 0,
+        "win_rate_pct": 0.0,
+        "total_return_pct": 0.0,
+        "net_profit_dollars": 0.0,
+        "final_balance": STARTING_BALANCE
+    }])
+    perf.to_csv(PERFORMANCE_PATH, index=False)
+    
+    # Save reset marker for dashboard
+    with open(DATA_DIR / "reset_marker.txt", 'w') as f:
+        f.write(f"RESET_DATE={RESET_DATE}\n")
+        f.write(f"RESET_REASON={RESET_REASON}\n")
+        f.write(f"PREVIOUS_RETURN={PREVIOUS_SYSTEM_RETURN}\n")
+        f.write(f"STARTING_BALANCE={STARTING_BALANCE}\n")
+    
+    print(f"\n✅ System reset complete!")
+    print(f"   Reset Date: {RESET_DATE}")
+    print(f"   Starting Balance: ${STARTING_BALANCE:,.2f}")
+    print(f"   Previous Return: {PREVIOUS_SYSTEM_RETURN}")
+    print("=" * 60)
+    
+    return True
 
 def calculate_score(ret_1d, ret_3d, ret_5d):
     """Calculate score with 35/35/30 weights (dashboard aligned)"""
@@ -54,21 +147,38 @@ def calculate_score(ret_1d, ret_3d, ret_5d):
     elif ret_1d < 0 and ret_3d < 0 and ret_5d < 0:
         score -= 0.75
     
-    # Volatility adjustment (removed per dashboard)
-    # score += max(0, 10 - vol) * 0.10  ← REMOVED
-    
     return round(score, 2)
 
 def main():
-    print("🔬 QUANTUM COMPUTING PAPER TRADING SYSTEM (FIXED)")
-    print("=" * 60)
-    print(f"   Min Score: {MIN_SCORE}")
-    print(f"   Trailing Stop: {TRAILING_STOP_PCT * 100}%")
-    print(f"   Cooldown: {COOLDOWN_DAYS} days")
-    print(f"   Time Stop: {MAX_HOLD_DAYS} days")
+    print("🔬 QUANTUM COMPUTING PAPER TRADING SYSTEM v2.0")
     print("=" * 60)
     
-    print("\n📥 Fetching latest prices...")
+    # ===== CHECK FOR RESET FLAG =====
+    # If we want to force a reset, we can check for a flag file
+    # For now, we'll always reset on first run after code update
+    # To enable: create a file called "force_reset.txt" in data/quantum/
+    
+    force_reset_file = DATA_DIR / "force_reset.txt"
+    should_reset = force_reset_file.exists()
+    
+    # Also check if positions file is missing or empty
+    if not should_reset and POSITIONS_PATH.exists():
+        try:
+            df = pd.read_csv(POSITIONS_PATH)
+            if df.empty:
+                should_reset = True
+        except:
+            should_reset = True
+    elif not should_reset and not POSITIONS_PATH.exists():
+        should_reset = True
+    
+    if should_reset:
+        perform_system_reset()
+        # Remove force reset flag if it exists
+        if force_reset_file.exists():
+            force_reset_file.unlink()
+    
+    print(f"\n📥 Fetching latest prices...")
     data = yf.download(TICKERS, period="6mo", progress=False)
     
     # Extract OHLCV components
@@ -176,7 +286,7 @@ def main():
             trade_log = pd.concat([trade_log, new_row], ignore_index=True)
             trade_log.to_csv(TRADE_LOG_PATH, index=False)
             
-            # NEW: Store last exited ticker for cooldown
+            # Store last exited ticker for cooldown
             global _last_exit_ticker, _last_exit_date
             _last_exit_ticker = ticker
             _last_exit_date = today
