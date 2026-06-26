@@ -82,6 +82,58 @@
             font-weight: bold;
         }
         
+        /* Reset History Styles */
+        .reset-history {
+            background: #1e293b;
+            border-radius: 12px;
+            padding: 16px;
+            margin: 12px 0;
+            border-left: 4px solid #3b82f6;
+        }
+        .reset-history h3 {
+            margin: 0 0 8px 0;
+            color: #e2e8f0;
+            font-size: 1rem;
+        }
+        .reset-history-item {
+            background: #0f172a;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 8px;
+        }
+        .reset-history-item:last-child {
+            margin-bottom: 0;
+        }
+        .reset-history-header {
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 8px;
+            color: #e2e8f0;
+        }
+        .reset-history-header strong {
+            color: #60a5fa;
+        }
+        .reset-history-previous {
+            color: #ef4444;
+        }
+        .reset-history-reason {
+            margin-top: 4px;
+            font-size: 0.75rem;
+            color: #94a3b8;
+        }
+        .reset-history-params {
+            margin-top: 4px;
+            font-size: 0.7rem;
+            color: #64748b;
+        }
+        .reset-history-empty {
+            color: #94a3b8;
+            font-size: 0.85rem;
+            text-align: center;
+            padding: 12px;
+        }
+        
         /* Old vs New comparison */
         .comparison-note {
             background: #fff8e1;
@@ -102,6 +154,23 @@
             color: #1e8a4c;
             font-weight: bold;
         }
+        
+        /* Dark mode tweaks for history */
+        @media (prefers-color-scheme: dark) {
+            .reset-history {
+                background: #0f172a;
+                border-color: #3b82f6;
+            }
+            .reset-history-item {
+                background: #1e293b;
+            }
+            .reset-history-header {
+                color: #e2e8f0;
+            }
+            .reset-history-header strong {
+                color: #93c5fd;
+            }
+        }
     </style>
 </head>
 <body>
@@ -109,28 +178,32 @@
     <p class="subtitle">7 Quantum Stocks • Single Position • 25% Trailing Stop</p>
 
     <!-- RESET BANNER -->
-    <div class="reset-banner">
+    <div class="reset-banner" id="resetBanner">
         <div class="reset-banner-left">
             <div class="reset-icon">🔄</div>
             <div class="reset-text">
-                <h3>System Reset — May 23, 2026</h3>
-                <p>Full system reset with improved parameters to achieve better outcomes</p>
+                <h3 id="resetTitle">System Reset — Loading...</h3>
+                <p id="resetDescription">Loading reset information...</p>
             </div>
         </div>
-        <div class="reset-badge">🎯 Fresh Start</div>
+        <div class="reset-badge" id="resetBadge">🎯 Loading...</div>
     </div>
 
     <!-- Parameter Comparison -->
-    <div class="comparison-note">
-        <strong>⚙️ Parameter Changes (Reset Date: 2026-05-23)</strong>
-        <div class="params-grid" style="margin-top: 10px;">
-            <div class="param-item"><span class="param-label">Trailing Stop:</span> <span class="old-value">10%</span> → <span class="new-value">25%</span></div>
-            <div class="param-item"><span class="param-label">Min Score:</span> <span class="old-value">4.0</span> → <span class="new-value">18.0</span></div>
-            <div class="param-item"><span class="param-label">Volatility Penalty:</span> <span class="old-value">Yes</span> → <span class="new-value">Removed</span></div>
-            <div class="param-item"><span class="param-label">Trend Filter:</span> <span class="old-value">Off</span> → <span class="new-value">20-day SMA</span></div>
-            <div class="param-item"><span class="param-label">Score Weights:</span> <span class="old-value">30/25/20</span> → <span class="new-value">35/35/30</span></div>
+    <div class="comparison-note" id="comparisonNote">
+        <strong>⚙️ Parameter Changes</strong>
+        <div id="comparisonParams" class="params-grid" style="margin-top: 10px;">
+            <div class="param-item"><span class="param-label">Loading...</span></div>
         </div>
-        <div class="small-note" style="margin-top: 8px;">📊 Previous system: -73% return. New system starting fresh from $5,000.</div>
+        <div class="small-note" style="margin-top: 8px;" id="comparisonNoteText">Loading system parameters...</div>
+    </div>
+
+    <!-- RESET HISTORY -->
+    <div class="reset-history" id="resetHistoryContainer">
+        <h3>📜 Reset History</h3>
+        <div id="resetHistoryContent">
+            <div class="reset-history-empty">Loading reset history...</div>
+        </div>
     </div>
 
     <!-- KPI Cards -->
@@ -168,7 +241,17 @@
 <script>
     const BASE = "https://raw.githubusercontent.com/mrpink970/sector-research-system/main/data/quantum/";
     const STARTING_BALANCE = 5000;
-    const RESET_DATE = "2026-05-23";
+    const RESET_DATE = "2026-06-26";
+
+    // ===== PARAMETERS (Dashboard aligned) =====
+    const PARAMS = {
+        trailing_stop_pct: 0.25,
+        min_score: 18.0,
+        weights: "35/35/30",
+        cooldown_days: 5,
+        max_hold_days: 5,
+        time_stop_min_return: 3.0
+    };
 
     async function fetchCSV(url) {
         const r = await fetch(url + "?t=" + Date.now());
@@ -176,8 +259,66 @@
         return r.text();
     }
 
+    async function loadResetHistory() {
+        try {
+            const response = await fetch(BASE + "reset_history.json?t=" + Date.now());
+            if (!response.ok) {
+                document.getElementById('resetHistoryContent').innerHTML = 
+                    '<div class="reset-history-empty">No reset history found</div>';
+                return;
+            }
+            const data = await response.json();
+            
+            if (!data.resets || data.resets.length === 0) {
+                document.getElementById('resetHistoryContent').innerHTML = 
+                    '<div class="reset-history-empty">No resets recorded yet</div>';
+                return;
+            }
+            
+            let html = '';
+            // Show most recent first
+            const resets = data.resets.slice().reverse();
+            for (const reset of resets) {
+                const params = reset.parameters || {};
+                html += `
+                    <div class="reset-history-item">
+                        <div class="reset-history-header">
+                            <span><strong>🔄 ${reset.reset_date}</strong></span>
+                            <span class="reset-history-previous">Previous Return: ${reset.previous_return || 'N/A'}</span>
+                        </div>
+                        <div class="reset-history-reason">${reset.reset_reason || 'System reset'}</div>
+                        <div class="reset-history-params">
+                            Parameters: Stop ${(params.trailing_stop_pct * 100) || 25}% | 
+                            Min Score ${params.min_score || 18.0} | 
+                            Weights ${params.weights || '35/35/30'} | 
+                            Cooldown ${params.cooldown_days || 5}d | 
+                            Time Stop ${params.max_hold_days || 5}d
+                        </div>
+                    </div>
+                `;
+            }
+            document.getElementById('resetHistoryContent').innerHTML = html;
+            
+            // Update banner with latest reset
+            const latest = data.resets[data.resets.length - 1];
+            if (latest) {
+                document.getElementById('resetTitle').textContent = `System Reset — ${latest.reset_date}`;
+                document.getElementById('resetDescription').textContent = latest.reset_reason || 'System reset with improved parameters';
+                document.getElementById('resetBadge').textContent = `🎯 Fresh Start`;
+            }
+            
+        } catch (e) {
+            console.error('Error loading reset history:', e);
+            document.getElementById('resetHistoryContent').innerHTML = 
+                '<div class="reset-history-empty">Error loading reset history</div>';
+        }
+    }
+
     async function loadDashboard() {
         try {
+            // Load reset history first
+            await loadResetHistory();
+            
             // Fetch all data
             const [pricesCSV, scoresCSV, positionsCSV, tradesCSV, perfCSV] = await Promise.all([
                 fetchCSV(BASE + "prices.csv"),
@@ -355,7 +496,7 @@
             // Closed Trades Table (only post-reset)
             const tradesDiv = document.getElementById('tradesContent');
             if (trades.length === 0) {
-                tradesDiv.innerHTML = '<div class="small-note">No closed trades since system reset on 2026-05-23</div>';
+                tradesDiv.innerHTML = '<div class="small-note">No closed trades since system reset on 2026-06-26</div>';
             } else {
                 let tradeHtml = `<table><thead><tr><th>Ticker</th><th>Entry Date</th><th>Exit Date</th><th>Return %</th><th>P&L</th><th>Exit Reason</th></tr></thead><tbody>`;
                 for (let i = trades.length - 1; i >= 0; i--) {
@@ -375,6 +516,18 @@
                 tradesDiv.innerHTML = tradeHtml;
             }
             
+            // Update comparison note
+            document.getElementById('comparisonParams').innerHTML = `
+                <div class="param-item"><span class="param-label">Trailing Stop:</span> <span class="new-value">25%</span></div>
+                <div class="param-item"><span class="param-label">Min Score:</span> <span class="new-value">18.0</span></div>
+                <div class="param-item"><span class="param-label">Volatility Penalty:</span> <span class="new-value">Removed</span></div>
+                <div class="param-item"><span class="param-label">Trend Filter:</span> <span class="new-value">20-day SMA</span></div>
+                <div class="param-item"><span class="param-label">Score Weights:</span> <span class="new-value">35/35/30</span></div>
+                <div class="param-item"><span class="param-label">Cooldown:</span> <span class="new-value">5 days</span></div>
+                <div class="param-item"><span class="param-label">Time Stop:</span> <span class="new-value">5 days</span></div>
+            `;
+            document.getElementById('comparisonNoteText').textContent = `📊 System reset on ${RESET_DATE}. Previous system: -690.8% return. New system starting fresh from $5,000.`;
+            
             document.getElementById('lastUpdated').innerHTML = `System Reset: ${RESET_DATE} | Last updated: ${new Date().toLocaleString()} | Data as of: ${lastDate}`;
             
         } catch (e) {
@@ -383,6 +536,7 @@
         }
     }
     
+    // Load dashboard on page load
     loadDashboard();
     setInterval(loadDashboard, 180000);
 </script>
