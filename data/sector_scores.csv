@@ -6999,3 +6999,17 @@ date,sector,signal_etf,selected_etf,direction,total_score,signal_state,score_cha
 2026-06-29,Consumer Discretionary,XLY,SCC,short,-3,Bear,0,7
 2026-06-29,Communication Services,XLC,,short,-5,Bear,0,8
 2026-06-29,Energy,XLE,ERY,short,-5,Bear,0,8
+2026-06-30,Healthcare,XLV,CURE,long,7,Strong Bull,1,1
+2026-06-30,Biotechnology,XBI,LABU,long,6,Strong Bull,0,2
+2026-06-30,Semiconductors,SMH,SOXL,long,6,Strong Bull,4,2
+2026-06-30,Industrials,XLI,DUSL,long,5,Bull,0,3
+2026-06-30,Utilities,XLU,UTSL,long,5,Bull,0,3
+2026-06-30,Financials,XLF,FAS,long,3,Bull,0,4
+2026-06-30,Nasdaq Growth,QQQ,,none,1,Neutral,0,5
+2026-06-30,Technology,XLK,,none,1,Neutral,0,5
+2026-06-30,Consumer Staples,XLP,,none,-1,Neutral,-4,6
+2026-06-30,Real Estate,XLRE,,none,-1,Neutral,-4,6
+2026-06-30,Materials,XLB,,none,-2,Neutral,0,7
+2026-06-30,Consumer Discretionary,XLY,SCC,short,-3,Bear,0,8
+2026-06-30,Communication Services,XLC,,short,-5,Bear,0,9
+2026-06-30,Energy,XLE,ERY,short,-5,Bear,0,9
