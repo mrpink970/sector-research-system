@@ -1,2 +1,2 @@
 sector,ticker,direction,entry_date,entry_price,shares,highest_price,stop_pct,trailing_stop,entry_signal,entry_strength
-Biotechnology,LABU,long,2026-06-18,211.2,25,301.5699,0.1,271.4129,Strong Bull,7.0
+Biotechnology,LABU,long,2026-06-18,211.2,25,301.57,0.1,271.413,Strong Bull,7.0
