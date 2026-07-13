@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Trading Dashboard &mdash; 2026-07-10</title>
+<title>Trading Dashboard &mdash; 2026-07-13</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=DM+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
@@ -26,7 +26,7 @@
     <div>
       <div style="font-size:11px;font-weight:600;color:#818cf8;text-transform:uppercase;letter-spacing:.12em;margin-bottom:4px">Automated Sector Rotation</div>
       <h1 style="font-size:22px;font-weight:800;color:#fff;font-family:'DM Sans',sans-serif">Trading Dashboard</h1>
-      <div style="font-size:12px;color:#94a3b8;margin-top:3px">2026-07-10 &nbsp;&bull;&nbsp; EXP06a &nbsp;&bull;&nbsp; Paper Trading</div>
+      <div style="font-size:12px;color:#94a3b8;margin-top:3px">2026-07-13 &nbsp;&bull;&nbsp; EXP06a &nbsp;&bull;&nbsp; Paper Trading</div>
     </div>
     <div style="text-align:right">
       <div style="font-size:28px;font-weight:800;color:#fff;font-family:'DM Mono',monospace">$10,230.37</div>
@@ -42,16 +42,16 @@
 <!-- QQQ Banner -->
 <div style="margin-bottom:16px">
 
-    <div style="background:#d1fae5;border-radius:12px;padding:18px 24px;display:flex;align-items:center;gap:16px">
-      <div style="width:14px;height:14px;border-radius:50%;background:#10b981;flex-shrink:0;box-shadow:0 0 0 4px #10b98133"></div>
+    <div style="background:#fee2e2;border-radius:12px;padding:18px 24px;display:flex;align-items:center;gap:16px">
+      <div style="width:14px;height:14px;border-radius:50%;background:#ef4444;flex-shrink:0;box-shadow:0 0 0 4px #ef444433"></div>
       <div>
         <div style="font-weight:700;font-size:14px;color:#111">
-          QQQ MARKET REGIME: BULL &nbsp;
-          <span style="font-size:12px;color:#6b7280;font-weight:400">Score: 3</span>
+          QQQ MARKET REGIME: NEUTRAL &nbsp;
+          <span style="font-size:12px;color:#6b7280;font-weight:400">Score: -1</span>
           &nbsp;&mdash;&nbsp;
-          <span style="font-weight:800">NEW ENTRIES ALLOWED</span>
+          <span style="font-weight:800">NEW ENTRIES BLOCKED</span>
         </div>
-        <div style="font-size:12px;color:#6b7280;margin-top:3px">Positions will open when strong sector signals appear.</div>
+        <div style="font-size:12px;color:#6b7280;margin-top:3px">Open positions continue running with trailing stops active.</div>
       </div>
     </div>
 </div>
@@ -85,7 +85,7 @@
     </div>
     <div style="background:#fff;border-radius:12px;padding:24px 20px;flex:1;min-width:160px;box-shadow:0 1px 3px rgba(0,0,0,.08)">
       <div style="font-size:11px;font-weight:600;color:#9ca3af;text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">Margin Utilization</div>
-      <div style="font-size:28px;font-weight:800;font-family:'DM Mono',monospace;color:#f59e0b">$0 / $2,046 (0% used)</div>
+      <div style="font-size:28px;font-weight:800;font-family:'DM Mono',monospace;color:#f59e0b">$1,146 / $2,046 (56% used)</div>
       <div style="font-size:11px;color:#9ca3af;margin-top:6px">20% max allowed | 0.1% APR | $0/day</div>
     </div></div>
     </div>
@@ -115,9 +115,9 @@
     </div>
     <script>
     (function() {
-      var labels   = ["2026-03-31", "2026-04-01", "2026-04-02", "2026-04-06", "2026-04-07", "2026-04-08", "2026-04-09", "2026-04-10", "2026-04-13", "2026-04-14", "2026-04-15", "2026-04-16", "2026-04-17", "2026-04-20", "2026-04-21", "2026-04-22", "2026-04-23", "2026-04-24", "2026-04-27", "2026-04-28", "2026-04-29", "2026-04-30", "2026-05-01", "2026-05-04", "2026-05-05", "2026-05-06", "2026-05-07", "2026-05-08", "2026-05-11", "2026-05-12", "2026-05-13", "2026-05-14", "2026-05-15", "2026-05-18", "2026-05-19", "2026-05-20", "2026-05-21", "2026-05-22", "2026-05-26", "2026-05-27", "2026-05-28", "2026-05-29", "2026-06-01", "2026-06-02", "2026-06-03", "2026-06-04", "2026-06-05", "2026-06-08", "2026-06-09", "2026-06-10", "2026-06-11", "2026-06-12", "2026-06-15", "2026-06-16", "2026-06-17", "2026-06-18", "2026-06-22", "2026-06-23", "2026-06-24", "2026-06-25", "2026-06-26", "2026-06-29", "2026-06-30", "2026-07-01", "2026-07-02", "2026-07-06", "2026-07-07", "2026-07-08", "2026-07-09", "2026-07-10"];
-      var equity   = [5000.0, 5000.0, 5000.0, 5000.0, 5000.0, 5000.0, 5000.0, 5000.0, 5000.0, 5000.0, 5000.0, 5000.0, 5000.0, 5000.0, 5000.0, 5535.55, 5535.55, 5535.55, 5535.55, 7319.58, 7319.58, 7319.58, 7319.58, 7205.01, 7205.01, 7205.01, 8828.47, 8828.47, 8828.47, 8903.25, 8903.25, 8903.25, 8903.25, 8235.75, 7347.56, 7347.56, 7347.56, 7347.56, 7347.56, 7347.56, 8523.97, 8523.97, 8523.97, 8523.97, 8523.97, 9051.61, 8805.08, 8805.08, 8805.08, 8805.08, 8805.08, 8805.08, 8805.08, 8805.08, 8805.08, 8815.29, 8815.29, 8221.52, 8221.52, 8221.52, 8025.4, 8025.4, 8025.4, 8025.4, 8025.4, 8025.4, 8025.4, 8025.4, 8025.4, 10230.37];
-      var drawdown = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -1.57, -1.57, -1.57, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -7.5, -17.47, -17.47, -17.47, -17.47, -17.47, -17.47, -4.26, -4.26, -4.26, -4.26, -4.26, 0.0, -2.72, -2.72, -2.72, -2.72, -2.72, -2.72, -2.72, -2.72, -2.72, -2.61, -2.61, -9.17, -9.17, -9.17, -11.34, -11.34, -11.34, -11.34, -11.34, -11.34, -11.34, -11.34, -11.34, 0.0];
+      var labels   = ["2026-03-31", "2026-04-01", "2026-04-02", "2026-04-06", "2026-04-07", "2026-04-08", "2026-04-09", "2026-04-10", "2026-04-13", "2026-04-14", "2026-04-15", "2026-04-16", "2026-04-17", "2026-04-20", "2026-04-21", "2026-04-22", "2026-04-23", "2026-04-24", "2026-04-27", "2026-04-28", "2026-04-29", "2026-04-30", "2026-05-01", "2026-05-04", "2026-05-05", "2026-05-06", "2026-05-07", "2026-05-08", "2026-05-11", "2026-05-12", "2026-05-13", "2026-05-14", "2026-05-15", "2026-05-18", "2026-05-19", "2026-05-20", "2026-05-21", "2026-05-22", "2026-05-26", "2026-05-27", "2026-05-28", "2026-05-29", "2026-06-01", "2026-06-02", "2026-06-03", "2026-06-04", "2026-06-05", "2026-06-08", "2026-06-09", "2026-06-10", "2026-06-11", "2026-06-12", "2026-06-15", "2026-06-16", "2026-06-17", "2026-06-18", "2026-06-22", "2026-06-23", "2026-06-24", "2026-06-25", "2026-06-26", "2026-06-29", "2026-06-30", "2026-07-01", "2026-07-02", "2026-07-06", "2026-07-07", "2026-07-08", "2026-07-09", "2026-07-10", "2026-07-13"];
+      var equity   = [5000.0, 5000.0, 5000.0, 5000.0, 5000.0, 5000.0, 5000.0, 5000.0, 5000.0, 5000.0, 5000.0, 5000.0, 5000.0, 5000.0, 5000.0, 5535.55, 5535.55, 5535.55, 5535.55, 7319.58, 7319.58, 7319.58, 7319.58, 7205.01, 7205.01, 7205.01, 8828.47, 8828.47, 8828.47, 8903.25, 8903.25, 8903.25, 8903.25, 8235.75, 7347.56, 7347.56, 7347.56, 7347.56, 7347.56, 7347.56, 8523.97, 8523.97, 8523.97, 8523.97, 8523.97, 9051.61, 8805.08, 8805.08, 8805.08, 8805.08, 8805.08, 8805.08, 8805.08, 8805.08, 8805.08, 8815.29, 8815.29, 8221.52, 8221.52, 8221.52, 8025.4, 8025.4, 8025.4, 8025.4, 8025.4, 8025.4, 8025.4, 8025.4, 8025.4, 10230.37, 10066.57];
+      var drawdown = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -1.57, -1.57, -1.57, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -7.5, -17.47, -17.47, -17.47, -17.47, -17.47, -17.47, -4.26, -4.26, -4.26, -4.26, -4.26, 0.0, -2.72, -2.72, -2.72, -2.72, -2.72, -2.72, -2.72, -2.72, -2.72, -2.61, -2.61, -9.17, -9.17, -9.17, -11.34, -11.34, -11.34, -11.34, -11.34, -11.34, -11.34, -11.34, -11.34, 0.0, -1.6];
       var startBal = 5000.0;
 
       var eCtx = document.getElementById('equityChart').getContext('2d');
@@ -193,11 +193,49 @@
         <span style="font-size:18px">&#128202;</span>Open Positions
       </h2>
       
-        <div style="text-align:center;padding:40px;color:#9ca3af">
-          <div style="font-size:32px;margin-bottom:8px">&#128683;</div>
-          <div style="font-weight:600;font-size:15px">No open positions</div>
-          <div style="font-size:12px;margin-top:4px">System is in cash. Waiting for confirmed Bull signal with QQQ approval.</div>
-        </div>
+    <table style="width:100%;border-collapse:collapse;font-size:13px">
+      <thead>
+        <tr style="background:#f9fafb;border-bottom:2px solid #e5e7eb">
+          <th style="padding:10px 14px;text-align:left;font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase">Sector</th>
+          <th style="padding:10px 14px;text-align:left;font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase">Ticker</th>
+          <th style="padding:10px 14px;text-align:left;font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase">Entry Date</th>
+          <th style="padding:10px 14px;text-align:left;font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase">Days Held</th>
+          <th style="padding:10px 14px;text-align:left;font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase">Shares</th>
+          <th style="padding:10px 14px;text-align:left;font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase">Entry $</th>
+          <th style="padding:10px 14px;text-align:left;font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase">Total Cost</th>
+          <th style="padding:10px 14px;text-align:left;font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase">Current $</th>
+          <th style="padding:10px 14px;text-align:left;font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase">Gain / Loss</th>
+          <th style="padding:10px 14px;text-align:left;font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase">Trailing Stop</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr style="border-bottom:1px solid #f3f4f6">
+          <td style="padding:12px 14px;font-weight:600">Biotechnology</td>
+          <td style="padding:12px 14px;font-family:'DM Mono',monospace;font-weight:700">LABU</td>
+          <td style="padding:12px 14px;color:#6b7280">2026-07-13</td>
+          <td style="padding:12px 14px">
+            <div style="font-size:12px;color:#f59e0b;margin-bottom:3px">0 / 10 days</div>
+            <div style="background:#e5e7eb;border-radius:99px;height:4px;width:80px">
+              <div style="background:#f59e0b;border-radius:99px;height:4px;width:0%"></div>
+            </div>
+          </td>
+          <td style="padding:12px 14px;font-family:'DM Mono',monospace">21</td>
+          <td style="padding:12px 14px;font-family:'DM Mono',monospace">$280.64</td>
+          <td style="padding:12px 14px;font-family:'DM Mono',monospace">$5,893.44</td>
+          <td style="padding:12px 14px;font-family:'DM Mono',monospace">$272.84</td>
+          <td style="padding:12px 14px;color:#ef4444;font-weight:600;font-family:'DM Mono',monospace">
+            -2.8%<br>
+            <span style="font-size:11px">$163.80</span>
+          </td>
+          <td style="padding:12px 14px;font-family:'DM Mono',monospace">
+            $231.49<br>
+            <span style="font-size:11px;color:#9ca3af">15.2% below</span>
+          </td>
+        </tr></tbody>
+    </table>
+    <div style="font-size:11px;color:#9ca3af;margin-top:10px;padding:0 4px">
+      &#9432; Trailing stops tighten automatically as profits grow. Stop distance shrinks from 18% to 10% on 3x ETFs as gains compound.
+    </div>
     </div>
 
 <!-- Sector Signals -->
@@ -212,15 +250,15 @@
              onmouseenter="this.querySelector('.tooltip-content').style.display='block'"
              onmouseleave="this.querySelector('.tooltip-content').style.display='none'">
           <div style="font-weight:700;font-size:13px;margin-bottom:10px;color:#111">Semiconductors</div>
-          <div style="background:#e5e7eb;border-radius:8px;padding:8px 10px;margin-bottom:10px">
+          <div style="background:#fee2e2;border-radius:8px;padding:8px 10px;margin-bottom:10px">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-              <span style="font-weight:800;font-size:12px;color:#374151">NEUTRAL</span>
-              <span style="font-size:11px;color:#374151"><span style="color:#10b981">&#9650; +2</span></span>
+              <span style="font-weight:800;font-size:12px;color:#991b1b">BEAR</span>
+              <span style="font-size:11px;color:#991b1b"><span style="color:#ef4444">&#9660; -4</span></span>
             </div>
             <div style="background:rgba(0,0,0,.1);border-radius:99px;height:5px">
-              <div style="background:#10b981;border-radius:99px;height:5px;width:57%;transition:width .3s"></div>
+              <div style="background:#ef4444;border-radius:99px;height:5px;width:28%;transition:width .3s"></div>
             </div>
-            <div style="font-size:11px;color:#374151;margin-top:4px;font-family:'DM Mono',monospace">Score: +1</div>
+            <div style="font-size:11px;color:#991b1b;margin-top:4px;font-family:'DM Mono',monospace">Score: -3</div>
           </div>
           <div style="display:flex;justify-content:space-between;align-items:center;font-size:11px">
             <span style="color:#9ca3af">Signal: <strong style="color:#111">SMH</strong> &rarr; <strong style="color:#111">SOXL</strong></span>
@@ -229,8 +267,8 @@
           
         <div class="tooltip-content" style="display:none;position:absolute;z-index:99;background:#1f2937;border-radius:8px;padding:12px 14px;min-width:200px;box-shadow:0 8px 24px rgba(0,0,0,.3);top:0;left:105%">
           <div style="font-weight:700;color:#fff;margin-bottom:8px;font-size:12px">Semiconductors Breakdown</div>
-          <table><tr><td style="padding:2px 8px 2px 0;color:#d1d5db;font-size:11px">Trend (MA50)</td><td style="padding:2px 0;color:#10b981;font-weight:700;font-size:11px">+2</td></tr><tr><td style="padding:2px 8px 2px 0;color:#d1d5db;font-size:11px">Trend Ignition</td><td style="padding:2px 0;color:#10b981;font-weight:700;font-size:11px">+1</td></tr><tr><td style="padding:2px 8px 2px 0;color:#d1d5db;font-size:11px">Momentum</td><td style="padding:2px 0;color:#9ca3af;font-weight:700;font-size:11px">+0</td></tr><tr><td style="padding:2px 8px 2px 0;color:#d1d5db;font-size:11px">Rel. Strength</td><td style="padding:2px 0;color:#ef4444;font-weight:700;font-size:11px">-1</td></tr><tr><td style="padding:2px 8px 2px 0;color:#d1d5db;font-size:11px">RS Persistence</td><td style="padding:2px 0;color:#ef4444;font-weight:700;font-size:11px">-1</td></tr><tr><td style="padding:2px 8px 2px 0;color:#d1d5db;font-size:11px">Exhaustion</td><td style="padding:2px 0;color:#9ca3af;font-weight:700;font-size:11px">+0</td></tr><tr><td style="padding:2px 8px 2px 0;color:#d1d5db;font-size:11px">Volatility</td><td style="padding:2px 0;color:#9ca3af;font-weight:700;font-size:11px">+0</td></tr></table>
-          <div style="border-top:1px solid #374151;margin-top:8px;padding-top:8px;font-weight:700;color:#fff;font-size:12px">Total: +1</div>
+          <table><tr><td style="padding:2px 8px 2px 0;color:#d1d5db;font-size:11px">Trend (MA50)</td><td style="padding:2px 0;color:#ef4444;font-weight:700;font-size:11px">-2</td></tr><tr><td style="padding:2px 8px 2px 0;color:#d1d5db;font-size:11px">Trend Ignition</td><td style="padding:2px 0;color:#10b981;font-weight:700;font-size:11px">+1</td></tr><tr><td style="padding:2px 8px 2px 0;color:#d1d5db;font-size:11px">Momentum</td><td style="padding:2px 0;color:#9ca3af;font-weight:700;font-size:11px">+0</td></tr><tr><td style="padding:2px 8px 2px 0;color:#d1d5db;font-size:11px">Rel. Strength</td><td style="padding:2px 0;color:#ef4444;font-weight:700;font-size:11px">-1</td></tr><tr><td style="padding:2px 8px 2px 0;color:#d1d5db;font-size:11px">RS Persistence</td><td style="padding:2px 0;color:#ef4444;font-weight:700;font-size:11px">-1</td></tr><tr><td style="padding:2px 8px 2px 0;color:#d1d5db;font-size:11px">Exhaustion</td><td style="padding:2px 0;color:#9ca3af;font-weight:700;font-size:11px">+0</td></tr><tr><td style="padding:2px 8px 2px 0;color:#d1d5db;font-size:11px">Volatility</td><td style="padding:2px 0;color:#9ca3af;font-weight:700;font-size:11px">+0</td></tr></table>
+          <div style="border-top:1px solid #374151;margin-top:8px;padding-top:8px;font-weight:700;color:#fff;font-size:12px">Total: -3</div>
         </div>
         </div>
         <div class="sector-card" style="background:#fff;border-radius:12px;padding:18px;flex:1;min-width:160px;position:relative;cursor:pointer;box-shadow:0 1px 3px rgba(0,0,0,.08);transition:box-shadow .15s"
@@ -262,40 +300,40 @@
              onmouseenter="this.querySelector('.tooltip-content').style.display='block'"
              onmouseleave="this.querySelector('.tooltip-content').style.display='none'">
           <div style="font-weight:700;font-size:13px;margin-bottom:10px;color:#111">Biotechnology</div>
-          <div style="background:#d1fae5;border-radius:8px;padding:8px 10px;margin-bottom:10px">
+          <div style="background:#e5e7eb;border-radius:8px;padding:8px 10px;margin-bottom:10px">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-              <span style="font-weight:800;font-size:12px;color:#065f46">BULL</span>
-              <span style="font-size:11px;color:#065f46"><span style="color:#ef4444">&#9660; -2</span></span>
+              <span style="font-weight:800;font-size:12px;color:#374151">NEUTRAL</span>
+              <span style="font-size:11px;color:#374151"><span style="color:#ef4444">&#9660; -3</span></span>
             </div>
             <div style="background:rgba(0,0,0,.1);border-radius:99px;height:5px">
-              <div style="background:#10b981;border-radius:99px;height:5px;width:78%;transition:width .3s"></div>
+              <div style="background:#10b981;border-radius:99px;height:5px;width:57%;transition:width .3s"></div>
             </div>
-            <div style="font-size:11px;color:#065f46;margin-top:4px;font-family:'DM Mono',monospace">Score: +4</div>
+            <div style="font-size:11px;color:#374151;margin-top:4px;font-family:'DM Mono',monospace">Score: +1</div>
           </div>
           <div style="display:flex;justify-content:space-between;align-items:center;font-size:11px">
             <span style="color:#9ca3af">Signal: <strong style="color:#111">XBI</strong> &rarr; <strong style="color:#111">LABU</strong></span>
-            <span><span style="color:#10b981">&#10003; Tradable</span></span>
+            <span><span style="color:#ef4444">&#10007; Not tradable</span></span>
           </div>
           
         <div class="tooltip-content" style="display:none;position:absolute;z-index:99;background:#1f2937;border-radius:8px;padding:12px 14px;min-width:200px;box-shadow:0 8px 24px rgba(0,0,0,.3);top:0;left:105%">
           <div style="font-weight:700;color:#fff;margin-bottom:8px;font-size:12px">Biotechnology Breakdown</div>
-          <table><tr><td style="padding:2px 8px 2px 0;color:#d1d5db;font-size:11px">Trend (MA50)</td><td style="padding:2px 0;color:#10b981;font-weight:700;font-size:11px">+2</td></tr><tr><td style="padding:2px 8px 2px 0;color:#d1d5db;font-size:11px">Trend Ignition</td><td style="padding:2px 0;color:#10b981;font-weight:700;font-size:11px">+1</td></tr><tr><td style="padding:2px 8px 2px 0;color:#d1d5db;font-size:11px">Momentum</td><td style="padding:2px 0;color:#9ca3af;font-weight:700;font-size:11px">+0</td></tr><tr><td style="padding:2px 8px 2px 0;color:#d1d5db;font-size:11px">Rel. Strength</td><td style="padding:2px 0;color:#10b981;font-weight:700;font-size:11px">+1</td></tr><tr><td style="padding:2px 8px 2px 0;color:#d1d5db;font-size:11px">RS Persistence</td><td style="padding:2px 0;color:#10b981;font-weight:700;font-size:11px">+1</td></tr><tr><td style="padding:2px 8px 2px 0;color:#d1d5db;font-size:11px">Exhaustion</td><td style="padding:2px 0;color:#ef4444;font-weight:700;font-size:11px">-1</td></tr><tr><td style="padding:2px 8px 2px 0;color:#d1d5db;font-size:11px">Volatility</td><td style="padding:2px 0;color:#9ca3af;font-weight:700;font-size:11px">+0</td></tr></table>
-          <div style="border-top:1px solid #374151;margin-top:8px;padding-top:8px;font-weight:700;color:#fff;font-size:12px">Total: +4</div>
+          <table><tr><td style="padding:2px 8px 2px 0;color:#d1d5db;font-size:11px">Trend (MA50)</td><td style="padding:2px 0;color:#10b981;font-weight:700;font-size:11px">+2</td></tr><tr><td style="padding:2px 8px 2px 0;color:#d1d5db;font-size:11px">Trend Ignition</td><td style="padding:2px 0;color:#10b981;font-weight:700;font-size:11px">+1</td></tr><tr><td style="padding:2px 8px 2px 0;color:#d1d5db;font-size:11px">Momentum</td><td style="padding:2px 0;color:#9ca3af;font-weight:700;font-size:11px">+0</td></tr><tr><td style="padding:2px 8px 2px 0;color:#d1d5db;font-size:11px">Rel. Strength</td><td style="padding:2px 0;color:#ef4444;font-weight:700;font-size:11px">-1</td></tr><tr><td style="padding:2px 8px 2px 0;color:#d1d5db;font-size:11px">RS Persistence</td><td style="padding:2px 0;color:#9ca3af;font-weight:700;font-size:11px">+0</td></tr><tr><td style="padding:2px 8px 2px 0;color:#d1d5db;font-size:11px">Exhaustion</td><td style="padding:2px 0;color:#ef4444;font-weight:700;font-size:11px">-1</td></tr><tr><td style="padding:2px 8px 2px 0;color:#d1d5db;font-size:11px">Volatility</td><td style="padding:2px 0;color:#9ca3af;font-weight:700;font-size:11px">+0</td></tr></table>
+          <div style="border-top:1px solid #374151;margin-top:8px;padding-top:8px;font-weight:700;color:#fff;font-size:12px">Total: +1</div>
         </div>
         </div>
         <div class="sector-card" style="background:#fff;border-radius:12px;padding:18px;flex:1;min-width:160px;position:relative;cursor:pointer;box-shadow:0 1px 3px rgba(0,0,0,.08);transition:box-shadow .15s"
              onmouseenter="this.querySelector('.tooltip-content').style.display='block'"
              onmouseleave="this.querySelector('.tooltip-content').style.display='none'">
           <div style="font-weight:700;font-size:13px;margin-bottom:10px;color:#111">Communication Services</div>
-          <div style="background:#fee2e2;border-radius:8px;padding:8px 10px;margin-bottom:10px">
+          <div style="background:#e5e7eb;border-radius:8px;padding:8px 10px;margin-bottom:10px">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-              <span style="font-weight:800;font-size:12px;color:#991b1b">BEAR</span>
-              <span style="font-size:11px;color:#991b1b"><span style="color:#9ca3af">&#9644; 0</span></span>
+              <span style="font-weight:800;font-size:12px;color:#374151">NEUTRAL</span>
+              <span style="font-size:11px;color:#374151"><span style="color:#10b981">&#9650; +1</span></span>
             </div>
             <div style="background:rgba(0,0,0,.1);border-radius:99px;height:5px">
-              <div style="background:#ef4444;border-radius:99px;height:5px;width:28%;transition:width .3s"></div>
+              <div style="background:#ef4444;border-radius:99px;height:5px;width:35%;transition:width .3s"></div>
             </div>
-            <div style="font-size:11px;color:#991b1b;margin-top:4px;font-family:'DM Mono',monospace">Score: -3</div>
+            <div style="font-size:11px;color:#374151;margin-top:4px;font-family:'DM Mono',monospace">Score: -2</div>
           </div>
           <div style="display:flex;justify-content:space-between;align-items:center;font-size:11px">
             <span style="color:#9ca3af">Signal: <strong style="color:#111">XLC</strong> &rarr; <strong style="color:#111">LTL</strong></span>
@@ -304,8 +342,8 @@
           
         <div class="tooltip-content" style="display:none;position:absolute;z-index:99;background:#1f2937;border-radius:8px;padding:12px 14px;min-width:200px;box-shadow:0 8px 24px rgba(0,0,0,.3);top:0;left:105%">
           <div style="font-weight:700;color:#fff;margin-bottom:8px;font-size:12px">Communication Services Breakdown</div>
-          <table><tr><td style="padding:2px 8px 2px 0;color:#d1d5db;font-size:11px">Trend (MA50)</td><td style="padding:2px 0;color:#ef4444;font-weight:700;font-size:11px">-2</td></tr><tr><td style="padding:2px 8px 2px 0;color:#d1d5db;font-size:11px">Trend Ignition</td><td style="padding:2px 0;color:#ef4444;font-weight:700;font-size:11px">-1</td></tr><tr><td style="padding:2px 8px 2px 0;color:#d1d5db;font-size:11px">Momentum</td><td style="padding:2px 0;color:#9ca3af;font-weight:700;font-size:11px">+0</td></tr><tr><td style="padding:2px 8px 2px 0;color:#d1d5db;font-size:11px">Rel. Strength</td><td style="padding:2px 0;color:#10b981;font-weight:700;font-size:11px">+1</td></tr><tr><td style="padding:2px 8px 2px 0;color:#d1d5db;font-size:11px">RS Persistence</td><td style="padding:2px 0;color:#9ca3af;font-weight:700;font-size:11px">+0</td></tr><tr><td style="padding:2px 8px 2px 0;color:#d1d5db;font-size:11px">Exhaustion</td><td style="padding:2px 0;color:#ef4444;font-weight:700;font-size:11px">-1</td></tr><tr><td style="padding:2px 8px 2px 0;color:#d1d5db;font-size:11px">Volatility</td><td style="padding:2px 0;color:#9ca3af;font-weight:700;font-size:11px">+0</td></tr></table>
-          <div style="border-top:1px solid #374151;margin-top:8px;padding-top:8px;font-weight:700;color:#fff;font-size:12px">Total: -3</div>
+          <table><tr><td style="padding:2px 8px 2px 0;color:#d1d5db;font-size:11px">Trend (MA50)</td><td style="padding:2px 0;color:#ef4444;font-weight:700;font-size:11px">-2</td></tr><tr><td style="padding:2px 8px 2px 0;color:#d1d5db;font-size:11px">Trend Ignition</td><td style="padding:2px 0;color:#ef4444;font-weight:700;font-size:11px">-1</td></tr><tr><td style="padding:2px 8px 2px 0;color:#d1d5db;font-size:11px">Momentum</td><td style="padding:2px 0;color:#9ca3af;font-weight:700;font-size:11px">+0</td></tr><tr><td style="padding:2px 8px 2px 0;color:#d1d5db;font-size:11px">Rel. Strength</td><td style="padding:2px 0;color:#10b981;font-weight:700;font-size:11px">+1</td></tr><tr><td style="padding:2px 8px 2px 0;color:#d1d5db;font-size:11px">RS Persistence</td><td style="padding:2px 0;color:#9ca3af;font-weight:700;font-size:11px">+0</td></tr><tr><td style="padding:2px 8px 2px 0;color:#d1d5db;font-size:11px">Exhaustion</td><td style="padding:2px 0;color:#9ca3af;font-weight:700;font-size:11px">+0</td></tr><tr><td style="padding:2px 8px 2px 0;color:#d1d5db;font-size:11px">Volatility</td><td style="padding:2px 0;color:#9ca3af;font-weight:700;font-size:11px">+0</td></tr></table>
+          <div style="border-top:1px solid #374151;margin-top:8px;padding-top:8px;font-weight:700;color:#fff;font-size:12px">Total: -2</div>
         </div>
         </div>
         <div class="sector-card" style="background:#fff;border-radius:12px;padding:18px;flex:1;min-width:160px;position:relative;cursor:pointer;box-shadow:0 1px 3px rgba(0,0,0,.08);transition:box-shadow .15s"
@@ -315,7 +353,7 @@
           <div style="background:#e5e7eb;border-radius:8px;padding:8px 10px;margin-bottom:10px">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
               <span style="font-weight:800;font-size:12px;color:#374151">NEUTRAL</span>
-              <span style="font-size:11px;color:#374151"><span style="color:#ef4444">&#9660; -2</span></span>
+              <span style="font-size:11px;color:#374151"><span style="color:#9ca3af">&#9644; 0</span></span>
             </div>
             <div style="background:rgba(0,0,0,.1);border-radius:99px;height:5px">
               <div style="background:#10b981;border-radius:99px;height:5px;width:64%;transition:width .3s"></div>
@@ -329,7 +367,7 @@
           
         <div class="tooltip-content" style="display:none;position:absolute;z-index:99;background:#1f2937;border-radius:8px;padding:12px 14px;min-width:200px;box-shadow:0 8px 24px rgba(0,0,0,.3);top:0;left:105%">
           <div style="font-weight:700;color:#fff;margin-bottom:8px;font-size:12px">Healthcare Breakdown</div>
-          <table><tr><td style="padding:2px 8px 2px 0;color:#d1d5db;font-size:11px">Trend (MA50)</td><td style="padding:2px 0;color:#10b981;font-weight:700;font-size:11px">+2</td></tr><tr><td style="padding:2px 8px 2px 0;color:#d1d5db;font-size:11px">Trend Ignition</td><td style="padding:2px 0;color:#10b981;font-weight:700;font-size:11px">+1</td></tr><tr><td style="padding:2px 8px 2px 0;color:#d1d5db;font-size:11px">Momentum</td><td style="padding:2px 0;color:#9ca3af;font-weight:700;font-size:11px">+0</td></tr><tr><td style="padding:2px 8px 2px 0;color:#d1d5db;font-size:11px">Rel. Strength</td><td style="padding:2px 0;color:#9ca3af;font-weight:700;font-size:11px">+0</td></tr><tr><td style="padding:2px 8px 2px 0;color:#d1d5db;font-size:11px">RS Persistence</td><td style="padding:2px 0;color:#9ca3af;font-weight:700;font-size:11px">+0</td></tr><tr><td style="padding:2px 8px 2px 0;color:#d1d5db;font-size:11px">Exhaustion</td><td style="padding:2px 0;color:#ef4444;font-weight:700;font-size:11px">-1</td></tr><tr><td style="padding:2px 8px 2px 0;color:#d1d5db;font-size:11px">Volatility</td><td style="padding:2px 0;color:#9ca3af;font-weight:700;font-size:11px">+0</td></tr></table>
+          <table><tr><td style="padding:2px 8px 2px 0;color:#d1d5db;font-size:11px">Trend (MA50)</td><td style="padding:2px 0;color:#10b981;font-weight:700;font-size:11px">+2</td></tr><tr><td style="padding:2px 8px 2px 0;color:#d1d5db;font-size:11px">Trend Ignition</td><td style="padding:2px 0;color:#10b981;font-weight:700;font-size:11px">+1</td></tr><tr><td style="padding:2px 8px 2px 0;color:#d1d5db;font-size:11px">Momentum</td><td style="padding:2px 0;color:#9ca3af;font-weight:700;font-size:11px">+0</td></tr><tr><td style="padding:2px 8px 2px 0;color:#d1d5db;font-size:11px">Rel. Strength</td><td style="padding:2px 0;color:#ef4444;font-weight:700;font-size:11px">-1</td></tr><tr><td style="padding:2px 8px 2px 0;color:#d1d5db;font-size:11px">RS Persistence</td><td style="padding:2px 0;color:#9ca3af;font-weight:700;font-size:11px">+0</td></tr><tr><td style="padding:2px 8px 2px 0;color:#d1d5db;font-size:11px">Exhaustion</td><td style="padding:2px 0;color:#9ca3af;font-weight:700;font-size:11px">+0</td></tr><tr><td style="padding:2px 8px 2px 0;color:#d1d5db;font-size:11px">Volatility</td><td style="padding:2px 0;color:#9ca3af;font-weight:700;font-size:11px">+0</td></tr></table>
           <div style="border-top:1px solid #374151;margin-top:8px;padding-top:8px;font-weight:700;color:#fff;font-size:12px">Total: +2</div>
         </div>
         </div></div>
@@ -577,8 +615,8 @@
     </div>
     <div style="margin-bottom:6px">
       <strong style="color:#374151">Data:</strong>
-      Last market data: 2026-07-10 &nbsp;|&nbsp;
-      Dashboard generated: 2026-07-10 22:59 ET &nbsp;|&nbsp;
+      Last market data: 2026-07-13 &nbsp;|&nbsp;
+      Dashboard generated: 2026-07-13 22:56 ET &nbsp;|&nbsp;
       Source: Yahoo Finance via yfinance
     </div>
     <div style="background:#fef9c3;border-radius:8px;padding:10px 14px;margin-top:10px;color:#854d0e">
