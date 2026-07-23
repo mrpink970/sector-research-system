@@ -13,3 +13,4 @@ Healthcare,CURE,long,2026-05-27,93.1,2026-06-18,93.45,47,Bull,4.0,Stop,16.45,6.2
 Semiconductors,SOXL,long,2026-06-16,267.13,2026-06-23,236.0,19,Strong Bull,7.0,Stop,-591.47,2.302,-593.77,-11.6535,7,trailing_stop
 Semiconductors,SOXL,long,2026-06-23,236.0,2026-06-26,226.24,20,Bull,5.0,Stop,-195.2,0.9175,-196.12,-4.1356,3,trailing_stop
 Biotechnology,LABU,long,2026-06-18,211.2,2026-07-10,299.7,25,Strong Bull,7.0,Stop,2212.5,7.5265,2204.97,41.9034,22,trailing_stop
+Biotechnology,LABU,long,2026-07-13,280.64,2026-07-23,243.96,21,Bull,4.0,Neutral,-770.28,3.8186,-774.1,-13.0701,10,signal_change
