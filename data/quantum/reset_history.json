@@ -506,6 +506,19 @@
         "max_hold_days": 5,
         "time_stop_min_return": 3.0
       }
+    },
+    {
+      "reset_date": "2026-06-26",
+      "reset_reason": "System reset with improved parameters: 25% trailing stop, 18.0 min score, 35/35/30 weights, 5-day cooldown, 5-day time stop",
+      "previous_return": "-690.8%",
+      "parameters": {
+        "trailing_stop_pct": 0.25,
+        "min_score": 18.0,
+        "weights": "0.35/0.35/0.3",
+        "cooldown_days": 5,
+        "max_hold_days": 5,
+        "time_stop_min_return": 3.0
+      }
     }
   ]
 }
