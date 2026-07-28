@@ -6971,17 +6971,45 @@ date,sector,signal_etf,selected_etf,direction,total_score,signal_state,score_cha
 2026-07-23,Nasdaq Growth,QQQ,SQQQ,short,-4,Bear,-1,8
 2026-07-23,Semiconductors,SMH,SOXS,short,-4,Bear,-1,8
 2026-07-23,Consumer Discretionary,XLY,SCC,short,-6,Strong Bear,-3,9
-2026-07-27,Consumer Staples,XLP,UGE,long,4,Bull,5,1
-2026-07-27,Energy,XLE,ERX,long,4,Bull,-2,1
-2026-07-27,Financials,XLF,FAS,long,4,Bull,0,1
-2026-07-27,Healthcare,XLV,CURE,long,4,Bull,1,1
-2026-07-27,Real Estate,XLRE,DRN,long,4,Bull,0,1
-2026-07-27,Utilities,XLU,UTSL,long,4,Bull,0,1
-2026-07-27,Industrials,XLI,,none,2,Neutral,0,2
-2026-07-27,Materials,XLB,,none,2,Neutral,5,2
-2026-07-27,Biotechnology,XBI,,none,1,Neutral,0,3
-2026-07-27,Communication Services,XLC,,none,-1,Neutral,3,4
-2026-07-27,Consumer Discretionary,XLY,SCC,short,-4,Bear,2,5
-2026-07-27,Nasdaq Growth,QQQ,SQQQ,short,-4,Bear,0,5
-2026-07-27,Semiconductors,SMH,SOXS,short,-4,Bear,0,5
-2026-07-27,Technology,XLK,TECS,short,-4,Bear,-1,5
+2026-07-24,Energy,XLE,ERX,long,4,Bull,-2,1
+2026-07-24,Financials,XLF,FAS,long,4,Bull,0,1
+2026-07-24,Healthcare,XLV,CURE,long,4,Bull,1,1
+2026-07-24,Real Estate,XLRE,DRN,long,4,Bull,0,1
+2026-07-24,Utilities,XLU,UTSL,long,4,Bull,0,1
+2026-07-24,Industrials,XLI,,none,2,Neutral,0,2
+2026-07-24,Materials,XLB,,none,2,Neutral,5,2
+2026-07-24,Biotechnology,XBI,,none,1,Neutral,0,3
+2026-07-24,Consumer Staples,XLP,,none,0,Neutral,1,4
+2026-07-24,Communication Services,XLC,,none,-2,Neutral,2,5
+2026-07-24,Nasdaq Growth,QQQ,SQQQ,short,-4,Bear,0,6
+2026-07-24,Semiconductors,SMH,SOXS,short,-4,Bear,0,6
+2026-07-24,Technology,XLK,TECS,short,-4,Bear,-1,6
+2026-07-24,Consumer Discretionary,XLY,SCC,short,-6,Strong Bear,0,7
+2026-07-27,Financials,XLF,FAS,long,5,Bull,1,1
+2026-07-27,Real Estate,XLRE,DRN,long,5,Bull,1,1
+2026-07-27,Consumer Staples,XLP,UGE,long,4,Bull,4,2
+2026-07-27,Energy,XLE,ERX,long,4,Bull,0,2
+2026-07-27,Healthcare,XLV,CURE,long,4,Bull,0,2
+2026-07-27,Biotechnology,XBI,LABU,long,3,Bull,2,3
+2026-07-27,Industrials,XLI,DUSL,long,3,Bull,1,3
+2026-07-27,Utilities,XLU,UTSL,long,3,Bull,-1,3
+2026-07-27,Materials,XLB,,none,2,Neutral,0,4
+2026-07-27,Communication Services,XLC,,short,-3,Bear,-1,5
+2026-07-27,Technology,XLK,TECS,short,-4,Bear,0,6
+2026-07-27,Consumer Discretionary,XLY,SCC,short,-5,Bear,1,7
+2026-07-27,Nasdaq Growth,QQQ,SQQQ,short,-5,Bear,-1,7
+2026-07-27,Semiconductors,SMH,SOXS,short,-5,Bear,-1,7
+2026-07-28,Healthcare,XLV,CURE,long,7,Strong Bull,3,1
+2026-07-28,Consumer Staples,XLP,UGE,long,5,Bull,1,2
+2026-07-28,Financials,XLF,FAS,long,5,Bull,0,2
+2026-07-28,Industrials,XLI,DUSL,long,5,Bull,2,2
+2026-07-28,Materials,XLB,UYM,long,5,Bull,3,2
+2026-07-28,Real Estate,XLRE,DRN,long,5,Bull,0,2
+2026-07-28,Energy,XLE,ERX,long,4,Bull,0,3
+2026-07-28,Utilities,XLU,UTSL,long,3,Bull,0,4
+2026-07-28,Biotechnology,XBI,,none,0,Neutral,-3,5
+2026-07-28,Communication Services,XLC,,none,-1,Neutral,2,6
+2026-07-28,Consumer Discretionary,XLY,SCC,short,-3,Bear,2,7
+2026-07-28,Nasdaq Growth,QQQ,SQQQ,short,-7,Strong Bear,-2,8
+2026-07-28,Semiconductors,SMH,SOXS,short,-7,Strong Bear,-2,8
+2026-07-28,Technology,XLK,TECS,short,-7,Strong Bear,-3,8

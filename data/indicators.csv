@@ -6971,17 +6971,45 @@ date,sector,signal_etf,trend_score,trend_ignition_score,momentum_score,relative_
 2026-07-23,Semiconductors,SMH,-2,-1,0,-1,0,0,0
 2026-07-23,Technology,XLK,-2,-1,0,0,0,0,0
 2026-07-23,Utilities,XLU,2,1,0,1,0,0,0
-2026-07-27,Biotechnology,XBI,2,1,0,-1,-1,0,0
-2026-07-27,Communication Services,XLC,-2,1,0,0,0,0,0
-2026-07-27,Consumer Discretionary,XLY,-2,-1,0,-1,0,0,0
+2026-07-24,Biotechnology,XBI,2,1,0,-1,-1,0,0
+2026-07-24,Communication Services,XLC,-2,1,0,-1,0,0,0
+2026-07-24,Consumer Discretionary,XLY,-2,-1,-2,-1,0,0,0
+2026-07-24,Consumer Staples,XLP,-2,1,0,1,0,0,0
+2026-07-24,Energy,XLE,2,1,0,1,1,-1,0
+2026-07-24,Financials,XLF,2,1,0,1,0,0,0
+2026-07-24,Healthcare,XLV,2,1,0,1,0,0,0
+2026-07-24,Industrials,XLI,2,-1,0,1,0,0,0
+2026-07-24,Materials,XLB,2,-1,0,1,0,0,0
+2026-07-24,Nasdaq Growth,QQQ,-2,-1,0,-1,0,0,0
+2026-07-24,Real Estate,XLRE,2,1,0,1,0,0,0
+2026-07-24,Semiconductors,SMH,-2,-1,0,-1,0,0,0
+2026-07-24,Technology,XLK,-2,-1,0,-1,0,0,0
+2026-07-24,Utilities,XLU,2,1,0,1,0,0,0
+2026-07-27,Biotechnology,XBI,2,1,0,0,0,0,0
+2026-07-27,Communication Services,XLC,-2,1,0,-1,-1,0,0
+2026-07-27,Consumer Discretionary,XLY,-2,-1,0,-1,-1,0,0
 2026-07-27,Consumer Staples,XLP,2,1,0,1,0,0,0
 2026-07-27,Energy,XLE,2,1,0,1,1,-1,0
-2026-07-27,Financials,XLF,2,1,0,1,0,0,0
+2026-07-27,Financials,XLF,2,1,0,1,1,0,0
 2026-07-27,Healthcare,XLV,2,1,0,1,0,0,0
-2026-07-27,Industrials,XLI,2,-1,0,1,0,0,0
+2026-07-27,Industrials,XLI,2,-1,0,1,1,0,0
 2026-07-27,Materials,XLB,2,-1,0,1,0,0,0
-2026-07-27,Nasdaq Growth,QQQ,-2,-1,0,-1,0,0,0
-2026-07-27,Real Estate,XLRE,2,1,0,1,0,0,0
-2026-07-27,Semiconductors,SMH,-2,-1,0,-1,0,0,0
+2026-07-27,Nasdaq Growth,QQQ,-2,-1,0,-1,-1,0,0
+2026-07-27,Real Estate,XLRE,2,1,0,1,1,0,0
+2026-07-27,Semiconductors,SMH,-2,-1,0,-1,-1,0,0
 2026-07-27,Technology,XLK,-2,-1,0,-1,0,0,0
-2026-07-27,Utilities,XLU,2,1,0,1,0,0,0
+2026-07-27,Utilities,XLU,2,1,0,0,0,0,0
+2026-07-28,Biotechnology,XBI,2,-1,0,-1,0,0,0
+2026-07-28,Communication Services,XLC,-2,1,0,0,0,0,0
+2026-07-28,Consumer Discretionary,XLY,-2,-1,0,0,0,0,0
+2026-07-28,Consumer Staples,XLP,2,1,0,1,1,0,0
+2026-07-28,Energy,XLE,2,1,0,1,1,-1,0
+2026-07-28,Financials,XLF,2,1,0,1,1,0,0
+2026-07-28,Healthcare,XLV,2,1,2,1,1,0,0
+2026-07-28,Industrials,XLI,2,1,0,1,1,0,0
+2026-07-28,Materials,XLB,2,-1,2,1,1,0,0
+2026-07-28,Nasdaq Growth,QQQ,-2,-1,-2,-1,-1,0,0
+2026-07-28,Real Estate,XLRE,2,1,0,1,1,0,0
+2026-07-28,Semiconductors,SMH,-2,-1,-2,-1,-1,0,0
+2026-07-28,Technology,XLK,-2,-1,-2,-1,-1,0,0
+2026-07-28,Utilities,XLU,2,1,0,0,0,0,0
