@@ -1,1 +1,2 @@
 ticker,regime,entry_date,entry_price,shares,highest_price,trailing_stop,rank_score_at_entry
+TQQQ,bull,2026-07-31,65.735,193,66.77,58.7576,3.5235
