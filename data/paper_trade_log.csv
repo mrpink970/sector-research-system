@@ -14,3 +14,5 @@ Semiconductors,SOXL,long,2026-06-16,267.13,2026-06-23,236.0,19,Strong Bull,7.0,S
 Semiconductors,SOXL,long,2026-06-23,236.0,2026-06-26,226.24,20,Bull,5.0,Stop,-195.2,0.9175,-196.12,-4.1356,3,trailing_stop
 Biotechnology,LABU,long,2026-06-18,211.2,2026-07-10,299.7,25,Strong Bull,7.0,Stop,2212.5,7.5265,2204.97,41.9034,22,trailing_stop
 Biotechnology,LABU,long,2026-07-13,280.64,2026-07-23,243.96,21,Bull,4.0,Neutral,-770.28,3.8186,-774.1,-13.0701,10,signal_change
+Communication Services,LTL,long,2026-08-05,24.93,2026-08-17,24.56,227,Bull,3.0,Neutral,-83.99,4.4002,-88.39,-1.4842,12,signal_change
+Consumer Discretionary,WANT,long,2026-08-05,43.85,2026-08-17,42.55,129,Bull,3.0,Neutral,-167.7,4.3982,-172.1,-2.9647,12,signal_change
