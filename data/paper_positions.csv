@@ -1,3 +1,3 @@
 sector,ticker,direction,entry_date,entry_price,shares,highest_price,stop_pct,trailing_stop,entry_signal,entry_strength
-Healthcare,CURE,long,2026-08-17,126.54,43,134.97,0.14,116.0742,Bull,3.0
-Biotechnology,LABU,long,2026-08-18,281.27,19,292.65,0.18,239.973,Bull,3.0
+Healthcare,CURE,long,2026-08-17,126.54,43,150.0,0.11,133.5,Bull,3.0
+Biotechnology,LABU,long,2026-08-18,281.27,19,341.91,0.12,300.8808,Bull,3.0
