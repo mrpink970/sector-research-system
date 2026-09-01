@@ -17,3 +17,4 @@ Biotechnology,LABU,long,2026-07-13,280.64,2026-07-23,243.96,21,Bull,4.0,Neutral,
 Communication Services,LTL,long,2026-08-05,24.93,2026-08-17,24.56,227,Bull,3.0,Neutral,-83.99,4.4002,-88.39,-1.4842,12,signal_change
 Consumer Discretionary,WANT,long,2026-08-05,43.85,2026-08-17,42.55,129,Bull,3.0,Neutral,-167.7,4.3982,-172.1,-2.9647,12,signal_change
 Biotechnology,LABU,long,2026-08-18,281.27,2026-08-20,300.8984,19,Bull,3.0,Stop,372.94,0.6925,372.25,6.9785,2,trailing_stop
+Healthcare,CURE,long,2026-08-17,126.54,2026-08-31,133.5,43,Bull,3.0,Stop,299.28,4.9359,294.34,5.5002,14,trailing_stop
