@@ -6985,17 +6985,31 @@ date,sector,signal_etf,selected_etf,direction,total_score,signal_state,score_cha
 2026-09-11,Industrials,XLI,SIJ,short,-5,Bear,0,5
 2026-09-11,Materials,XLB,SMN,short,-5,Bear,2,5
 2026-09-11,Healthcare,XLV,RXD,short,-7,Strong Bear,-2,6
-2026-09-14,Biotechnology,XBI,,none,0,Neutral,5,1
-2026-09-14,Communication Services,XLC,,none,0,Neutral,-3,1
-2026-09-14,Consumer Discretionary,XLY,,none,0,Neutral,3,1
-2026-09-14,Consumer Staples,XLP,,none,0,Neutral,3,1
-2026-09-14,Energy,XLE,,none,0,Neutral,-4,1
-2026-09-14,Financials,XLF,,none,0,Neutral,-1,1
-2026-09-14,Healthcare,XLV,,none,0,Neutral,7,1
-2026-09-14,Industrials,XLI,,none,0,Neutral,5,1
-2026-09-14,Materials,XLB,,none,0,Neutral,5,1
-2026-09-14,Nasdaq Growth,QQQ,,none,0,Neutral,-1,1
-2026-09-14,Real Estate,XLRE,,none,0,Neutral,3,1
-2026-09-14,Semiconductors,SMH,,none,0,Neutral,3,1
-2026-09-14,Technology,XLK,,none,0,Neutral,-1,1
-2026-09-14,Utilities,XLU,,none,0,Neutral,3,1
+2026-09-14,Communication Services,XLC,LTL,long,4,Bull,1,1
+2026-09-14,Energy,XLE,ERX,long,4,Bull,0,1
+2026-09-14,Healthcare,XLV,,none,1,Neutral,8,2
+2026-09-14,Technology,XLK,,none,1,Neutral,0,2
+2026-09-14,Biotechnology,XBI,,none,-1,Neutral,4,3
+2026-09-14,Consumer Staples,XLP,SZK,short,-3,Bear,0,4
+2026-09-14,Financials,XLF,FAZ,short,-3,Bear,-4,4
+2026-09-14,Nasdaq Growth,QQQ,SQQQ,short,-3,Bear,-4,4
+2026-09-14,Real Estate,XLRE,DRV,short,-3,Bear,0,4
+2026-09-14,Utilities,XLU,SDP,short,-3,Bear,0,4
+2026-09-14,Consumer Discretionary,XLY,SCC,short,-4,Bear,-1,5
+2026-09-14,Industrials,XLI,SIJ,short,-5,Bear,0,6
+2026-09-14,Materials,XLB,SMN,short,-5,Bear,0,6
+2026-09-14,Semiconductors,SMH,SOXS,short,-5,Bear,-2,6
+2026-09-15,Energy,XLE,ERX,long,5,Bull,1,1
+2026-09-15,Communication Services,XLC,LTL,long,4,Bull,0,2
+2026-09-15,Healthcare,XLV,,none,1,Neutral,0,3
+2026-09-15,Technology,XLK,,none,1,Neutral,0,3
+2026-09-15,Consumer Staples,XLP,SZK,short,-3,Bear,0,4
+2026-09-15,Financials,XLF,FAZ,short,-3,Bear,0,4
+2026-09-15,Nasdaq Growth,QQQ,SQQQ,short,-3,Bear,0,4
+2026-09-15,Real Estate,XLRE,DRV,short,-3,Bear,0,4
+2026-09-15,Consumer Discretionary,XLY,SCC,short,-4,Bear,0,5
+2026-09-15,Industrials,XLI,SIJ,short,-5,Bear,0,6
+2026-09-15,Materials,XLB,SMN,short,-5,Bear,0,6
+2026-09-15,Semiconductors,SMH,SOXS,short,-5,Bear,0,6
+2026-09-15,Utilities,XLU,SDP,short,-5,Bear,-2,6
+2026-09-15,Biotechnology,XBI,LABD,short,-6,Strong Bear,-5,7
