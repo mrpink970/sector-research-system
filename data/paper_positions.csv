@@ -1,1 +1,2 @@
-
+sector,ticker,direction,entry_date,entry_price,shares,highest_price,stop_pct,trailing_stop,entry_signal,entry_strength
+Semiconductors,SOXL,long,2026-09-23,149.89,34,151.0,0.18,123.82,Bull,5.0
