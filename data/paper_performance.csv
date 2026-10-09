@@ -1,2 +1,2 @@
 total_trades,win_rate_pct,loss_rate_pct,average_gain_pct,average_loss_pct,largest_gain_pct,largest_loss_pct,total_return_pct,max_drawdown_pct,expectancy_per_trade_pct,gross_profit_dollars,gross_loss_dollars,total_margin_interest_dollars,net_profit_dollars
-22,45.4545,54.5455,20.943,8.2279,59.6447,-18.3348,110.6961,-31.6374,5.0316,8637.67,-5206.25,69.82,3361.6
+23,43.4783,56.5217,20.943,7.7918,59.6447,-18.3348,108.1368,-34.1967,4.7016,8637.67,-5336.68,74.77,3226.22
