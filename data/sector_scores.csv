@@ -6985,17 +6985,31 @@ date,sector,signal_etf,selected_etf,direction,total_score,signal_state,score_cha
 2026-10-23,Semiconductors,SMH,SOXS,short,-5,Bear,2,5
 2026-10-23,Technology,XLK,TECS,short,-5,Bear,0,5
 2026-10-23,Communication Services,XLC,,short,-6,Strong Bear,0,6
-2026-10-26,Biotechnology,XBI,,none,0,Neutral,3,1
-2026-10-26,Communication Services,XLC,,none,0,Neutral,6,1
-2026-10-26,Consumer Discretionary,XLY,,none,0,Neutral,-1,1
-2026-10-26,Consumer Staples,XLP,,none,0,Neutral,-4,1
-2026-10-26,Energy,XLE,,none,0,Neutral,-4,1
-2026-10-26,Financials,XLF,,none,0,Neutral,-1,1
-2026-10-26,Healthcare,XLV,,none,0,Neutral,-4,1
-2026-10-26,Industrials,XLI,,none,0,Neutral,3,1
-2026-10-26,Materials,XLB,,none,0,Neutral,-5,1
-2026-10-26,Nasdaq Growth,QQQ,,none,0,Neutral,5,1
-2026-10-26,Real Estate,XLRE,,none,0,Neutral,-1,1
-2026-10-26,Semiconductors,SMH,,none,0,Neutral,5,1
-2026-10-26,Technology,XLK,,none,0,Neutral,5,1
-2026-10-26,Utilities,XLU,,none,0,Neutral,-5,1
+2026-10-26,Consumer Discretionary,XLY,WANT,long,5,Bull,4,1
+2026-10-26,Consumer Staples,XLP,UGE,long,5,Bull,1,1
+2026-10-26,Energy,XLE,ERX,long,5,Bull,1,1
+2026-10-26,Materials,XLB,UYM,long,5,Bull,0,1
+2026-10-26,Utilities,XLU,UTSL,long,5,Bull,0,1
+2026-10-26,Healthcare,XLV,CURE,long,4,Bull,0,2
+2026-10-26,Financials,XLF,,none,1,Neutral,0,3
+2026-10-26,Real Estate,XLRE,,none,1,Neutral,0,3
+2026-10-26,Biotechnology,XBI,LABD,short,-3,Bear,0,4
+2026-10-26,Industrials,XLI,SIJ,short,-3,Bear,0,4
+2026-10-26,Nasdaq Growth,QQQ,SQQQ,short,-5,Bear,0,5
+2026-10-26,Semiconductors,SMH,SOXS,short,-5,Bear,0,5
+2026-10-26,Technology,XLK,TECS,short,-5,Bear,0,5
+2026-10-26,Communication Services,XLC,,short,-7,Strong Bear,-1,6
+2026-10-27,Biotechnology,XBI,,none,0,Neutral,3,1
+2026-10-27,Communication Services,XLC,,none,0,Neutral,7,1
+2026-10-27,Consumer Discretionary,XLY,,none,0,Neutral,-5,1
+2026-10-27,Consumer Staples,XLP,,none,0,Neutral,-5,1
+2026-10-27,Energy,XLE,,none,0,Neutral,-5,1
+2026-10-27,Financials,XLF,,none,0,Neutral,-1,1
+2026-10-27,Healthcare,XLV,,none,0,Neutral,-4,1
+2026-10-27,Industrials,XLI,,none,0,Neutral,3,1
+2026-10-27,Materials,XLB,,none,0,Neutral,-5,1
+2026-10-27,Nasdaq Growth,QQQ,,none,0,Neutral,5,1
+2026-10-27,Real Estate,XLRE,,none,0,Neutral,-1,1
+2026-10-27,Semiconductors,SMH,,none,0,Neutral,5,1
+2026-10-27,Technology,XLK,,none,0,Neutral,5,1
+2026-10-27,Utilities,XLU,,none,0,Neutral,-5,1

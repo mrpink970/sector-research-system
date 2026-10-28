@@ -6985,17 +6985,31 @@ date,sector,signal_etf,trend_score,trend_ignition_score,momentum_score,relative_
 2026-10-23,Semiconductors,SMH,-2,-1,0,-1,-1,0,0
 2026-10-23,Technology,XLK,-2,-1,0,-1,-1,0,0
 2026-10-23,Utilities,XLU,2,1,0,1,1,0,0
-2026-10-26,Biotechnology,XBI,0,0,0,0,0,0,0
-2026-10-26,Communication Services,XLC,0,0,0,0,0,0,0
-2026-10-26,Consumer Discretionary,XLY,0,0,0,0,0,0,0
-2026-10-26,Consumer Staples,XLP,0,0,0,0,0,0,0
-2026-10-26,Energy,XLE,0,0,0,0,0,0,0
-2026-10-26,Financials,XLF,0,0,0,0,0,0,0
-2026-10-26,Healthcare,XLV,0,0,0,0,0,0,0
-2026-10-26,Industrials,XLI,0,0,0,0,0,0,0
-2026-10-26,Materials,XLB,0,0,0,0,0,0,0
-2026-10-26,Nasdaq Growth,QQQ,0,0,0,0,0,0,0
-2026-10-26,Real Estate,XLRE,0,0,0,0,0,0,0
-2026-10-26,Semiconductors,SMH,0,0,0,0,0,0,0
-2026-10-26,Technology,XLK,0,0,0,0,0,0,0
-2026-10-26,Utilities,XLU,0,0,0,0,0,0,0
+2026-10-26,Biotechnology,XBI,-2,-1,0,0,0,0,0
+2026-10-26,Communication Services,XLC,-2,-1,-2,-1,-1,0,0
+2026-10-26,Consumer Discretionary,XLY,2,1,0,1,1,0,0
+2026-10-26,Consumer Staples,XLP,2,1,0,1,1,0,0
+2026-10-26,Energy,XLE,2,1,0,1,1,0,0
+2026-10-26,Financials,XLF,-2,1,0,1,1,0,0
+2026-10-26,Healthcare,XLV,2,1,0,1,1,-1,0
+2026-10-26,Industrials,XLI,-2,-1,0,0,0,0,0
+2026-10-26,Materials,XLB,2,1,0,1,1,0,0
+2026-10-26,Nasdaq Growth,QQQ,-2,-1,0,-1,-1,0,0
+2026-10-26,Real Estate,XLRE,-2,1,0,1,1,0,0
+2026-10-26,Semiconductors,SMH,-2,-1,0,-1,-1,0,0
+2026-10-26,Technology,XLK,-2,-1,0,-1,-1,0,0
+2026-10-26,Utilities,XLU,2,1,0,1,1,0,0
+2026-10-27,Biotechnology,XBI,0,0,0,0,0,0,0
+2026-10-27,Communication Services,XLC,0,0,0,0,0,0,0
+2026-10-27,Consumer Discretionary,XLY,0,0,0,0,0,0,0
+2026-10-27,Consumer Staples,XLP,0,0,0,0,0,0,0
+2026-10-27,Energy,XLE,0,0,0,0,0,0,0
+2026-10-27,Financials,XLF,0,0,0,0,0,0,0
+2026-10-27,Healthcare,XLV,0,0,0,0,0,0,0
+2026-10-27,Industrials,XLI,0,0,0,0,0,0,0
+2026-10-27,Materials,XLB,0,0,0,0,0,0,0
+2026-10-27,Nasdaq Growth,QQQ,0,0,0,0,0,0,0
+2026-10-27,Real Estate,XLRE,0,0,0,0,0,0,0
+2026-10-27,Semiconductors,SMH,0,0,0,0,0,0,0
+2026-10-27,Technology,XLK,0,0,0,0,0,0,0
+2026-10-27,Utilities,XLU,0,0,0,0,0,0,0
