@@ -6999,3 +6999,17 @@ date,sector,signal_etf,selected_etf,direction,total_score,signal_state,score_cha
 2026-11-02,Nasdaq Growth,QQQ,SQQQ,short,-6,Strong Bear,-3,6
 2026-11-02,Semiconductors,SMH,SOXS,short,-6,Strong Bear,-2,6
 2026-11-02,Technology,XLK,TECS,short,-6,Strong Bear,-3,6
+2026-11-03,Biotechnology,XBI,,none,0,Neutral,2,1
+2026-11-03,Communication Services,XLC,,none,0,Neutral,5,1
+2026-11-03,Consumer Discretionary,XLY,,none,0,Neutral,-5,1
+2026-11-03,Consumer Staples,XLP,,none,0,Neutral,-5,1
+2026-11-03,Energy,XLE,,none,0,Neutral,-3,1
+2026-11-03,Financials,XLF,,none,0,Neutral,-5,1
+2026-11-03,Healthcare,XLV,,none,0,Neutral,-5,1
+2026-11-03,Industrials,XLI,,none,0,Neutral,2,1
+2026-11-03,Materials,XLB,,none,0,Neutral,-7,1
+2026-11-03,Nasdaq Growth,QQQ,,none,0,Neutral,6,1
+2026-11-03,Real Estate,XLRE,,none,0,Neutral,-5,1
+2026-11-03,Semiconductors,SMH,,none,0,Neutral,6,1
+2026-11-03,Technology,XLK,,none,0,Neutral,6,1
+2026-11-03,Utilities,XLU,,none,0,Neutral,-5,1
