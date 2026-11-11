@@ -6999,3 +6999,17 @@ date,sector,signal_etf,trend_score,trend_ignition_score,momentum_score,relative_
 2026-11-09,Semiconductors,SMH,-2,-1,-2,-1,-1,0,0
 2026-11-09,Technology,XLK,-2,-1,0,-1,-1,0,0
 2026-11-09,Utilities,XLU,2,1,0,1,1,0,0
+2026-11-10,Biotechnology,XBI,2,1,0,1,1,0,0
+2026-11-10,Communication Services,XLC,0,0,0,0,0,0,0
+2026-11-10,Consumer Discretionary,XLY,2,1,0,1,1,0,0
+2026-11-10,Consumer Staples,XLP,2,1,0,1,1,-1,0
+2026-11-10,Energy,XLE,-2,-1,-2,-1,-1,0,0
+2026-11-10,Financials,XLF,2,1,0,1,1,0,0
+2026-11-10,Healthcare,XLV,2,1,0,1,1,0,0
+2026-11-10,Industrials,XLI,-2,-1,0,1,1,0,0
+2026-11-10,Materials,XLB,2,1,0,1,1,0,0
+2026-11-10,Nasdaq Growth,QQQ,-2,-1,0,-1,-1,0,0
+2026-11-10,Real Estate,XLRE,0,0,0,0,0,0,0
+2026-11-10,Semiconductors,SMH,-2,-1,-2,-1,-1,0,0
+2026-11-10,Technology,XLK,-2,-1,-2,-1,-1,0,0
+2026-11-10,Utilities,XLU,2,1,0,1,1,0,0
